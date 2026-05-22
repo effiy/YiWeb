@@ -24,7 +24,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             useMethods,
             components: [
                 'AicrPage',
-                'AicrHeader',
                 'AicrSidebar',
                 'AicrCodeArea',
                 'AicrModals',
@@ -39,7 +38,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 'YiSelect',
                 'YiInput',
                 'YiTextarea',
-                'SearchHeader',
                 'HeaderActions',
                 'FileTree',
                 'CodeView',
@@ -50,7 +48,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             ],
             componentModules: [
                 '/src/views/aicr/components/aicrPage/index.js',
-                '/src/views/aicr/components/aicrHeader/index.js',
                 '/src/views/aicr/components/aicrSidebar/index.js',
                 '/src/views/aicr/components/aicrCodeArea/index.js',
                 '/src/views/aicr/components/aicrModals/index.js',
@@ -65,7 +62,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 '/cdn/components/common/forms/YiSelect/index.js',
                 '/cdn/components/common/forms/YiInput/index.js',
                 '/cdn/components/common/forms/YiTextarea/index.js',
-                '/cdn/components/business/SearchHeader/index.js',
                 '/cdn/components/business/HeaderActions/index.js',
                 '/src/views/aicr/components/fileTree/index.js',
                 '/src/views/aicr/components/codeView/index.js',
@@ -319,14 +315,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             // 传递props给子组件
             props: {
                 'code-view': {},
-                'aicr-header': {
-                    allTags: function () { return this.allTags; },
-                    selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
-                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    tagCounts: function () { return this.tagCounts; },
-                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
-                    sidebarCollapsed: function () { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; }
-                },
                 'file-tree': {
                     tree: function () { return store.fileTree; },
                     selectedKey: function () { return store.selectedKey.value; },

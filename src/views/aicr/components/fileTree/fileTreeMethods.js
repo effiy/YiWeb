@@ -40,36 +40,6 @@ const fileTreeMethods = {
         }
         return filtered;
     },
-    handleSearchInput(event) {
-        const value = event.target.value;
-
-        if (this.searchDebounceTimer) {
-            clearTimeout(this.searchDebounceTimer);
-        }
-
-        this.searchDebounceTimer = setTimeout(() => {
-            this.$emit('search-change', value);
-        }, 300);
-    },
-    handleSearchKeydown(event) {
-        if (event.key === 'Escape') {
-            event.target.value = '';
-            this.$emit('search-change', '');
-            event.target.focus();
-        }
-    },
-    handleSearchClear() {
-        const input = this.$refs.searchInput;
-        if (input) {
-            input.value = '';
-        }
-        this.$emit('search-change', '');
-        this.$nextTick(() => {
-            if (input) {
-                input.focus();
-            }
-        });
-    },
     toggleBatchMode() {
         this.$emit('toggle-batch-mode');
     },
@@ -100,40 +70,6 @@ const fileTreeMethods = {
     },
     sortFileTreeItems(items) {
         return sortFileTreeItems(items);
-    },
-    sortTreeItem(node, sortField, sortDir) {
-        if (!node || typeof node !== 'object') return node;
-        if (node.type === 'folder' && Array.isArray(node.children)) {
-            const sortedChildren = this.sortChildren(node.children, sortField, sortDir);
-            node = { ...node, children: sortedChildren };
-            node.children.forEach(child => this.sortTreeItem(child, sortField, sortDir));
-        }
-        return node;
-    },
-    sortChildren(items, sortField, sortDir) {
-        if (!Array.isArray(items)) return items;
-        const dir = sortDir === 'desc' ? -1 : 1;
-        return [...items].sort((a, b) => {
-            if (sortField === 'name') {
-                const nameA = (a.name || '').toLowerCase();
-                const nameB = (b.name || '').toLowerCase();
-                return dir * nameA.localeCompare(nameB, 'zh-CN');
-            }
-            // default: folders first, then alphabetical
-            if (a.type === 'folder' && b.type !== 'folder') return -1;
-            if (a.type !== 'folder' && b.type === 'folder') return 1;
-            const nameA = (a.name || '').toLowerCase();
-            const nameB = (b.name || '').toLowerCase();
-            return dir * nameA.localeCompare(nameB, 'zh-CN');
-        });
-    },
-    handleSortChange(event) {
-        const value = event.target.value;
-        if (value === 'default' || value === 'name-asc' || value === 'name-desc') {
-            const [field, dir] = value === 'default' ? ['default', 'asc'] : value.split('-');
-            this.sortField = field;
-            this.sortDirection = dir || 'asc';
-        }
     },
     handleSessionSearchInput(event) {
         const value = event.target.value;

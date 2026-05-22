@@ -5,7 +5,7 @@
 @import url('/src/views/aicr/styles/codePage.contextModals.css');
 @import url('/src/views/aicr/components/keyboardShortcutsHelp/index.css');
 @import url('/src/views/aicr/components/aicrPage/index.css');
-@import url('/src/views/aicr/components/aicrHeader/index.css');
+
 @import url('/src/views/aicr/components/aicrSidebar/index.css');
 @import url('/src/views/aicr/components/aicrCodeArea/index.css');
 @import url('/src/views/aicr/components/aicrModals/index.css');
@@ -26,15 +26,7 @@ html, body {
  */
 
 /* ========== 主容器 ========== */
-.aicr-main {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    background: var(--yi-dark-surface);
-    min-width: 320px;
-    position: relative;
-    overflow: hidden;
-}
+/* .aicr-main 样式已迁移到 aicrPage/index.css */
 
 /* ========== 侧边栏（文件树） ========== */
 .aicr-sidebar {

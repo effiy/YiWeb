@@ -1,18 +1,157 @@
 /**
  * AicrPage 组件样式
  * author: YiWeb
- * 说明：AICR 主页面组件样式
+ * 说明：AICR 主页面组件样式 — 对齐 story 页面 header 规格
  */
+
+/* Page wrapper — 对齐 story .sp-page */
+.aicr-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Header — 对齐 story header 规格: 紧凑垂直间距 + 底边分割线 */
+.aicr-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--yi-border);
+    flex-wrap: wrap;
+    gap: 12px;
+    flex-shrink: 0;
+    background: var(--yi-bg);
+}
+.aicr-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+.aicr-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--yi-text);
+    margin: 0;
+}
+.aicr-header-count {
+    font-size: 13px;
+    color: var(--yi-text-secondary);
+}
+
+/* Meta Row — tags + stats side by side */
+.aicr-meta-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--yi-border);
+    flex-shrink: 0;
+}
+.aicr-header-tags-row {
+    width: 50vw;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 24px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: var(--yi-border) transparent;
+}
+/* Fade indicators — signal hidden content on each side */
+.aicr-header-tags-row::before,
+.aicr-header-tags-row::after {
+    content: '';
+    position: sticky;
+    top: 0;
+    bottom: 0;
+    width: 64px;
+    min-width: 64px;
+    pointer-events: none;
+    flex-shrink: 0;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+}
+/* Left fade — hidden when at scroll start */
+.aicr-header-tags-row::before {
+    left: 0;
+    margin-right: -64px;
+    background: linear-gradient(to right, var(--yi-bg) 30%, transparent 100%);
+    opacity: 0;
+}
+.aicr-header-tags-row.is-scrolled-right::before {
+    opacity: 1;
+}
+/* Right fade — hidden when scrolled to end */
+.aicr-header-tags-row::after {
+    right: 0;
+    margin-left: -64px;
+    background: linear-gradient(to left, var(--yi-bg) 30%, transparent 100%);
+    opacity: 0;
+}
+.aicr-header-tags-row.is-overflowing-right::after {
+    opacity: 1;
+}
+.aicr-header-tags-row::-webkit-scrollbar {
+    height: 4px;
+}
+.aicr-header-tags-row::-webkit-scrollbar-track {
+    background: transparent;
+}
+.aicr-header-tags-row::-webkit-scrollbar-thumb {
+    background: var(--yi-border);
+    border-radius: 2px;
+}
+.aicr-header-tags-row::-webkit-scrollbar-thumb:hover {
+    background: var(--yi-text-muted);
+}
+
+/* Project tag filter — pill-shaped, matching story */
+.aicr-project-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 9999px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.aicr-project-tag:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+    background: var(--yi-surface-hover);
+}
+.aicr-project-tag--active {
+    background: var(--yi-primary);
+    border-color: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+}
+.aicr-project-tag--active:hover {
+    background: var(--yi-primary-hover);
+    border-color: var(--yi-primary-hover);
+    color: var(--yi-text-on-primary);
+}
 
 /* Stats Bar */
 .aicr-stats-bar {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 24px;
     padding: 12px 24px;
-    border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
     flex-wrap: wrap;
+    margin-left: auto;
 }
 .aicr-stat-item {
     display: flex;
@@ -33,86 +172,83 @@
     color: var(--yi-text-muted);
 }
 
-/* Filter Bar */
+/* Filter Bar — matching story */
 .aicr-filter-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 16px;
+    justify-content: flex-start;
+    padding: 8px 24px;
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
     flex-wrap: wrap;
+    gap: 16px;
 }
-.aicr-filter-search {
+/* Unified Search — inside header-actions, matching story .sp-search */
+.aicr-search {
     position: relative;
     display: flex;
     align-items: center;
-    flex: 1;
-    max-width: 360px;
-    min-width: 180px;
 }
-.aicr-filter-search-icon {
+.aicr-search-icon {
     position: absolute;
-    left: 10px;
-    font-size: 12px;
-    color: var(--yi-text-muted);
+    left: 12px;
+    color: var(--yi-text-secondary);
+    font-size: 13px;
     pointer-events: none;
 }
-.aicr-filter-search-input {
-    width: 100%;
-    padding: 6px 30px 6px 30px;
+.aicr-search-input {
+    padding: 8px 12px 8px 36px;
     border: 1px solid var(--yi-border);
-    border-radius: 6px;
-    font-size: 13px;
-    background: var(--yi-bg);
-    color: var(--yi-text);
+    border-radius: 8px;
+    font-size: 14px;
+    width: 240px;
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: var(--yi-surface);
+    color: var(--yi-text);
 }
-.aicr-filter-search-input:focus {
+.aicr-search-input:focus {
     border-color: var(--yi-primary);
     box-shadow: var(--yi-shadow-focus);
 }
-.aicr-filter-search-input::placeholder {
-    color: var(--yi-text-muted);
+.aicr-search-input::placeholder {
+    color: var(--yi-text-secondary);
 }
-.aicr-filter-search-clear {
+.aicr-search-clear {
     position: absolute;
-    right: 6px;
+    right: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: none;
     border-radius: 50%;
     background: var(--yi-text-muted);
     color: var(--yi-bg);
-    font-size: 9px;
+    font-size: 10px;
     cursor: pointer;
     padding: 0;
 }
-.aicr-filter-search-clear:hover {
+.aicr-search-clear:hover {
     background: var(--yi-text-secondary);
 }
-.aicr-filter-clear-all {
+.aicr-filter-clear {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border: 1px solid var(--yi-border);
+    border: none;
     border-radius: 6px;
-    background: transparent;
-    color: var(--yi-text-muted);
     font-size: 12px;
+    background: transparent;
+    color: var(--yi-danger);
     cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    margin-left: auto;
 }
-.aicr-filter-clear-all:hover {
-    background: var(--yi-surface-hover);
-    color: var(--yi-text);
+.aicr-filter-clear:hover {
+    background: rgba(var(--yi-danger-rgb), 0.1);
 }
 
 .aicr-main {
@@ -120,7 +256,10 @@
     flex-direction: row;
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    min-width: 320px;
+    overflow: hidden;
+    background: var(--yi-dark-surface);
+    position: relative;
 }
 
 /* 响应式调整 */

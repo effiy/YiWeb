@@ -5,20 +5,6 @@
             <span v-if="totalStories > 0" class="sp-header-count">{{ totalStories }} 个故事</span>
         </div>
         <header-actions @clear-cache="clearCache">
-            <div v-if="allProjectTags.length > 0" class="sp-project-tags">
-                <button
-                    class="sp-project-tag"
-                    :class="{ 'sp-project-tag--active': !selectedProjectTag }"
-                    @click="clearProjectTag"
-                >全部</button>
-                <button
-                    v-for="tag in allProjectTags"
-                    :key="tag"
-                    class="sp-project-tag"
-                    :class="{ 'sp-project-tag--active': selectedProjectTag === tag }"
-                    @click="selectProjectTag(tag)"
-                >{{ tag }}</button>
-            </div>
             <div class="sp-search">
                 <yi-icon name="search" class-name="sp-search-icon"></yi-icon>
                 <input
@@ -53,31 +39,47 @@
         </header-actions>
     </header>
 
-    <div v-if="totalStories > 0 && !loading" class="sp-stats-bar">
-        <div class="sp-stat-item">
-            <yi-icon name="list" class-name="sp-stat-icon"></yi-icon>
-            <span class="sp-stat-value">{{ totalStories }}</span>
-            <span class="sp-stat-label">故事</span>
+    <div v-if="totalStories > 0 && !loading" class="sp-meta-row">
+        <div v-if="allProjectTags.length > 0" class="sp-header-tags-row">
+            <button
+                class="sp-project-tag"
+                :class="{ 'sp-project-tag--active': !selectedProjectTag }"
+                @click="clearProjectTag"
+            >全部</button>
+            <button
+                v-for="tag in allProjectTags"
+                :key="tag"
+                class="sp-project-tag"
+                :class="{ 'sp-project-tag--active': selectedProjectTag === tag }"
+                @click="selectProjectTag(tag)"
+            >{{ tag }}</button>
         </div>
-        <div class="sp-stat-item">
-            <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
-            <span class="sp-stat-value">{{ statusCounts.not_started || 0 }}</span>
-            <span class="sp-stat-label">未开始</span>
-        </div>
-        <div class="sp-stat-item">
-            <yi-icon name="edit" class-name="sp-stat-icon"></yi-icon>
-            <span class="sp-stat-value">{{ (statusCounts.docs_in_progress || 0) + (statusCounts.code_in_progress || 0) }}</span>
-            <span class="sp-stat-label">进行中</span>
-        </div>
-        <div class="sp-stat-item">
-            <yi-icon name="check-circle" class-name="sp-stat-icon"></yi-icon>
-            <span class="sp-stat-value">{{ (statusCounts.docs_done || 0) + (statusCounts.code_done || 0) }}</span>
-            <span class="sp-stat-label">已完成</span>
-        </div>
-        <div v-if="statusCounts.self_improve > 0" class="sp-stat-item">
-            <yi-icon name="lightbulb" class-name="sp-stat-icon"></yi-icon>
-            <span class="sp-stat-value">{{ statusCounts.self_improve || 0 }}</span>
-            <span class="sp-stat-label">自改进</span>
+        <div class="sp-stats-bar">
+            <div class="sp-stat-item">
+                <yi-icon name="list" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ totalStories }}</span>
+                <span class="sp-stat-label">故事</span>
+            </div>
+            <div class="sp-stat-item">
+                <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ statusCounts.not_started || 0 }}</span>
+                <span class="sp-stat-label">未开始</span>
+            </div>
+            <div class="sp-stat-item">
+                <yi-icon name="edit" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ (statusCounts.docs_in_progress || 0) + (statusCounts.code_in_progress || 0) }}</span>
+                <span class="sp-stat-label">进行中</span>
+            </div>
+            <div class="sp-stat-item">
+                <yi-icon name="check-circle" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ (statusCounts.docs_done || 0) + (statusCounts.code_done || 0) }}</span>
+                <span class="sp-stat-label">已完成</span>
+            </div>
+            <div v-if="statusCounts.self_improve > 0" class="sp-stat-item">
+                <yi-icon name="lightbulb" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ statusCounts.self_improve || 0 }}</span>
+                <span class="sp-stat-label">自改进</span>
+            </div>
         </div>
     </div>
 

@@ -185,16 +185,11 @@ const fileTreeComputed = {
             });
         }
 
-        // 排序
-        const sortField = this.sortField || 'default';
-        const sortDir = this.sortDirection || 'asc';
-        const sorted = filteredItems.map(item => this.sortTreeItem(item, sortField, sortDir));
-
         if (this.searchQuery && this.searchQuery.trim()) {
-            return this.filterTree(sorted, this.searchQuery.trim().toLowerCase());
+            return this.filterTree(filteredItems, this.searchQuery.trim().toLowerCase());
         }
 
-        return sorted;
+        return filteredItems;
     },
     flattenedFiles() {
         const files = [];

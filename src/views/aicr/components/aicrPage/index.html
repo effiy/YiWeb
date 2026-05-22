@@ -1,70 +1,84 @@
-<aicr-header
-    :all-tags="allTags"
-    :selected-tags="selectedSessionTags"
-    :tag-filter-no-tags="tagFilterNoTags"
-    :tag-counts="tagCounts"
-    :search-query="searchQuery"
-    :sidebar-collapsed="sidebarCollapsed"
-    @tag-select="handleTagSelect"
-    @tag-clear="handleTagClear"
-    @tag-filter-no-tags="handleTagFilterNoTags"
-    @search-input="handleSearchInput"
-    @search-keydown="handleMessageInput"
-    @composition-start="handleCompositionStart"
-    @composition-end="handleCompositionEnd"
-    @clear-search="clearSearch"
-    @clear-cache="clearCacheAndRefresh"
-></aicr-header>
-
-<div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-stats-bar">
-    <div class="aicr-stat-item">
-        <yi-icon name="inbox" class-name="aicr-stat-icon"></yi-icon>
-        <span class="aicr-stat-value">{{ sessions.length }}</span>
-        <span class="aicr-stat-label">会话</span>
-    </div>
-    <div class="aicr-stat-item">
-        <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
-        <span class="aicr-stat-value">{{ allTags.length }}</span>
-        <span class="aicr-stat-label">标签</span>
-    </div>
-    <div class="aicr-stat-item">
-        <yi-icon name="folder" class-name="aicr-stat-icon"></yi-icon>
-        <span class="aicr-stat-value">{{ fileTreeStats.folders }}</span>
-        <span class="aicr-stat-label">文件夹</span>
-    </div>
-    <div class="aicr-stat-item">
-        <yi-icon name="file" class-name="aicr-stat-icon"></yi-icon>
-        <span class="aicr-stat-value">{{ fileTreeStats.files }}</span>
-        <span class="aicr-stat-label">文件</span>
-    </div>
-</div>
-
-<div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar">
-        <div class="aicr-filter-search">
-            <yi-icon name="search" class-name="aicr-filter-search-icon"></yi-icon>
-            <input
-                type="text"
-                class="aicr-filter-search-input"
-                :value="sessionSearchQuery"
-                @input="handleSessionSearchInput"
-                @keydown="handleSessionSearchKeydown"
-                placeholder="搜索会话..."
-                aria-label="搜索会话"
-            />
-            <button
-                v-if="sessionSearchQuery"
-                type="button"
-                class="aicr-filter-search-clear"
-                @click="clearSessionSearch"
-                aria-label="清除会话搜索"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
+<div class="aicr-page">
+    <header class="aicr-header">
+        <div class="aicr-header-left">
+            <h1 class="aicr-header-title">代码审查</h1>
+            <span v-if="sessions && sessions.length > 0" class="aicr-header-count">{{ sessions.length }} 个会话</span>
         </div>
+        <header-actions @clear-cache="clearCacheAndRefresh">
+                <div class="aicr-search">
+                    <yi-icon name="search" class-name="aicr-search-icon"></yi-icon>
+                    <input
+                        type="text"
+                        class="aicr-search-input"
+                        placeholder="搜索会话和文件..."
+                        :value="sessionSearchQuery"
+                        @input="handleSessionSearchInput"
+                        @keydown="handleSessionSearchKeydown"
+                        aria-label="搜索会话和文件"
+                    />
+                    <button
+                        v-if="sessionSearchQuery"
+                        type="button"
+                        class="aicr-search-clear"
+                        @click="clearSessionSearch"
+                        aria-label="清除搜索"
+                    >
+                        <yi-icon name="close"></yi-icon>
+                    </button>
+                </div>
+            </header-actions>
+    </header>
+
+    <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-meta-row">
+        <div v-if="allTags && (allTags.length > 0 || (tagCounts && tagCounts.noTagsCount > 0))" class="aicr-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="handleTagsScroll">
+            <button
+                class="aicr-project-tag aicr-project-tag--all"
+                :class="{ 'aicr-project-tag--active': !tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) }"
+                @click="clearAllTags"
+            >全部</button>
+            <button
+                v-if="tagCounts && tagCounts.noTagsCount > 0"
+                class="aicr-project-tag"
+                :class="{ 'aicr-project-tag--active': tagFilterNoTags }"
+                @click="handleTagFilterNoTags(!tagFilterNoTags)"
+            >没有标签 ({{ tagCounts.noTagsCount }})</button>
+            <button
+                v-for="tag in allTags"
+                :key="tag"
+                class="aicr-project-tag"
+                :class="{ 'aicr-project-tag--active': selectedSessionTags && selectedSessionTags.includes(tag) }"
+                @click="toggleAicrTag(tag)"
+            >{{ tag }} ({{ tagCounts && tagCounts.counts ? (tagCounts.counts[tag] || 0) : 0 }})</button>
+        </div>
+        <div class="aicr-stats-bar">
+            <div class="aicr-stat-item">
+                <yi-icon name="inbox" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ sessions.length }}</span>
+                <span class="aicr-stat-label">会话</span>
+            </div>
+            <div class="aicr-stat-item">
+                <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ allTags.length }}</span>
+                <span class="aicr-stat-label">标签</span>
+            </div>
+            <div class="aicr-stat-item">
+                <yi-icon name="folder" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ fileTreeStats.folders }}</span>
+                <span class="aicr-stat-label">文件夹</span>
+            </div>
+            <div class="aicr-stat-item">
+                <yi-icon name="file" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ fileTreeStats.files }}</span>
+                <span class="aicr-stat-label">文件</span>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar">
         <button
-            v-if="sessionSearchQuery || selectedSessionTags.length > 0 || tagFilterNoTags"
+            v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
             type="button"
-            class="aicr-filter-clear-all"
+            class="aicr-filter-clear"
             @click="clearAllAicrFilters"
             title="清除所有筛选"
         >
@@ -73,13 +87,14 @@
         </button>
     </div>
 
-<main class="aicr-main">
-    <aicr-sidebar></aicr-sidebar>
-    <aicr-code-area></aicr-code-area>
-</main>
+    <main class="aicr-main">
+        <aicr-sidebar></aicr-sidebar>
+        <aicr-code-area></aicr-code-area>
+    </main>
 
-<!-- 键盘快捷键帮助面板 -->
-<keyboard-shortcuts-help
-    :visible="showKeyboardShortcuts"
-    @close="showKeyboardShortcuts = false"
-></keyboard-shortcuts-help>
+    <!-- 键盘快捷键帮助面板 -->
+    <keyboard-shortcuts-help
+        :visible="showKeyboardShortcuts"
+        @close="showKeyboardShortcuts = false"
+    ></keyboard-shortcuts-help>
+</div>

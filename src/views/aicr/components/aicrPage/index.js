@@ -11,7 +11,9 @@ registerGlobalComponent({
     data() {
         return {
             showKeyboardShortcuts: false,
-            sessionSearchDebounceTimer: null
+            sessionSearchDebounceTimer: null,
+            tagsScrollLeft: 0,
+            tagsScrollAtEnd: true
         };
     },
     mounted() {
@@ -68,6 +70,9 @@ registerGlobalComponent({
                 if (typeof this.handleSessionSearchChange === 'function') {
                     this.handleSessionSearchChange(value);
                 }
+                if (typeof this.handleSearchChange === 'function') {
+                    this.handleSearchChange(value);
+                }
             }, 300);
         },
         handleSessionSearchKeydown(event) {
@@ -84,11 +89,36 @@ registerGlobalComponent({
             if (typeof this.handleSessionSearchChange === 'function') {
                 this.handleSessionSearchChange('');
             }
+            if (typeof this.clearSearch === 'function') {
+                this.clearSearch();
+            }
+        },
+        toggleAicrTag(tag) {
+            const currentTags = this.selectedSessionTags || [];
+            const newTags = [...currentTags];
+            const index = newTags.indexOf(tag);
+            if (index > -1) {
+                newTags.splice(index, 1);
+            } else {
+                newTags.push(tag);
+            }
+            if (typeof this.handleTagSelect === 'function') {
+                this.handleTagSelect(newTags);
+            }
         },
         clearAllAicrFilters() {
             this.clearSessionSearch();
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
+        },
+        clearAllTags() {
+            if (typeof this.handleTagClear === 'function') this.handleTagClear();
+            if (typeof this.handleTagFilterNoTags === 'function') this.handleTagFilterNoTags(false);
+        },
+        handleTagsScroll(event) {
+            const el = event.target;
+            this.tagsScrollLeft = el.scrollLeft;
+            this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
         }
     }
 });
