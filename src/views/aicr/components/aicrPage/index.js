@@ -13,8 +13,38 @@ registerGlobalComponent({
             showKeyboardShortcuts: false,
             sessionSearchDebounceTimer: null,
             tagsScrollLeft: 0,
-            tagsScrollAtEnd: true
+            tagsScrollAtEnd: true,
+            filterBarCollapsed: false
         };
+    },
+    computed: {
+        filterSummaryText() {
+            const parts = [];
+            if (this.tagFilterNoTags) {
+                const count = this.subTagCounts?.noTagsCount;
+                parts.push(`没有标签${count != null ? ` (${count})` : ''}`);
+            }
+            if (this.selectedSessionTags && this.selectedSessionTags.length > 0) {
+                for (const tag of this.selectedSessionTags) {
+                    const count = this.subTagCounts?.counts?.[tag];
+                    parts.push(`${tag}${count != null ? ` (${count})` : ''}`);
+                }
+            }
+            if (parts.length > 0) {
+                return parts.join(', ');
+            }
+            const all = [];
+            if (this.subTagCounts?.noTagsCount > 0) {
+                all.push(`没有标签(${this.subTagCounts.noTagsCount})`);
+            }
+            if (this.subTags) {
+                for (const tag of this.subTags) {
+                    const count = this.subTagCounts?.counts?.[tag];
+                    all.push(`${tag}${count != null ? `(${count})` : ''}`);
+                }
+            }
+            return all.length > 0 ? `全部标签 · ${all.join(', ')}` : '全部标签';
+        }
     },
     mounted() {
         this._onKeydown = (e) => {
@@ -105,6 +135,9 @@ registerGlobalComponent({
             if (typeof this.handleTagSelect === 'function') {
                 this.handleTagSelect(newTags);
             }
+        },
+        toggleFilterBar() {
+            this.filterBarCollapsed = !this.filterBarCollapsed;
         },
         clearAllAicrFilters() {
             this.clearSessionSearch();

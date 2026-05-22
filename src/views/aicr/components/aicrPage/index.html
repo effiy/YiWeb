@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar">
+    <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
         <div v-if="subTags && subTags.length > 0" class="aicr-filter-group">
             <span class="aicr-filter-label">标签</span>
             <button
@@ -93,16 +93,31 @@
                 @click="toggleAicrTag(tag)"
             >{{ tag }} ({{ subTagCounts && subTagCounts.counts ? (subTagCounts.counts[tag] || 0) : 0 }})</button>
         </div>
-        <button
-            v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
-            type="button"
-            class="aicr-filter-clear"
-            @click="clearAllAicrFilters"
-            title="清除所有筛选"
-        >
-            <yi-icon name="close"></yi-icon>
-            <span>清除筛选</span>
-        </button>
+        <div v-if="subTags && subTags.length > 0" class="aicr-filter-summary">
+            <span class="aicr-filter-label">标签</span>
+            <span class="aicr-filter-summary-text">{{ filterSummaryText }}</span>
+        </div>
+        <div class="aicr-filter-actions">
+            <button
+                v-if="subTags && subTags.length > 0"
+                type="button"
+                class="aicr-filter-collapse"
+                @click="toggleFilterBar"
+                :title="filterBarCollapsed ? '展开筛选标签' : '折叠筛选标签'"
+            >
+                <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
+            </button>
+            <button
+                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
+                type="button"
+                class="aicr-filter-clear"
+                @click="clearAllAicrFilters"
+                title="清除所有筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+                <span>清除筛选</span>
+            </button>
+        </div>
     </div>
 
     <main class="aicr-main">
