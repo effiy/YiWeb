@@ -42,7 +42,7 @@
                     class="aicr-project-tag"
                     :class="{ 'aicr-project-tag--active': tagFilterNoTags }"
                     @click="handleTagFilterNoTags(!tagFilterNoTags)"
-                >没有标签 ({{ tagCounts.noTagsCount }})</button>
+                >没有故事 ({{ tagCounts.noTagsCount }})</button>
                 <button
                     v-for="tag in allTags"
                     :key="tag"
@@ -56,91 +56,96 @@
         </div>
         <div class="aicr-stats-bar">
             <div class="aicr-stat-item">
-                <yi-icon name="inbox" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ sessions.length }}</span>
-                <span class="aicr-stat-label">会话</span>
-            </div>
-            <div class="aicr-stat-item">
-                <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ allTags.length }}</span>
-                <span class="aicr-stat-label">标签</span>
+                <yi-icon name="file" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ filteredFileCount }}</span>
+                <span class="aicr-stat-label">文件</span>
             </div>
             <div class="aicr-stat-item">
                 <yi-icon name="folder" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ fileTreeStats.folders }}</span>
-                <span class="aicr-stat-label">文件夹</span>
+                <span class="aicr-stat-value">{{ allTags.length }}</span>
+                <span class="aicr-stat-label">项目</span>
             </div>
             <div class="aicr-stat-item">
-                <yi-icon name="file" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ fileTreeStats.files }}</span>
-                <span class="aicr-stat-label">文件</span>
+                <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ subTags.length }}</span>
+                <span class="aicr-stat-label">故事</span>
+            </div>
+            <div class="aicr-stat-item">
+                <yi-icon name="server" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ prefixTags.length }}</span>
+                <span class="aicr-stat-label">前缀</span>
             </div>
         </div>
     </div>
 
     <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
-        <div v-if="subTags && subTags.length > 0" class="aicr-filter-group">
-            <span class="aicr-filter-label">标签</span>
-            <button
-                v-if="subTagCounts && subTagCounts.noTagsCount > 0"
-                type="button"
-                class="aicr-filter-tag"
-                :class="{ active: tagFilterNoTags }"
-                @click="toggleTagFilterNoTags"
-            >没有标签 ({{ subTagCounts.noTagsCount }})</button>
-            <button
-                v-for="tag in subTags"
-                :key="tag"
-                type="button"
-                class="aicr-filter-tag"
-                :class="{ active: selectedSessionTags && selectedSessionTags.includes(tag) }"
-                @click="toggleAicrTag(tag)"
-            >{{ tag }} ({{ subTagCounts && subTagCounts.counts ? (subTagCounts.counts[tag] || 0) : 0 }})</button>
-            <button
-                v-if="(selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
-                type="button"
-                class="aicr-filter-clear aicr-filter-clear--inline"
-                @click="clearAllTags"
-                title="清除标签筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
+        <div class="aicr-filter-group">
+            <span class="aicr-filter-label">故事</span>
+            <template v-if="subTags && subTags.length > 0">
+                <button
+                    v-if="subTagCounts && subTagCounts.noTagsCount > 0"
+                    type="button"
+                    class="aicr-filter-tag"
+                    :class="{ active: tagFilterNoTags }"
+                    @click="toggleTagFilterNoTags"
+                >没有故事 ({{ subTagCounts.noTagsCount }})</button>
+                <button
+                    v-for="tag in subTags"
+                    :key="tag"
+                    type="button"
+                    class="aicr-filter-tag"
+                    :class="{ active: selectedSessionTags && selectedSessionTags.includes(tag) }"
+                    @click="toggleAicrTag(tag)"
+                >{{ tag }} ({{ subTagCounts && subTagCounts.counts ? (subTagCounts.counts[tag] || 0) : 0 }})</button>
+                <button
+                    v-if="(selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
+                    type="button"
+                    class="aicr-filter-clear aicr-filter-clear--inline"
+                    @click="clearAllTags"
+                    title="清除故事筛选"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </template>
+            <span v-else class="aicr-filter-empty">没有故事</span>
         </div>
-        <div v-if="prefixTags && prefixTags.length > 0" class="aicr-filter-group aicr-filter-group--prefix">
+        <div class="aicr-filter-group aicr-filter-group--prefix">
             <span class="aicr-filter-label">前缀</span>
-            <button
-                v-for="pt in prefixTags"
-                :key="pt.prefix"
-                type="button"
-                class="aicr-filter-tag aicr-filter-tag--prefix"
-                :class="{ active: selectedPrefixTags && selectedPrefixTags.includes(pt.prefix) }"
-                @click="togglePrefixTag(pt.prefix)"
-            >{{ pt.prefix }} ({{ pt.count }})</button>
-            <button
-                v-if="selectedPrefixTags && selectedPrefixTags.length > 0"
-                type="button"
-                class="aicr-filter-clear aicr-filter-clear--inline"
-                @click="clearPrefixTags"
-                title="清除前缀筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
+            <template v-if="prefixTags && prefixTags.length > 0">
+                <button
+                    v-for="pt in prefixTags"
+                    :key="pt.prefix"
+                    type="button"
+                    class="aicr-filter-tag aicr-filter-tag--prefix"
+                    :class="{ active: selectedPrefixTags && selectedPrefixTags.includes(pt.prefix) }"
+                    @click="togglePrefixTag(pt.prefix)"
+                >{{ pt.prefix }} ({{ pt.count }})</button>
+                <button
+                    v-if="selectedPrefixTags && selectedPrefixTags.length > 0"
+                    type="button"
+                    class="aicr-filter-clear aicr-filter-clear--inline"
+                    @click="clearPrefixTags"
+                    title="清除前缀筛选"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </template>
+            <span v-else class="aicr-filter-empty">没有前缀</span>
         </div>
-        <div v-if="subTags && subTags.length > 0" class="aicr-filter-summary">
-            <span class="aicr-filter-label">标签</span>
+        <div class="aicr-filter-summary">
+            <span class="aicr-filter-label">故事</span>
             <span class="aicr-filter-summary-text">{{ filterSummaryText }}</span>
         </div>
-        <div v-if="prefixTags && prefixTags.length > 0" class="aicr-filter-summary aicr-filter-summary--prefix">
+        <div class="aicr-filter-summary aicr-filter-summary--prefix">
             <span class="aicr-filter-label">前缀</span>
             <span class="aicr-filter-summary-text">{{ prefixFilterSummaryText }}</span>
         </div>
         <div class="aicr-filter-actions">
             <button
-                v-if="subTags && subTags.length > 0"
                 type="button"
                 class="aicr-filter-collapse"
                 @click="toggleFilterBar"
-                :title="filterBarCollapsed ? '展开筛选标签' : '折叠筛选标签'"
+                :title="filterBarCollapsed ? '展开筛选' : '折叠筛选'"
             >
                 <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
             </button>

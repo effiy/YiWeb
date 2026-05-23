@@ -14,13 +14,65 @@ import { safeExecute } from '/cdn/utils/core/error.js';
  */
 export const createTagFilterMethods = ({ store }) => {
     /**
-     * 处理标签选择
+     * 处理标签选择（双向联动：选故事自动选父项目，去项目自动去子故事）
      */
     const handleTagSelect = (tags) => {
         return safeExecute(() => {
-            if (store.selectedSessionTags) {
-                store.selectedSessionTags.value = tags;
+            if (!store.selectedSessionTags) return;
+
+            const current = store.selectedSessionTags.value || [];
+            const added = tags.filter(t => !current.includes(t));
+            const removed = current.filter(t => !tags.includes(t));
+
+            let newTags = [...tags];
+
+            // 构建一级目录名集合（项目级标签）
+            const firstLevelNames = new Set();
+            if (store.fileTree?.value) {
+                for (const item of store.fileTree.value) {
+                    if (item.type === 'folder') firstLevelNames.add(item.name);
+                }
             }
+
+            // 自动选中故事标签的父项目
+            for (const tag of added) {
+                if (!firstLevelNames.has(tag)) {
+                    if (store.fileTree?.value) {
+                        for (const item of store.fileTree.value) {
+                            if (item.type === 'folder' && Array.isArray(item.children)) {
+                                for (const child of item.children) {
+                                    if (child.type === 'folder' && child.name === tag) {
+                                        if (!newTags.includes(item.name)) {
+                                            newTags.push(item.name);
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 自动移除被取消项目标签下的子故事标签
+            for (const tag of removed) {
+                if (firstLevelNames.has(tag)) {
+                    if (store.fileTree?.value) {
+                        for (const item of store.fileTree.value) {
+                            if (item.type === 'folder' && item.name === tag && Array.isArray(item.children)) {
+                                for (const child of item.children) {
+                                    if (child.type === 'folder') {
+                                        newTags = newTags.filter(t => t !== child.name);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            store.selectedSessionTags.value = newTags;
         }, '选择标签');
     };
 

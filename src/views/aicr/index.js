@@ -351,14 +351,35 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
                 },
-                // 所有标签列表
+                // 所有标签列表（三级联动：受前缀标签选中过滤）
                 allTags: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
 
-                    // 只收集一级目录作为标签
+                    const selectedPrefixes = store.selectedPrefixTags?.value || [];
+                    const hasPrefix = selectedPrefixes.length > 0;
+
+                    const fileMatchesPrefix = (name) => {
+                        if (!hasPrefix) return true;
+                        const sepIdx = Math.min(
+                            ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                        );
+                        if (sepIdx === Infinity || sepIdx === 0) return false;
+                        return selectedPrefixes.includes(name.substring(0, sepIdx));
+                    };
+
+                    const folderHasMatchingFile = (items) => {
+                        if (!Array.isArray(items)) return false;
+                        for (const item of items) {
+                            if (item.type === 'file' && fileMatchesPrefix(item.name || '')) return true;
+                            if (item.type === 'folder' && item.children && folderHasMatchingFile(item.children)) return true;
+                        }
+                        return false;
+                    };
+
                     const tags = new Set();
                     for (const item of store.fileTree.value) {
                         if (item.type === 'folder') {
+                            if (hasPrefix && !folderHasMatchingFile(item.children || [])) continue;
                             tags.add(item.name);
                         }
                     }
@@ -380,7 +401,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     return allTagsArray;
                 },
-                // 标签计数
+                // 标签计数（三级联动：受前缀标签选中过滤）
                 tagCounts: function () {
                     const counts = {};
                     let noTagsCount = 0;
@@ -389,13 +410,24 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return { counts, noTagsCount };
                     }
 
-                    // 统计一级目录下所有文件数量（包括子文件夹中的文件）
+                    const selectedPrefixes = store.selectedPrefixTags?.value || [];
+                    const hasPrefix = selectedPrefixes.length > 0;
+
+                    const fileMatchesPrefix = (name) => {
+                        if (!hasPrefix) return true;
+                        const sepIdx = Math.min(
+                            ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                        );
+                        if (sepIdx === Infinity || sepIdx === 0) return false;
+                        return selectedPrefixes.includes(name.substring(0, sepIdx));
+                    };
+
                     const countFilesInFolder = (items) => {
                         let fileCount = 0;
                         if (!Array.isArray(items)) return fileCount;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                fileCount++;
+                                if (fileMatchesPrefix(item.name || '')) fileCount++;
                             } else if (item.type === 'folder' && item.children) {
                                 fileCount += countFilesInFolder(item.children);
                             }
@@ -403,10 +435,9 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return fileCount;
                     };
 
-                    // 遍历根目录
                     for (const item of store.fileTree.value) {
                         if (item.type === 'file') {
-                            noTagsCount++;
+                            if (fileMatchesPrefix(item.name || '')) noTagsCount++;
                         } else if (item.type === 'folder') {
                             counts[item.name] = countFilesInFolder(item.children || []);
                         }
@@ -414,11 +445,13 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     return { counts, noTagsCount };
                 },
-                // 二级标签：全部模式展示所有一级目录下的二级标签；选中一级标签后仅展示对应二级标签
+                // 二级标签（三级联动：受一级标签和前缀标签选中过滤）
                 subTags: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
 
                     const selectedTags = store.selectedSessionTags?.value || [];
+                    const selectedPrefixes = store.selectedPrefixTags?.value || [];
+                    const hasPrefix = selectedPrefixes.length > 0;
 
                     const firstLevelNames = new Set();
                     for (const item of store.fileTree.value) {
@@ -428,13 +461,31 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         ? selectedTags.filter(t => firstLevelNames.has(t))
                         : [];
 
+                    const fileMatchesPrefix = (name) => {
+                        if (!hasPrefix) return true;
+                        const sepIdx = Math.min(
+                            ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                        );
+                        if (sepIdx === Infinity || sepIdx === 0) return false;
+                        return selectedPrefixes.includes(name.substring(0, sepIdx));
+                    };
+
+                    const folderHasMatchingFile = (items) => {
+                        if (!Array.isArray(items)) return false;
+                        for (const item of items) {
+                            if (item.type === 'file' && fileMatchesPrefix(item.name || '')) return true;
+                            if (item.type === 'folder' && item.children && folderHasMatchingFile(item.children)) return true;
+                        }
+                        return false;
+                    };
+
                     const tags = new Set();
                     for (const item of store.fileTree.value) {
                         if (item.type === 'folder' && Array.isArray(item.children)) {
-                            // 全部模式：收集所有一级目录的二级标签；选中模式：仅收集选中目录
                             if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
                             for (const child of item.children) {
                                 if (child.type === 'folder') {
+                                    if (hasPrefix && !folderHasMatchingFile(child.children || [])) continue;
                                     tags.add(child.name);
                                 }
                             }
@@ -459,12 +510,21 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     return allTagsArray;
                 },
-                // 前缀标签：从文件名自动提取前缀，按频次降序排列
+                // 前缀标签（三级联动：受一级标签和二级标签选中过滤）
                 prefixTags: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
 
+                    const selectedTags = store.selectedSessionTags?.value || [];
+
+                    const firstLevelNames = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') firstLevelNames.add(item.name);
+                    }
+                    const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
+                    const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
+
                     const prefixCounts = {};
-                    const collectPrefixes = (items) => {
+                    const collectPrefixes = (items, depth) => {
                         if (!Array.isArray(items)) return;
                         for (const item of items) {
                             if (item.type === 'file') {
@@ -480,17 +540,23 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                                     prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
                                 }
                             } else if (item.type === 'folder' && item.children) {
-                                collectPrefixes(item.children);
+                                if (depth === 0 && firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) {
+                                    continue;
+                                }
+                                if (depth === 1 && secondLevelTags.length > 0 && !secondLevelTags.includes(item.name)) {
+                                    continue;
+                                }
+                                collectPrefixes(item.children, depth + 1);
                             }
                         }
                     };
-                    collectPrefixes(store.fileTree.value);
+                    collectPrefixes(store.fileTree.value, 0);
 
                     return Object.entries(prefixCounts)
                         .map(([prefix, count]) => ({ prefix, count }))
                         .sort((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix));
                 },
-                // 二级标签计数：全部模式统计所有目录；选中模式仅统计选中目录
+                // 二级标签计数（三级联动：受一级标签和前缀标签选中过滤）
                 subTagCounts: function () {
                     const counts = {};
                     let noTagsCount = 0;
@@ -500,13 +566,24 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
 
                     const selectedTags = store.selectedSessionTags?.value || [];
+                    const selectedPrefixes = store.selectedPrefixTags?.value || [];
+                    const hasPrefix = selectedPrefixes.length > 0;
+
+                    const fileMatchesPrefix = (name) => {
+                        if (!hasPrefix) return true;
+                        const sepIdx = Math.min(
+                            ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                        );
+                        if (sepIdx === Infinity || sepIdx === 0) return false;
+                        return selectedPrefixes.includes(name.substring(0, sepIdx));
+                    };
 
                     const countFilesInFolder = (items) => {
                         let fileCount = 0;
                         if (!Array.isArray(items)) return fileCount;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                fileCount++;
+                                if (fileMatchesPrefix(item.name || '')) fileCount++;
                             } else if (item.type === 'folder' && item.children) {
                                 fileCount += countFilesInFolder(item.children);
                             }
@@ -534,10 +611,98 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
 
                     for (const item of store.fileTree.value) {
-                        if (item.type === 'file') noTagsCount++;
+                        if (item.type === 'file') {
+                            if (fileMatchesPrefix(item.name || '')) noTagsCount++;
+                        }
                     }
 
                     return { counts, noTagsCount };
+                },
+                // 筛选感知的文件总数（三级联动 + 项目/故事/前缀筛选 + 会话搜索）
+                filteredFileCount: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const selectedPrefixes = store.selectedPrefixTags?.value || [];
+                    const hasPrefix = selectedPrefixes.length > 0;
+                    const noTags = store.tagFilterNoTags?.value || false;
+                    const anyTagFilter = selectedTags.length > 0 || noTags || hasPrefix;
+
+                    const sessionQuery = store.sessionSearchQuery?.value?.trim().toLowerCase() || '';
+
+                    const firstLevelNames = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') firstLevelNames.add(item.name);
+                    }
+                    const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
+                    const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
+
+                    const getPrefix = (name) => {
+                        const sepIdx = Math.min(
+                            ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                        );
+                        return sepIdx !== Infinity && sepIdx > 0 ? name.substring(0, sepIdx) : null;
+                    };
+
+                    const fileMatches = (name) => {
+                        if (hasPrefix) {
+                            const p = getPrefix(name);
+                            if (!p || !selectedPrefixes.includes(p)) return false;
+                        }
+                        return true;
+                    };
+
+                    let total = 0;
+
+                    const countFiles = (items, depth) => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (fileMatches(item.name || '')) total++;
+                            } else if (item.type === 'folder' && item.children) {
+                                if (depth === 0) {
+                                    if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
+                                } else if (depth === 1) {
+                                    if (secondLevelTags.length > 0 && !secondLevelTags.includes(item.name)) continue;
+                                }
+                                countFiles(item.children, depth + 1);
+                            }
+                        }
+                    };
+
+                    if (!anyTagFilter && !sessionQuery) {
+                        countFiles(store.fileTree.value, 0);
+                        return total;
+                    }
+
+                    // 会话搜索：按顶层文件夹名称过滤
+                    let filteredItems = store.fileTree.value;
+                    if (sessionQuery) {
+                        filteredItems = filteredItems.filter(item => {
+                            if (item.type === 'folder') {
+                                const nameMatch = (item.name || '').toLowerCase().includes(sessionQuery);
+                                if (nameMatch) return true;
+                                if (Array.isArray(item.children)) {
+                                    return item.children.some(child =>
+                                        (child.name || '').toLowerCase().includes(sessionQuery)
+                                    );
+                                }
+                                return false;
+                            }
+                            return (item.name || '').toLowerCase().includes(sessionQuery);
+                        });
+                    }
+
+                    // 无标签筛选：仅根级文件
+                    if (noTags && firstLevelTags.length === 0 && secondLevelTags.length === 0 && !hasPrefix) {
+                        for (const item of filteredItems) {
+                            if (item.type === 'file') total++;
+                        }
+                        return total;
+                    }
+
+                    countFiles(filteredItems, 0);
+                    return total;
                 }
             }
         });

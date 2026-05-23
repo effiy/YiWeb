@@ -12,12 +12,34 @@ const fileTreeComputed = {
         // 未选一级标签时不显示二级标签；已选时仅显示匹配一级目录下的二级标签
         if (firstLevelTags.length === 0) return [];
 
+        const selectedPrefixes = this.selectedPrefixTags || [];
+        const hasPrefix = selectedPrefixes.length > 0;
+
+        const fileMatchesPrefix = (name) => {
+            if (!hasPrefix) return true;
+            const sepIdx = Math.min(
+                ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+            );
+            if (sepIdx === Infinity || sepIdx === 0) return false;
+            return selectedPrefixes.includes(name.substring(0, sepIdx));
+        };
+
+        const folderHasMatchingFile = (items) => {
+            if (!Array.isArray(items)) return false;
+            for (const item of items) {
+                if (item.type === 'file' && fileMatchesPrefix(item.name || '')) return true;
+                if (item.type === 'folder' && item.children && folderHasMatchingFile(item.children)) return true;
+            }
+            return false;
+        };
+
         const tags = new Set();
         for (const item of this.tree) {
             if (item.type === 'folder' && Array.isArray(item.children)) {
                 if (!firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
+                        if (hasPrefix && !folderHasMatchingFile(child.children || [])) continue;
                         tags.add(child.name);
                     }
                 }
@@ -67,12 +89,37 @@ const fileTreeComputed = {
 
         if (firstLevelTags.length === 0) return { counts: {}, noTagsCount: 0 };
 
+        const selectedPrefixes = this.selectedPrefixTags || [];
+        const hasPrefix = selectedPrefixes.length > 0;
+
+        const fileMatchesPrefix = (name) => {
+            if (!hasPrefix) return true;
+            const sepIdx = Math.min(
+                ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+            );
+            if (sepIdx === Infinity || sepIdx === 0) return false;
+            return selectedPrefixes.includes(name.substring(0, sepIdx));
+        };
+
+        const countMatchingFilesInFolder = (items) => {
+            let fileCount = 0;
+            if (!Array.isArray(items)) return fileCount;
+            for (const item of items) {
+                if (item.type === 'file') {
+                    if (fileMatchesPrefix(item.name || '')) fileCount++;
+                } else if (item.type === 'folder' && item.children) {
+                    fileCount += countMatchingFilesInFolder(item.children);
+                }
+            }
+            return fileCount;
+        };
+
         for (const item of this.tree) {
             if (item.type === 'folder' && Array.isArray(item.children)) {
                 if (!firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
-                        counts[child.name] = (counts[child.name] || 0) + countFilesInFolder(child.children || []);
+                        counts[child.name] = (counts[child.name] || 0) + countMatchingFilesInFolder(child.children || []);
                     }
                 }
             }
@@ -80,7 +127,9 @@ const fileTreeComputed = {
 
         // 根级文件视为无标签
         for (const item of this.tree) {
-            if (item.type === 'file') noTagsCount++;
+            if (item.type === 'file') {
+                if (fileMatchesPrefix(item.name || '')) noTagsCount++;
+            }
         }
 
         return { counts, noTagsCount };

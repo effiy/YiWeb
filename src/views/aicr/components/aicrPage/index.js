@@ -24,7 +24,7 @@ registerGlobalComponent({
             const parts = [];
             if (this.tagFilterNoTags) {
                 const count = this.subTagCounts?.noTagsCount;
-                parts.push(`没有标签${count != null ? ` (${count})` : ''}`);
+                parts.push(`没有故事${count != null ? ` (${count})` : ''}`);
             }
             if (this.selectedSessionTags && this.selectedSessionTags.length > 0) {
                 for (const tag of this.selectedSessionTags) {
@@ -37,7 +37,7 @@ registerGlobalComponent({
             }
             const all = [];
             if (this.subTagCounts?.noTagsCount > 0) {
-                all.push(`没有标签(${this.subTagCounts.noTagsCount})`);
+                all.push(`没有故事(${this.subTagCounts.noTagsCount})`);
             }
             if (this.subTags) {
                 for (const tag of this.subTags) {
@@ -45,11 +45,11 @@ registerGlobalComponent({
                     all.push(`${tag}${count != null ? `(${count})` : ''}`);
                 }
             }
-            return all.length > 0 ? `全部标签 · ${all.join(', ')}` : '全部标签';
+            return all.length > 0 ? `全部故事 · ${all.join(', ')}` : '没有故事';
         },
         prefixFilterSummaryText() {
             if (!this.selectedPrefixTags || this.selectedPrefixTags.length === 0) {
-                if (!this.prefixTags || this.prefixTags.length === 0) return '';
+                if (!this.prefixTags || this.prefixTags.length === 0) return '没有前缀';
                 const all = this.prefixTags.map(pt => `${pt.prefix} (${pt.count})`);
                 return `全部前缀 · ${all.join(', ')}`;
             }
