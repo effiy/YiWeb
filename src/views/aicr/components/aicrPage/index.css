@@ -265,6 +265,35 @@
     border-color: var(--yi-primary);
     color: var(--yi-text-on-primary);
 }
+/* 前缀标签：虚线边框与目录标签区分 */
+.aicr-filter-tag--prefix {
+    border-style: dashed;
+}
+.aicr-filter-tag--prefix.active {
+    border-style: solid;
+}
+/* 前缀标签组内清除按钮 */
+.aicr-filter-clear--inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--yi-text-tertiary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+.aicr-filter-clear--inline:hover {
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
+}
 /* Filter actions — collapse toggle + clear button grouped at right */
 .aicr-filter-actions {
     display: flex;

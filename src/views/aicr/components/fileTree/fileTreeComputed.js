@@ -185,6 +185,42 @@ const fileTreeComputed = {
             });
         }
 
+        // 前缀标签筛选
+        if (this.selectedPrefixTags && this.selectedPrefixTags.length > 0) {
+            const prefixSet = new Set(this.selectedPrefixTags);
+            const getFilePrefix = (name) => {
+                const sepIdx = Math.min(
+                    ...['-', '_', '.'].map(s => {
+                        const i = name.indexOf(s);
+                        return i === -1 ? Infinity : i;
+                    })
+                );
+                if (sepIdx !== Infinity && sepIdx > 0) {
+                    return name.substring(0, sepIdx);
+                }
+                return null;
+            };
+            const filterByPrefix = (items) => {
+                if (!Array.isArray(items)) return [];
+                const result = [];
+                for (const item of items) {
+                    if (item.type === 'file') {
+                        const prefix = getFilePrefix(item.name || '');
+                        if (prefix && prefixSet.has(prefix)) {
+                            result.push(item);
+                        }
+                    } else if (item.type === 'folder') {
+                        const filteredChildren = item.children ? filterByPrefix(item.children) : [];
+                        if (filteredChildren.length > 0) {
+                            result.push({ ...item, children: filteredChildren });
+                        }
+                    }
+                }
+                return result;
+            };
+            filteredItems = filterByPrefix(filteredItems);
+        }
+
         if (this.searchQuery && this.searchQuery.trim()) {
             return this.filterTree(filteredItems, this.searchQuery.trim().toLowerCase());
         }

@@ -97,6 +97,26 @@
                 @click="toggleAicrTag(tag)"
             >{{ tag }} ({{ subTagCounts && subTagCounts.counts ? (subTagCounts.counts[tag] || 0) : 0 }})</button>
         </div>
+        <div v-if="prefixTags && prefixTags.length > 0" class="aicr-filter-group aicr-filter-group--prefix">
+            <span class="aicr-filter-label">前缀</span>
+            <button
+                v-for="pt in prefixTags"
+                :key="pt.prefix"
+                type="button"
+                class="aicr-filter-tag aicr-filter-tag--prefix"
+                :class="{ active: selectedPrefixTags && selectedPrefixTags.includes(pt.prefix) }"
+                @click="togglePrefixTag(pt.prefix)"
+            >{{ pt.prefix }} ({{ pt.count }})</button>
+            <button
+                v-if="selectedPrefixTags && selectedPrefixTags.length > 0"
+                type="button"
+                class="aicr-filter-clear aicr-filter-clear--inline"
+                @click="clearPrefixTags"
+                title="清除前缀筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
         <div v-if="subTags && subTags.length > 0" class="aicr-filter-summary">
             <span class="aicr-filter-label">标签</span>
             <span class="aicr-filter-summary-text">{{ filterSummaryText }}</span>

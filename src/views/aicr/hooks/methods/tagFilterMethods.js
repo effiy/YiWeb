@@ -57,10 +57,40 @@ export const createTagFilterMethods = ({ store }) => {
         }, '会话搜索变化');
     };
 
+    /**
+     * 切换前缀标签选中状态
+     */
+    const handlePrefixTagToggle = (prefix) => {
+        return safeExecute(() => {
+            if (store.selectedPrefixTags) {
+                const current = store.selectedPrefixTags.value || [];
+                const idx = current.indexOf(prefix);
+                if (idx > -1) {
+                    store.selectedPrefixTags.value = current.filter(p => p !== prefix);
+                } else {
+                    store.selectedPrefixTags.value = [...current, prefix];
+                }
+            }
+        }, '切换前缀标签');
+    };
+
+    /**
+     * 清除所有前缀标签
+     */
+    const handlePrefixTagClear = () => {
+        return safeExecute(() => {
+            if (store.selectedPrefixTags) {
+                store.selectedPrefixTags.value = [];
+            }
+        }, '清除前缀标签');
+    };
+
     return {
         handleTagSelect,
         handleTagClear,
         handleTagFilterNoTags,
-        handleSessionSearchChange
+        handleSessionSearchChange,
+        handlePrefixTagToggle,
+        handlePrefixTagClear
     };
 };

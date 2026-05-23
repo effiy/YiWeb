@@ -59,6 +59,10 @@ const componentOptions = {
             type: Boolean,
             default: false
         },
+        selectedPrefixTags: {
+            type: Array,
+            default: () => []
+        },
         sessionSearchQuery: {
             type: String,
             default: ''

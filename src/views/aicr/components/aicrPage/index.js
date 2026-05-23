@@ -59,11 +59,13 @@ registerGlobalComponent({
                 const hasTags = this.selectedSessionTags && this.selectedSessionTags.length > 0;
                 const hasNoTags = this.tagFilterNoTags;
                 const hasSessionSearch = this.sessionSearchQuery && this.sessionSearchQuery.length > 0;
-                if (hasSearch || hasTags || hasNoTags || hasSessionSearch) {
+                const hasPrefixTags = this.selectedPrefixTags && this.selectedPrefixTags.length > 0;
+                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasPrefixTags) {
                     e.preventDefault();
                     if (typeof this.clearSearch === 'function') this.clearSearch();
                     if (typeof this.handleTagClear === 'function') this.handleTagClear();
                     if (typeof this.clearSessionSearch === 'function') this.clearSessionSearch();
+                    if (typeof this.handlePrefixTagClear === 'function') this.handlePrefixTagClear();
                 }
             }
 
@@ -157,6 +159,7 @@ registerGlobalComponent({
             this.clearSessionSearch();
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
+            if (typeof this.handlePrefixTagClear === 'function') this.handlePrefixTagClear();
         },
         clearAllTags() {
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
@@ -165,6 +168,16 @@ registerGlobalComponent({
         toggleTagFilterNoTags() {
             if (typeof this.handleTagFilterNoTags === 'function') {
                 this.handleTagFilterNoTags(!this.tagFilterNoTags);
+            }
+        },
+        togglePrefixTag(prefix) {
+            if (typeof this.handlePrefixTagToggle === 'function') {
+                this.handlePrefixTagToggle(prefix);
+            }
+        },
+        clearPrefixTags() {
+            if (typeof this.handlePrefixTagClear === 'function') {
+                this.handlePrefixTagClear();
             }
         },
         handleTagsScroll(event) {

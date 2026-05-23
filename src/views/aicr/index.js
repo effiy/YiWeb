@@ -112,6 +112,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 fileTree: store.fileTree,
                 // 标签过滤相关状态
                 tagFilterNoTags: store.tagFilterNoTags,
+                selectedPrefixTags: store.selectedPrefixTags,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
@@ -330,7 +331,8 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
                     sessionSearchQuery: function () { return store.sessionSearchQuery ? store.sessionSearchQuery.value : ''; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
-                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; }
+                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
+                    selectedPrefixTags: function () { return store.selectedPrefixTags ? store.selectedPrefixTags.value : []; }
                 }
             },
             methods: createMainPageMethods(store),
@@ -456,6 +458,37 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
 
                     return allTagsArray;
+                },
+                // 前缀标签：从文件名自动提取前缀，按频次降序排列
+                prefixTags: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+
+                    const prefixCounts = {};
+                    const collectPrefixes = (items) => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const name = item.name || '';
+                                const sepIdx = Math.min(
+                                    ...['-', '_', '.'].map(s => {
+                                        const i = name.indexOf(s);
+                                        return i === -1 ? Infinity : i;
+                                    })
+                                );
+                                if (sepIdx !== Infinity && sepIdx > 0) {
+                                    const prefix = name.substring(0, sepIdx);
+                                    prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
+                                }
+                            } else if (item.type === 'folder' && item.children) {
+                                collectPrefixes(item.children);
+                            }
+                        }
+                    };
+                    collectPrefixes(store.fileTree.value);
+
+                    return Object.entries(prefixCounts)
+                        .map(([prefix, count]) => ({ prefix, count }))
+                        .sort((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix));
                 },
                 // 二级标签计数：全部模式统计所有目录；选中模式仅统计选中目录
                 subTagCounts: function () {
