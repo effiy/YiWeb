@@ -96,6 +96,15 @@
                 :class="{ active: selectedSessionTags && selectedSessionTags.includes(tag) }"
                 @click="toggleAicrTag(tag)"
             >{{ tag }} ({{ subTagCounts && subTagCounts.counts ? (subTagCounts.counts[tag] || 0) : 0 }})</button>
+            <button
+                v-if="(selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
+                type="button"
+                class="aicr-filter-clear aicr-filter-clear--inline"
+                @click="clearAllTags"
+                title="清除标签筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
         </div>
         <div v-if="prefixTags && prefixTags.length > 0" class="aicr-filter-group aicr-filter-group--prefix">
             <span class="aicr-filter-label">前缀</span>
