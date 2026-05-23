@@ -160,6 +160,9 @@ registerGlobalComponent({
                 this.handleTagSelect(newTags);
             }
         },
+        handleFilterToggle() {
+            this.filterBarCollapsed = !this.filterBarCollapsed;
+        },
         toggleFilterBar() {
             this.filterBarCollapsed = !this.filterBarCollapsed;
         },
