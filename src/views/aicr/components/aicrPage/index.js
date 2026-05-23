@@ -46,6 +46,14 @@ registerGlobalComponent({
                 }
             }
             return all.length > 0 ? `全部标签 · ${all.join(', ')}` : '全部标签';
+        },
+        prefixFilterSummaryText() {
+            if (!this.selectedPrefixTags || this.selectedPrefixTags.length === 0) {
+                if (!this.prefixTags || this.prefixTags.length === 0) return '';
+                const all = this.prefixTags.map(pt => `${pt.prefix} (${pt.count})`);
+                return `全部前缀 · ${all.join(', ')}`;
+            }
+            return this.selectedPrefixTags.join(', ');
         }
     },
     mounted() {

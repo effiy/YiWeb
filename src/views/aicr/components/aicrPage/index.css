@@ -361,6 +361,9 @@
 .aicr-filter-bar.is-collapsed .aicr-filter-summary {
     display: flex;
 }
+.aicr-filter-bar.is-collapsed .aicr-filter-summary--prefix {
+    display: flex;
+}
 .aicr-filter-bar.is-collapsed {
     padding-top: 6px;
     padding-bottom: 6px;

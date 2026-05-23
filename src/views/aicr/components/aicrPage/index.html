@@ -130,6 +130,10 @@
             <span class="aicr-filter-label">标签</span>
             <span class="aicr-filter-summary-text">{{ filterSummaryText }}</span>
         </div>
+        <div v-if="prefixTags && prefixTags.length > 0" class="aicr-filter-summary aicr-filter-summary--prefix">
+            <span class="aicr-filter-label">前缀</span>
+            <span class="aicr-filter-summary-text">{{ prefixFilterSummaryText }}</span>
+        </div>
         <div class="aicr-filter-actions">
             <button
                 v-if="subTags && subTags.length > 0"
@@ -141,7 +145,7 @@
                 <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
             </button>
             <button
-                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
+                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0)"
                 type="button"
                 class="aicr-filter-clear"
                 @click="clearAllAicrFilters"
