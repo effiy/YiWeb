@@ -86,15 +86,6 @@
                 <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
                 <span class="aicr-meta-filter-toggle-label">筛选</span>
             </button>
-            <button
-                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0) || (selectedSuffixTags && selectedSuffixTags.length > 0)"
-                type="button"
-                class="aicr-meta-filter-clear"
-                @click="clearAllAicrFilters"
-                title="清除所有筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
         </div>
     </div>
 
