@@ -63,6 +63,10 @@ const componentOptions = {
             type: Array,
             default: () => []
         },
+        selectedSuffixTags: {
+            type: Array,
+            default: () => []
+        },
         sessionSearchQuery: {
             type: String,
             default: ''

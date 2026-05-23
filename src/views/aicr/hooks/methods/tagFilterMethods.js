@@ -137,12 +137,42 @@ export const createTagFilterMethods = ({ store }) => {
         }, '清除前缀标签');
     };
 
+    /**
+     * 切换后缀标签选中状态
+     */
+    const handleSuffixTagToggle = (suffix) => {
+        return safeExecute(() => {
+            if (store.selectedSuffixTags) {
+                const current = store.selectedSuffixTags.value || [];
+                const idx = current.indexOf(suffix);
+                if (idx > -1) {
+                    store.selectedSuffixTags.value = current.filter(s => s !== suffix);
+                } else {
+                    store.selectedSuffixTags.value = [...current, suffix];
+                }
+            }
+        }, '切换后缀标签');
+    };
+
+    /**
+     * 清除所有后缀标签
+     */
+    const handleSuffixTagClear = () => {
+        return safeExecute(() => {
+            if (store.selectedSuffixTags) {
+                store.selectedSuffixTags.value = [];
+            }
+        }, '清除后缀标签');
+    };
+
     return {
         handleTagSelect,
         handleTagClear,
         handleTagFilterNoTags,
         handleSessionSearchChange,
         handlePrefixTagToggle,
-        handlePrefixTagClear
+        handlePrefixTagClear,
+        handleSuffixTagToggle,
+        handleSuffixTagClear
     };
 };

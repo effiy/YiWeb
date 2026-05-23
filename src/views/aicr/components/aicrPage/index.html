@@ -70,6 +70,11 @@
                 <span class="aicr-stat-value">{{ prefixTags.length }}</span>
                 <span class="aicr-stat-label">前缀</span>
             </div>
+            <div class="aicr-stat-item">
+                <yi-icon name="server" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ suffixTags.length }}</span>
+                <span class="aicr-stat-label">后缀</span>
+            </div>
         </div>
         <div class="aicr-meta-filter-actions">
             <button
@@ -82,7 +87,7 @@
                 <span class="aicr-meta-filter-toggle-label">筛选</span>
             </button>
             <button
-                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0)"
+                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0) || (selectedSuffixTags && selectedSuffixTags.length > 0)"
                 type="button"
                 class="aicr-meta-filter-clear"
                 @click="clearAllAicrFilters"
@@ -147,9 +152,32 @@
             </template>
             <span v-else class="aicr-filter-empty">没有前缀</span>
         </div>
+        <div class="aicr-filter-group aicr-filter-group--suffix">
+            <span class="aicr-filter-label">后缀</span>
+            <template v-if="suffixTags && suffixTags.length > 0">
+                <button
+                    v-for="st in suffixTags"
+                    :key="st.suffix"
+                    type="button"
+                    class="aicr-filter-tag aicr-filter-tag--suffix"
+                    :class="{ active: selectedSuffixTags && selectedSuffixTags.includes(st.suffix) }"
+                    @click="toggleSuffixTag(st.suffix)"
+                >{{ st.suffix }} ({{ st.count }})</button>
+                <button
+                    v-if="selectedSuffixTags && selectedSuffixTags.length > 0"
+                    type="button"
+                    class="aicr-filter-clear aicr-filter-clear--inline"
+                    @click="clearSuffixTags"
+                    title="清除后缀筛选"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </template>
+            <span v-else class="aicr-filter-empty">没有后缀</span>
+        </div>
         <div class="aicr-filter-collapsed-row">
             <div class="aicr-filter-collapsed-scroll">
-                <span v-if="!tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) && (!selectedPrefixTags || selectedPrefixTags.length === 0)" class="aicr-filter-collapsed-empty">未选择筛选</span>
+                <span v-if="!tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) && (!selectedPrefixTags || selectedPrefixTags.length === 0) && (!selectedSuffixTags || selectedSuffixTags.length === 0)" class="aicr-filter-collapsed-empty">未选择筛选</span>
                 <span v-if="tagFilterNoTags" class="aicr-filter-collapsed-pill">
                     没有故事
                     <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleTagFilterNoTags" title="移除筛选">×</button>
@@ -162,9 +190,13 @@
                     {{ prefix }}
                     <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="togglePrefixTag(prefix)" title="移除筛选">×</button>
                 </span>
+                <span v-for="suffix in (selectedSuffixTags || [])" :key="suffix" class="aicr-filter-collapsed-pill aicr-filter-collapsed-pill--suffix">
+                    {{ suffix }}
+                    <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleSuffixTag(suffix)" title="移除筛选">×</button>
+                </span>
             </div>
             <button
-                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0)"
+                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0) || (selectedSuffixTags && selectedSuffixTags.length > 0)"
                 type="button"
                 class="aicr-filter-collapsed-clear"
                 @click="clearAllAicrFilters"

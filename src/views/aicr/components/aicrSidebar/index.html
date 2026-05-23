@@ -21,7 +21,7 @@
             :session-search-query="sessionSearchQuery || ''"
             :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="'tree'"
             :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
-            :tag-filter-no-tags="tagFilterNoTags || false" :selected-prefix-tags="selectedPrefixTags || []" @file-select="handleFileSelect"
+            :tag-filter-no-tags="tagFilterNoTags || false" :selected-prefix-tags="selectedPrefixTags || []" :selected-suffix-tags="selectedSuffixTags || []" @file-select="handleFileSelect"
             @folder-toggle="handleFolderToggle" @create-folder="handleCreateFolder"
             @create-file="handleCreateFile" @rename-item="handleRenameItem" @delete-item="handleDeleteItem"
             @create-session="handleCreateSession" @toggle-collapse="toggleSidebar"

@@ -113,6 +113,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 // 标签过滤相关状态
                 tagFilterNoTags: store.tagFilterNoTags,
                 selectedPrefixTags: store.selectedPrefixTags,
+                selectedSuffixTags: store.selectedSuffixTags,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
@@ -332,7 +333,8 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     sessionSearchQuery: function () { return store.sessionSearchQuery ? store.sessionSearchQuery.value : ''; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
                     tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    selectedPrefixTags: function () { return store.selectedPrefixTags ? store.selectedPrefixTags.value : []; }
+                    selectedPrefixTags: function () { return store.selectedPrefixTags ? store.selectedPrefixTags.value : []; },
+                    selectedSuffixTags: function () { return store.selectedSuffixTags ? store.selectedSuffixTags.value : []; }
                 }
             },
             methods: createMainPageMethods(store),
@@ -351,12 +353,22 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
                 },
-                // 所有标签列表（三级联动：受前缀标签选中过滤）
+                // 所有标签列表（四级联动：受前缀标签和后缀标签选中过滤）
                 allTags: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
 
                     const selectedPrefixes = store.selectedPrefixTags?.value || [];
                     const hasPrefix = selectedPrefixes.length > 0;
+                    const selectedSuffixes = store.selectedSuffixTags?.value || [];
+                    const hasSuffix = selectedSuffixes.length > 0;
+
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
 
                     const fileMatchesPrefix = (name) => {
                         if (!hasPrefix) return true;
@@ -367,10 +379,19 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return selectedPrefixes.includes(name.substring(0, sepIdx));
                     };
 
+                    const fileMatchesSuffix = (name) => {
+                        if (!hasSuffix) return true;
+                        const suffix = getSuffix(name);
+                        if (!suffix) return false;
+                        return selectedSuffixes.includes(suffix);
+                    };
+
+                    const fileMatches = (name) => fileMatchesPrefix(name) && fileMatchesSuffix(name);
+
                     const folderHasMatchingFile = (items) => {
                         if (!Array.isArray(items)) return false;
                         for (const item of items) {
-                            if (item.type === 'file' && fileMatchesPrefix(item.name || '')) return true;
+                            if (item.type === 'file' && fileMatches(item.name || '')) return true;
                             if (item.type === 'folder' && item.children && folderHasMatchingFile(item.children)) return true;
                         }
                         return false;
@@ -379,7 +400,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     const tags = new Set();
                     for (const item of store.fileTree.value) {
                         if (item.type === 'folder') {
-                            if (hasPrefix && !folderHasMatchingFile(item.children || [])) continue;
+                            if ((hasPrefix || hasSuffix) && !folderHasMatchingFile(item.children || [])) continue;
                             tags.add(item.name);
                         }
                     }
@@ -401,7 +422,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     return allTagsArray;
                 },
-                // 标签计数（三级联动：受前缀标签选中过滤）
+                // 标签计数（四级联动：受前缀标签和后缀标签选中过滤）
                 tagCounts: function () {
                     const counts = {};
                     let noTagsCount = 0;
@@ -412,6 +433,16 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     const selectedPrefixes = store.selectedPrefixTags?.value || [];
                     const hasPrefix = selectedPrefixes.length > 0;
+                    const selectedSuffixes = store.selectedSuffixTags?.value || [];
+                    const hasSuffix = selectedSuffixes.length > 0;
+
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
 
                     const fileMatchesPrefix = (name) => {
                         if (!hasPrefix) return true;
@@ -422,12 +453,21 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return selectedPrefixes.includes(name.substring(0, sepIdx));
                     };
 
+                    const fileMatchesSuffix = (name) => {
+                        if (!hasSuffix) return true;
+                        const suffix = getSuffix(name);
+                        if (!suffix) return false;
+                        return selectedSuffixes.includes(suffix);
+                    };
+
+                    const fileMatches = (name) => fileMatchesPrefix(name) && fileMatchesSuffix(name);
+
                     const countFilesInFolder = (items) => {
                         let fileCount = 0;
                         if (!Array.isArray(items)) return fileCount;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                if (fileMatchesPrefix(item.name || '')) fileCount++;
+                                if (fileMatches(item.name || '')) fileCount++;
                             } else if (item.type === 'folder' && item.children) {
                                 fileCount += countFilesInFolder(item.children);
                             }
@@ -437,7 +477,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     for (const item of store.fileTree.value) {
                         if (item.type === 'file') {
-                            if (fileMatchesPrefix(item.name || '')) noTagsCount++;
+                            if (fileMatches(item.name || '')) noTagsCount++;
                         } else if (item.type === 'folder') {
                             counts[item.name] = countFilesInFolder(item.children || []);
                         }
@@ -445,13 +485,15 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     return { counts, noTagsCount };
                 },
-                // 二级标签（三级联动：受一级标签和前缀标签选中过滤）
+                // 二级标签（四级联动：受一级标签、前缀标签和后缀标签选中过滤）
                 subTags: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
 
                     const selectedTags = store.selectedSessionTags?.value || [];
                     const selectedPrefixes = store.selectedPrefixTags?.value || [];
                     const hasPrefix = selectedPrefixes.length > 0;
+                    const selectedSuffixes = store.selectedSuffixTags?.value || [];
+                    const hasSuffix = selectedSuffixes.length > 0;
 
                     const firstLevelNames = new Set();
                     for (const item of store.fileTree.value) {
@@ -460,6 +502,14 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     const firstLevelTags = Array.isArray(selectedTags)
                         ? selectedTags.filter(t => firstLevelNames.has(t))
                         : [];
+
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
 
                     const fileMatchesPrefix = (name) => {
                         if (!hasPrefix) return true;
@@ -470,10 +520,19 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return selectedPrefixes.includes(name.substring(0, sepIdx));
                     };
 
+                    const fileMatchesSuffix = (name) => {
+                        if (!hasSuffix) return true;
+                        const suffix = getSuffix(name);
+                        if (!suffix) return false;
+                        return selectedSuffixes.includes(suffix);
+                    };
+
+                    const fileMatches = (name) => fileMatchesPrefix(name) && fileMatchesSuffix(name);
+
                     const folderHasMatchingFile = (items) => {
                         if (!Array.isArray(items)) return false;
                         for (const item of items) {
-                            if (item.type === 'file' && fileMatchesPrefix(item.name || '')) return true;
+                            if (item.type === 'file' && fileMatches(item.name || '')) return true;
                             if (item.type === 'folder' && item.children && folderHasMatchingFile(item.children)) return true;
                         }
                         return false;
@@ -485,7 +544,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                             if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
                             for (const child of item.children) {
                                 if (child.type === 'folder') {
-                                    if (hasPrefix && !folderHasMatchingFile(child.children || [])) continue;
+                                    if ((hasPrefix || hasSuffix) && !folderHasMatchingFile(child.children || [])) continue;
                                     tags.add(child.name);
                                 }
                             }
@@ -510,11 +569,13 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     return allTagsArray;
                 },
-                // 前缀标签（三级联动：受一级标签和二级标签选中过滤）
+                // 前缀标签（四级联动：受一级/二级/后缀标签选中过滤）
                 prefixTags: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
 
                     const selectedTags = store.selectedSessionTags?.value || [];
+                    const selectedSuffixes = store.selectedSuffixTags?.value || [];
+                    const hasSuffix = selectedSuffixes.length > 0;
 
                     const firstLevelNames = new Set();
                     for (const item of store.fileTree.value) {
@@ -523,12 +584,24 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
                     const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
 
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
+
                     const prefixCounts = {};
                     const collectPrefixes = (items, depth) => {
                         if (!Array.isArray(items)) return;
                         for (const item of items) {
                             if (item.type === 'file') {
                                 const name = item.name || '';
+                                if (hasSuffix) {
+                                    const suffix = getSuffix(name);
+                                    if (!suffix || !selectedSuffixes.includes(suffix)) continue;
+                                }
                                 const sepIdx = Math.min(
                                     ...['-', '_', '.'].map(s => {
                                         const i = name.indexOf(s);
@@ -556,7 +629,68 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         .map(([prefix, count]) => ({ prefix, count }))
                         .sort((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix));
                 },
-                // 二级标签计数（三级联动：受一级标签和前缀标签选中过滤）
+                // 后缀标签（按 "-" 分割后取最后一段，联动一级/二级/前缀标签选中过滤）
+                suffixTags: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const selectedPrefixes = store.selectedPrefixTags?.value || [];
+                    const hasPrefix = selectedPrefixes.length > 0;
+
+                    const firstLevelNames = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') firstLevelNames.add(item.name);
+                    }
+                    const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
+                    const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
+
+                    const getPrefix = (name) => {
+                        const sepIdx = Math.min(
+                            ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                        );
+                        return sepIdx !== Infinity && sepIdx > 0 ? name.substring(0, sepIdx) : null;
+                    };
+
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
+
+                    const suffixCounts = {};
+                    const collectSuffixes = (items, depth) => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const name = item.name || '';
+                                if (hasPrefix) {
+                                    const p = getPrefix(name);
+                                    if (!p || !selectedPrefixes.includes(p)) continue;
+                                }
+                                const suffix = getSuffix(name);
+                                if (suffix) {
+                                    suffixCounts[suffix] = (suffixCounts[suffix] || 0) + 1;
+                                }
+                            } else if (item.type === 'folder' && item.children) {
+                                if (depth === 0 && firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) {
+                                    continue;
+                                }
+                                if (depth === 1 && secondLevelTags.length > 0 && !secondLevelTags.includes(item.name)) {
+                                    continue;
+                                }
+                                collectSuffixes(item.children, depth + 1);
+                            }
+                        }
+                    };
+                    collectSuffixes(store.fileTree.value, 0);
+
+                    return Object.entries(suffixCounts)
+                        .map(([suffix, count]) => ({ suffix, count }))
+                        .sort((a, b) => b.count - a.count || a.suffix.localeCompare(b.suffix));
+                },
+                // 二级标签计数（四级联动：受一级标签、前缀标签和后缀标签选中过滤）
                 subTagCounts: function () {
                     const counts = {};
                     let noTagsCount = 0;
@@ -568,6 +702,16 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     const selectedTags = store.selectedSessionTags?.value || [];
                     const selectedPrefixes = store.selectedPrefixTags?.value || [];
                     const hasPrefix = selectedPrefixes.length > 0;
+                    const selectedSuffixes = store.selectedSuffixTags?.value || [];
+                    const hasSuffix = selectedSuffixes.length > 0;
+
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
 
                     const fileMatchesPrefix = (name) => {
                         if (!hasPrefix) return true;
@@ -578,12 +722,21 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return selectedPrefixes.includes(name.substring(0, sepIdx));
                     };
 
+                    const fileMatchesSuffix = (name) => {
+                        if (!hasSuffix) return true;
+                        const suffix = getSuffix(name);
+                        if (!suffix) return false;
+                        return selectedSuffixes.includes(suffix);
+                    };
+
+                    const fileMatches = (name) => fileMatchesPrefix(name) && fileMatchesSuffix(name);
+
                     const countFilesInFolder = (items) => {
                         let fileCount = 0;
                         if (!Array.isArray(items)) return fileCount;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                if (fileMatchesPrefix(item.name || '')) fileCount++;
+                                if (fileMatches(item.name || '')) fileCount++;
                             } else if (item.type === 'folder' && item.children) {
                                 fileCount += countFilesInFolder(item.children);
                             }
@@ -612,21 +765,23 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
 
                     for (const item of store.fileTree.value) {
                         if (item.type === 'file') {
-                            if (fileMatchesPrefix(item.name || '')) noTagsCount++;
+                            if (fileMatches(item.name || '')) noTagsCount++;
                         }
                     }
 
                     return { counts, noTagsCount };
                 },
-                // 筛选感知的文件总数（三级联动 + 项目/故事/前缀筛选 + 会话搜索）
+                // 筛选感知的文件总数（四级联动 + 项目/故事/前缀/后缀筛选 + 会话搜索）
                 filteredFileCount: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
 
                     const selectedTags = store.selectedSessionTags?.value || [];
                     const selectedPrefixes = store.selectedPrefixTags?.value || [];
                     const hasPrefix = selectedPrefixes.length > 0;
+                    const selectedSuffixes = store.selectedSuffixTags?.value || [];
+                    const hasSuffix = selectedSuffixes.length > 0;
                     const noTags = store.tagFilterNoTags?.value || false;
-                    const anyTagFilter = selectedTags.length > 0 || noTags || hasPrefix;
+                    const anyTagFilter = selectedTags.length > 0 || noTags || hasPrefix || hasSuffix;
 
                     const sessionQuery = store.sessionSearchQuery?.value?.trim().toLowerCase() || '';
 
@@ -644,10 +799,22 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return sepIdx !== Infinity && sepIdx > 0 ? name.substring(0, sepIdx) : null;
                     };
 
+                    const getSuffix = (name) => {
+                        const lastDot = name.lastIndexOf('.');
+                        const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                        const parts = base.split('-');
+                        if (parts.length <= 1) return null;
+                        return parts[parts.length - 1];
+                    };
+
                     const fileMatches = (name) => {
                         if (hasPrefix) {
                             const p = getPrefix(name);
                             if (!p || !selectedPrefixes.includes(p)) return false;
+                        }
+                        if (hasSuffix) {
+                            const s = getSuffix(name);
+                            if (!s || !selectedSuffixes.includes(s)) return false;
                         }
                         return true;
                     };
@@ -694,7 +861,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
 
                     // 无标签筛选：仅根级文件
-                    if (noTags && firstLevelTags.length === 0 && secondLevelTags.length === 0 && !hasPrefix) {
+                    if (noTags && firstLevelTags.length === 0 && secondLevelTags.length === 0 && !hasPrefix && !hasSuffix) {
                         for (const item of filteredItems) {
                             if (item.type === 'file') total++;
                         }

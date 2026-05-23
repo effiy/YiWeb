@@ -54,6 +54,14 @@ registerGlobalComponent({
                 return `全部前缀 · ${all.join(', ')}`;
             }
             return this.selectedPrefixTags.join(', ');
+        },
+        suffixFilterSummaryText() {
+            if (!this.selectedSuffixTags || this.selectedSuffixTags.length === 0) {
+                if (!this.suffixTags || this.suffixTags.length === 0) return '没有后缀';
+                const all = this.suffixTags.map(st => `${st.suffix} (${st.count})`);
+                return `全部后缀 · ${all.join(', ')}`;
+            }
+            return this.selectedSuffixTags.join(', ');
         }
     },
     mounted() {
@@ -68,12 +76,14 @@ registerGlobalComponent({
                 const hasNoTags = this.tagFilterNoTags;
                 const hasSessionSearch = this.sessionSearchQuery && this.sessionSearchQuery.length > 0;
                 const hasPrefixTags = this.selectedPrefixTags && this.selectedPrefixTags.length > 0;
-                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasPrefixTags) {
+                const hasSuffixTags = this.selectedSuffixTags && this.selectedSuffixTags.length > 0;
+                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasPrefixTags || hasSuffixTags) {
                     e.preventDefault();
                     if (typeof this.clearSearch === 'function') this.clearSearch();
                     if (typeof this.handleTagClear === 'function') this.handleTagClear();
                     if (typeof this.clearSessionSearch === 'function') this.clearSessionSearch();
                     if (typeof this.handlePrefixTagClear === 'function') this.handlePrefixTagClear();
+                    if (typeof this.handleSuffixTagClear === 'function') this.handleSuffixTagClear();
                 }
             }
 
@@ -171,6 +181,7 @@ registerGlobalComponent({
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
             if (typeof this.handlePrefixTagClear === 'function') this.handlePrefixTagClear();
+            if (typeof this.handleSuffixTagClear === 'function') this.handleSuffixTagClear();
         },
         clearAllTags() {
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
@@ -189,6 +200,16 @@ registerGlobalComponent({
         clearPrefixTags() {
             if (typeof this.handlePrefixTagClear === 'function') {
                 this.handlePrefixTagClear();
+            }
+        },
+        toggleSuffixTag(suffix) {
+            if (typeof this.handleSuffixTagToggle === 'function') {
+                this.handleSuffixTagToggle(suffix);
+            }
+        },
+        clearSuffixTags() {
+            if (typeof this.handleSuffixTagClear === 'function') {
+                this.handleSuffixTagClear();
             }
         },
         handleTagsScroll(event) {

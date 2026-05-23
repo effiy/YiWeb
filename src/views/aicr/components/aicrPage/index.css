@@ -330,6 +330,13 @@
 .aicr-filter-tag--prefix.active {
     border-style: solid;
 }
+/* 后缀标签：点线边框与目录标签/前缀标签区分 */
+.aicr-filter-tag--suffix {
+    border-style: dotted;
+}
+.aicr-filter-tag--suffix.active {
+    border-style: solid;
+}
 /* 前缀标签组内清除按钮 */
 .aicr-filter-clear--inline {
     display: inline-flex;
@@ -451,6 +458,9 @@
 }
 .aicr-filter-collapsed-pill--prefix {
     border-style: dashed;
+}
+.aicr-filter-collapsed-pill--suffix {
+    border-style: dotted;
 }
 .aicr-filter-collapsed-pill-close {
     display: inline-flex;

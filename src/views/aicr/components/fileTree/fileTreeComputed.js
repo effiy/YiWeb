@@ -14,6 +14,16 @@ const fileTreeComputed = {
 
         const selectedPrefixes = this.selectedPrefixTags || [];
         const hasPrefix = selectedPrefixes.length > 0;
+        const selectedSuffixes = this.selectedSuffixTags || [];
+        const hasSuffix = selectedSuffixes.length > 0;
+
+        const getSuffix = (name) => {
+            const lastDot = name.lastIndexOf('.');
+            const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+            const parts = base.split('-');
+            if (parts.length <= 1) return null;
+            return parts[parts.length - 1];
+        };
 
         const fileMatchesPrefix = (name) => {
             if (!hasPrefix) return true;
@@ -24,10 +34,19 @@ const fileTreeComputed = {
             return selectedPrefixes.includes(name.substring(0, sepIdx));
         };
 
+        const fileMatchesSuffix = (name) => {
+            if (!hasSuffix) return true;
+            const suffix = getSuffix(name);
+            if (!suffix) return false;
+            return selectedSuffixes.includes(suffix);
+        };
+
+        const fileMatches = (name) => fileMatchesPrefix(name) && fileMatchesSuffix(name);
+
         const folderHasMatchingFile = (items) => {
             if (!Array.isArray(items)) return false;
             for (const item of items) {
-                if (item.type === 'file' && fileMatchesPrefix(item.name || '')) return true;
+                if (item.type === 'file' && fileMatches(item.name || '')) return true;
                 if (item.type === 'folder' && item.children && folderHasMatchingFile(item.children)) return true;
             }
             return false;
@@ -39,7 +58,7 @@ const fileTreeComputed = {
                 if (!firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
-                        if (hasPrefix && !folderHasMatchingFile(child.children || [])) continue;
+                        if ((hasPrefix || hasSuffix) && !folderHasMatchingFile(child.children || [])) continue;
                         tags.add(child.name);
                     }
                 }
@@ -91,6 +110,16 @@ const fileTreeComputed = {
 
         const selectedPrefixes = this.selectedPrefixTags || [];
         const hasPrefix = selectedPrefixes.length > 0;
+        const selectedSuffixes = this.selectedSuffixTags || [];
+        const hasSuffix = selectedSuffixes.length > 0;
+
+        const getSuffix = (name) => {
+            const lastDot = name.lastIndexOf('.');
+            const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+            const parts = base.split('-');
+            if (parts.length <= 1) return null;
+            return parts[parts.length - 1];
+        };
 
         const fileMatchesPrefix = (name) => {
             if (!hasPrefix) return true;
@@ -101,12 +130,21 @@ const fileTreeComputed = {
             return selectedPrefixes.includes(name.substring(0, sepIdx));
         };
 
+        const fileMatchesSuffix = (name) => {
+            if (!hasSuffix) return true;
+            const suffix = getSuffix(name);
+            if (!suffix) return false;
+            return selectedSuffixes.includes(suffix);
+        };
+
+        const fileMatches = (name) => fileMatchesPrefix(name) && fileMatchesSuffix(name);
+
         const countMatchingFilesInFolder = (items) => {
             let fileCount = 0;
             if (!Array.isArray(items)) return fileCount;
             for (const item of items) {
                 if (item.type === 'file') {
-                    if (fileMatchesPrefix(item.name || '')) fileCount++;
+                    if (fileMatches(item.name || '')) fileCount++;
                 } else if (item.type === 'folder' && item.children) {
                     fileCount += countMatchingFilesInFolder(item.children);
                 }
@@ -128,7 +166,7 @@ const fileTreeComputed = {
         // 根级文件视为无标签
         for (const item of this.tree) {
             if (item.type === 'file') {
-                if (fileMatchesPrefix(item.name || '')) noTagsCount++;
+                if (fileMatches(item.name || '')) noTagsCount++;
             }
         }
 
@@ -268,6 +306,37 @@ const fileTreeComputed = {
                 return result;
             };
             filteredItems = filterByPrefix(filteredItems);
+        }
+
+        // 后缀标签筛选
+        if (this.selectedSuffixTags && this.selectedSuffixTags.length > 0) {
+            const suffixSet = new Set(this.selectedSuffixTags);
+            const getFileSuffix = (name) => {
+                const lastDot = name.lastIndexOf('.');
+                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                const parts = base.split('-');
+                if (parts.length <= 1) return null;
+                return parts[parts.length - 1];
+            };
+            const filterBySuffix = (items) => {
+                if (!Array.isArray(items)) return [];
+                const result = [];
+                for (const item of items) {
+                    if (item.type === 'file') {
+                        const suffix = getFileSuffix(item.name || '');
+                        if (suffix && suffixSet.has(suffix)) {
+                            result.push(item);
+                        }
+                    } else if (item.type === 'folder') {
+                        const filteredChildren = item.children ? filterBySuffix(item.children) : [];
+                        if (filteredChildren.length > 0) {
+                            result.push({ ...item, children: filteredChildren });
+                        }
+                    }
+                }
+                return result;
+            };
+            filteredItems = filterBySuffix(filteredItems);
         }
 
         if (this.searchQuery && this.searchQuery.trim()) {
