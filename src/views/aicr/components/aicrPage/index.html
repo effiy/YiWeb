@@ -32,6 +32,17 @@
     <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-meta-row">
         <div v-if="allTags && (allTags.length > 0 || (tagCounts && tagCounts.noTagsCount > 0))" class="aicr-header-tags-wrapper">
             <div class="aicr-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="handleTagsScroll">
+                <div class="aicr-meta-filter-actions">
+                    <button
+                        type="button"
+                        class="aicr-meta-filter-toggle"
+                        @click="handleFilterToggle"
+                        :title="filterBarCollapsed ? '展开筛选栏' : '折叠筛选栏'"
+                    >
+                        <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
+                        <span class="aicr-meta-filter-toggle-label">筛选</span>
+                    </button>
+                </div>
                 <button
                     class="aicr-project-tag aicr-project-tag--all"
                     :class="{ 'aicr-project-tag--active': !tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) }"
@@ -75,17 +86,6 @@
                 <span class="aicr-stat-value">{{ suffixTags.length }}</span>
                 <span class="aicr-stat-label">后缀</span>
             </div>
-        </div>
-        <div class="aicr-meta-filter-actions">
-            <button
-                type="button"
-                class="aicr-meta-filter-toggle"
-                @click="handleFilterToggle"
-                :title="filterBarCollapsed ? '展开筛选栏' : '折叠筛选栏'"
-            >
-                <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
-                <span class="aicr-meta-filter-toggle-label">筛选</span>
-            </button>
         </div>
     </div>
 

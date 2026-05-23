@@ -103,26 +103,23 @@
     opacity: 1;
 }
 
-/* Filter toggle actions — fixed in meta row after stats bar, matching stats bar style */
+/* Filter toggle actions — inline inside tags row, pill-style matching project tags */
 .aicr-meta-filter-actions {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0;
     flex-shrink: 0;
-    padding: 8px 24px 8px 12px;
-    background: var(--quantum-stats-bar-bg);
-    background-size: 200% 100%;
-    animation: quantumFieldFlow 10s ease infinite;
 }
 .aicr-meta-filter-toggle {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 5px 10px;
+    padding: 4px 12px;
     border: 1px solid var(--yi-border);
-    border-radius: 5px 0 0 5px;
-    font-size: 13px;
-    background: transparent;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--yi-surface);
     color: var(--yi-text-secondary);
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
@@ -130,10 +127,11 @@
 }
 .aicr-meta-filter-toggle:hover {
     border-color: var(--yi-primary);
-    color: var(--yi-primary);
+    color: var(--yi-text);
+    background: var(--yi-surface-hover);
 }
 .aicr-meta-filter-toggle-label {
-    font-size: 13px;
+    font-size: 12px;
 }
 .aicr-meta-filter-clear {
     display: inline-flex;
