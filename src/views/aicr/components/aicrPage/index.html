@@ -2,7 +2,7 @@
     <header class="aicr-header">
         <div class="aicr-header-left">
             <h1 class="aicr-header-title">代码审查</h1>
-            <span v-if="sessions && sessions.length > 0" class="aicr-header-count">{{ sessions.length }} 个会话</span>
+            <span v-if="allTags && allTags.length > 0" class="aicr-header-count">{{ allTags.length }} 个项目</span>
         </div>
         <header-actions @clear-cache="clearCacheAndRefresh">
                 <div class="aicr-search">
@@ -59,11 +59,6 @@
                 <yi-icon name="file" class-name="aicr-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ filteredFileCount }}</span>
                 <span class="aicr-stat-label">文件</span>
-            </div>
-            <div class="aicr-stat-item">
-                <yi-icon name="folder" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ allTags.length }}</span>
-                <span class="aicr-stat-label">项目</span>
             </div>
             <div class="aicr-stat-item">
                 <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
