@@ -18,27 +18,23 @@
     padding: 3px 12px;
     line-height: 22px;
 }
-.sp-status-badge--not_started {
+.sp-status-badge--planning {
     background: var(--yi-surface);
     color: var(--yi-text-secondary);
 }
-.sp-status-badge--docs_in_progress {
+.sp-status-badge--design {
     background: var(--yi-warning-subtle);
     color: var(--yi-warning-hover);
 }
-.sp-status-badge--docs_done {
-    background: var(--yi-primary-subtle);
-    color: var(--yi-primary-hover);
-}
-.sp-status-badge--code_in_progress {
+.sp-status-badge--develop {
     background: var(--yi-info-subtle);
     color: var(--yi-info-hover);
 }
-.sp-status-badge--code_done {
+.sp-status-badge--testing {
+    background: var(--yi-primary-subtle);
+    color: var(--yi-primary-hover);
+}
+.sp-status-badge--operations {
     background: var(--yi-success-subtle);
     color: var(--yi-success-hover);
-}
-.sp-status-badge--self_improve {
-    background: rgba(var(--yi-self-improve-rgb), 0.15);
-    color: var(--yi-self-improve);
 }

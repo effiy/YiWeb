@@ -103,9 +103,14 @@
     background-size: 200% 100%;
     animation: quantumFieldFlow 8s ease infinite;
 }
-.sp-header-tags-row {
+/* Tags wrapper — fills remaining space in meta row, positions fade overlays */
+.sp-header-tags-wrapper {
     flex: 1;
     min-width: 0;
+    position: relative;
+}
+.sp-header-tags-row {
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -118,6 +123,28 @@
 .sp-header-tags-row::-webkit-scrollbar {
     display: none;
 }
+/* Fade overlays — absolutely positioned against the wrapper, outside scroll flow */
+.sp-tags-fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 64px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.sp-tags-fade--left {
+    left: 0;
+    background: linear-gradient(to right, var(--yi-bg) 30%, transparent 100%);
+}
+.sp-tags-fade--right {
+    right: 0;
+    background: linear-gradient(to left, var(--yi-bg) 30%, transparent 100%);
+}
+.sp-tags-fade.is-visible {
+    opacity: 1;
+}
 /* Stats Bar */
 .sp-stats-bar {
     display: flex;
@@ -127,6 +154,7 @@
     padding: 12px 24px;
     flex-shrink: 0;
     flex-wrap: wrap;
+    margin-left: auto;
     background: var(--quantum-stats-bar-bg);
     background-size: 200% 100%;
     animation: quantumFieldFlow 10s ease infinite;
@@ -137,6 +165,9 @@
     gap: 6px;
     font-size: 13px;
     color: var(--yi-text-secondary);
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
 }
 .sp-stat-icon {
     font-size: 14px;
@@ -151,7 +182,7 @@
     color: var(--yi-text-muted);
 }
 
-/* Filter Bar */
+/* Filter Bar — 对齐 aicr filter bar 规格 */
 .sp-filter-bar {
     display: flex;
     align-items: center;
@@ -168,6 +199,7 @@
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+    flex-basis: 100%;
 }
 .sp-filter-label {
     font-size: 12px;
@@ -197,22 +229,171 @@
     border-color: var(--yi-primary);
     color: var(--yi-text-on-primary);
 }
-.sp-filter-clear {
+.sp-filter-tag.active .sp-filter-count {
+    color: var(--yi-text-on-primary);
+    opacity: 0.8;
+}
+.sp-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--yi-surface-elevated);
+    color: var(--yi-text-muted);
+    margin-left: 2px;
+}
+.sp-filter-clear--inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    flex-shrink: 0;
+}
+.sp-filter-clear--inline:hover {
+    color: var(--yi-danger);
+    background: rgba(var(--yi-danger-rgb), 0.1);
+}
+
+/* Filter toggle actions — sticky left inside scrollable tags row */
+.sp-meta-filter-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--yi-bg);
+    padding-right: 8px;
+    margin-right: 2px;
+}
+.sp-meta-filter-toggle {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
-    border: none;
-    border-radius: 6px;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 9999px;
     font-size: 12px;
-    background: transparent;
-    color: var(--yi-danger);
+    font-weight: 500;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    margin-left: auto;
+    white-space: nowrap;
 }
-.sp-filter-clear:hover {
-    background: rgba(var(--yi-danger-rgb), 0.1);
+.sp-meta-filter-toggle:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+    background: var(--yi-surface-hover);
+}
+.sp-meta-filter-toggle-label {
+    font-size: 12px;
+}
+
+/* Collapsed: hide full tag buttons, show summary line */
+.sp-filter-bar.is-collapsed .sp-filter-group {
+    display: none;
+}
+.sp-filter-bar.is-collapsed {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+/* Collapsed row — single scrollable row for active filter pills */
+.sp-filter-collapsed-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    flex-basis: 100%;
+}
+.sp-filter-bar.is-collapsed .sp-filter-collapsed-row {
+    display: flex;
+}
+.sp-filter-collapsed-scroll {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.sp-filter-collapsed-scroll::-webkit-scrollbar {
+    display: none;
+}
+.sp-filter-collapsed-empty {
+    font-size: 12px;
+    color: var(--yi-text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.sp-filter-collapsed-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--yi-border);
+    border-radius: 9999px;
+    font-size: 12px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.sp-filter-collapsed-pill-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    font-size: 11px;
+    line-height: 1;
+    background: transparent;
+    color: var(--yi-text-tertiary);
+    cursor: pointer;
+}
+.sp-filter-collapsed-pill-close:hover {
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
+}
+.sp-filter-collapsed-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    background: transparent;
+    color: var(--yi-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--yi-duration-fast) var(--yi-easing-default);
+}
+.sp-filter-collapsed-clear:hover {
+    color: var(--yi-danger);
 }
 .sp-empty-clear-btn {
     display: inline-flex;
@@ -332,7 +513,7 @@
    ============================================== */
 .sp-kanban {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
     flex: 1;
     min-height: 0;
@@ -357,12 +538,11 @@
     border-bottom: 2px solid transparent;
     flex-shrink: 0;
 }
-.sp-column-header--not_started    { border-bottom-color: var(--yi-text-muted); }
-.sp-column-header--docs_in_progress { border-bottom-color: var(--yi-warning); }
-.sp-column-header--docs_done      { border-bottom-color: var(--yi-primary); }
-.sp-column-header--code_in_progress { border-bottom-color: var(--yi-info); }
-.sp-column-header--code_done      { border-bottom-color: var(--yi-success); }
-.sp-column-header--self_improve   { border-bottom-color: var(--yi-self-improve); }
+.sp-column-header--planning     { border-bottom-color: var(--yi-text-muted); }
+.sp-column-header--design       { border-bottom-color: var(--yi-warning); }
+.sp-column-header--develop      { border-bottom-color: var(--yi-info); }
+.sp-column-header--testing      { border-bottom-color: var(--yi-primary); }
+.sp-column-header--operations   { border-bottom-color: var(--yi-success); }
 
 
 .sp-column-count {
@@ -586,7 +766,7 @@
         grid-template-columns: repeat(3, 1fr);
     }
 }
-@media (max-width: 800px) {
+@media (max-width: 900px) {
     .sp-kanban {
         grid-template-columns: repeat(2, 1fr);
     }

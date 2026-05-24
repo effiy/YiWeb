@@ -37,9 +37,6 @@
                 <td class="sp-td sp-td--log">{{ story.hasLog ? '📜' : '—' }}</td>
                 <td class="sp-td sp-td--files">{{ story.fileCount }}</td>
                 <td class="sp-td sp-td--modified">{{ formatDate(story.lastModified) }}</td>
-                <td class="sp-td sp-td--type">
-                    <span class="sp-type-tag sp-type-tag--{{ story.type }}">{{ typeLabel(story.type) }}</span>
-                </td>
             </tr>
         </tbody>
     </table>

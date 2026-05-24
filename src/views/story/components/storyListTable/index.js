@@ -22,7 +22,6 @@ registerGlobalComponent({
                 { field: null, label: '日志', sortable: false },
                 { field: 'fileCount', label: '文件数', sortable: true },
                 { field: 'lastModified', label: '最后修改', sortable: true },
-                { field: 'type', label: '类型', sortable: true },
             ];
         },
     },
@@ -33,10 +32,6 @@ registerGlobalComponent({
             if (isNaN(d.getTime())) return '—';
             const pad = (n) => String(n).padStart(2, '0');
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        },
-        typeLabel(type) {
-            const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
-            return map[type] || type;
         },
         onSort(field) {
             if (!field) return;

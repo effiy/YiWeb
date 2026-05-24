@@ -71,21 +71,36 @@
                 <span class="aicr-stat-value">{{ filteredFileCount }}</span>
                 <span class="aicr-stat-label">文件</span>
             </div>
-            <div class="aicr-stat-item">
+            <button
+                type="button"
+                class="aicr-stat-item aicr-stat-btn"
+                :class="{ 'aicr-stat-btn--active': tagFilterNoTags }"
+                @click="toggleTagFilterNoTags"
+            >
                 <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ subTags.length }}</span>
                 <span class="aicr-stat-label">故事</span>
-            </div>
-            <div class="aicr-stat-item">
+            </button>
+            <button
+                type="button"
+                class="aicr-stat-item aicr-stat-btn"
+                :class="{ 'aicr-stat-btn--active': selectedPrefixTags && selectedPrefixTags.length > 0 }"
+                @click="filterBarCollapsed = false; clearPrefixTags()"
+            >
                 <yi-icon name="server" class-name="aicr-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ prefixTags.length }}</span>
                 <span class="aicr-stat-label">前缀</span>
-            </div>
-            <div class="aicr-stat-item">
+            </button>
+            <button
+                type="button"
+                class="aicr-stat-item aicr-stat-btn"
+                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.length > 0 }"
+                @click="filterBarCollapsed = false; clearSuffixTags()"
+            >
                 <yi-icon name="server" class-name="aicr-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ suffixTags.length }}</span>
                 <span class="aicr-stat-label">后缀</span>
-            </div>
+            </button>
         </div>
     </div>
 

@@ -211,6 +211,9 @@
     gap: 6px;
     font-size: 13px;
     color: var(--yi-text-secondary);
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
 }
 .aicr-stat-icon {
     font-size: 14px;
@@ -223,6 +226,22 @@
 }
 .aicr-stat-label {
     color: var(--yi-text-muted);
+}
+.aicr-stat-btn {
+    background: none;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+.aicr-stat-btn:hover {
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border);
+}
+.aicr-stat-btn--active {
+    background: var(--yi-primary-subtle);
+    border-color: var(--yi-primary);
 }
 
 /* Filter Bar — matching story */

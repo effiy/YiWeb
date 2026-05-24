@@ -9,10 +9,6 @@ registerGlobalComponent({
     },
     emits: ['select'],
     computed: {
-        typeLabel() {
-            const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
-            return map[this.story?.type] || this.story?.type || '';
-        },
         cardClass() {
             if (!this.story) return 'sc-card';
             return `sc-card sc-card--${this.story.status}`;

@@ -40,35 +40,45 @@
     </header>
 
     <div v-if="totalStories > 0 && !loading" class="sp-meta-row">
-        <div v-if="allProjectTags.length > 0" class="sp-header-tags-row">
-            <button
-                class="sp-project-tag"
-                :class="{ 'sp-project-tag--active': !selectedProjectTag }"
-                @click="clearProjectTag"
-            >全部</button>
-            <button
-                v-for="tag in allProjectTags"
-                :key="tag"
-                class="sp-project-tag"
-                :class="{ 'sp-project-tag--active': selectedProjectTag === tag }"
-                @click="selectProjectTag(tag)"
-            >{{ tag }}</button>
+        <div v-if="allProjectTags.length > 0" class="sp-header-tags-wrapper">
+            <div class="sp-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="handleTagsScroll">
+                <div class="sp-meta-filter-actions">
+                    <button
+                        type="button"
+                        class="sp-meta-filter-toggle"
+                        @click="toggleFilterBar"
+                        :title="filterBarCollapsed ? '展开筛选栏' : '折叠筛选栏'"
+                    >
+                        <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
+                        <span class="sp-meta-filter-toggle-label">筛选</span>
+                    </button>
+                </div>
+                <button
+                    class="sp-project-tag"
+                    :class="{ 'sp-project-tag--active': !selectedProjectTag }"
+                    @click="clearProjectTag"
+                >全部</button>
+                <button
+                    v-for="tag in allProjectTags"
+                    :key="tag"
+                    class="sp-project-tag"
+                    :class="{ 'sp-project-tag--active': selectedProjectTag === tag }"
+                    @click="selectProjectTag(tag)"
+                >{{ tag }}</button>
+            </div>
+            <div class="sp-tags-fade sp-tags-fade--left" :class="{ 'is-visible': tagsScrollLeft > 0 }"></div>
+            <div class="sp-tags-fade sp-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
         </div>
         <div class="sp-stats-bar">
             <div class="sp-stat-item">
-                <yi-icon name="list" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ totalStories }}</span>
-                <span class="sp-stat-label">故事</span>
-            </div>
-            <div class="sp-stat-item">
                 <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.scenario || 0 }}</span>
-                <span class="sp-stat-label">任务</span>
+                <span class="sp-stat-value">{{ documentCounts.story_task || 0 }}</span>
+                <span class="sp-stat-label">规划</span>
             </div>
             <div class="sp-stat-item">
                 <yi-icon name="file-alt" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.story_task || 0 }}</span>
-                <span class="sp-stat-label">产品</span>
+                <span class="sp-stat-value">{{ documentCounts.scenario || 0 }}</span>
+                <span class="sp-stat-label">设计</span>
             </div>
             <div class="sp-stat-item">
                 <yi-icon name="code" class-name="sp-stat-icon"></yi-icon>
@@ -88,39 +98,89 @@
         </div>
     </div>
 
-    <div v-if="totalStories > 0 && !loading" class="sp-filter-bar">
+    <div v-if="totalStories > 0 && !loading" class="sp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
         <div class="sp-filter-group">
-            <span class="sp-filter-label">状态</span>
+            <span class="sp-filter-label">健康度</span>
             <button
-                v-for="opt in statusOptions"
-                :key="opt.value || 'all-status'"
+                v-for="opt in healthOptions"
+                :key="'health-' + opt.value"
                 type="button"
                 class="sp-filter-tag"
-                :class="{ active: selectedStatus === opt.value }"
-                @click="selectStatus(opt.value)"
-            >{{ opt.label }}</button>
+                :class="{ active: selectedHealth === opt.value }"
+                @click="selectHealth(opt.value)"
+            >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
+            <button
+                v-if="selectedHealth"
+                type="button"
+                class="sp-filter-clear--inline"
+                @click="selectHealth(selectedHealth)"
+                title="清除健康度筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
         </div>
         <div class="sp-filter-group">
-            <span class="sp-filter-label">类型</span>
+            <span class="sp-filter-label">通知</span>
             <button
-                v-for="opt in typeOptions"
-                :key="opt.value || 'all-type'"
+                v-for="opt in notifyOptions"
+                :key="'notify-' + opt.value"
                 type="button"
                 class="sp-filter-tag"
-                :class="{ active: selectedType === opt.value }"
-                @click="selectType(opt.value)"
-            >{{ opt.label }}</button>
+                :class="{ active: selectedNotify === opt.value }"
+                @click="selectNotify(opt.value)"
+            >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
+            <button
+                v-if="selectedNotify !== null"
+                type="button"
+                class="sp-filter-clear--inline"
+                @click="selectNotify(selectedNotify)"
+                title="清除通知筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
         </div>
-        <button
-            v-if="hasActiveFilters"
-            type="button"
-            class="sp-filter-clear"
-            @click="clearAllFilters"
-            title="清除所有筛选条件"
-        >
-            <yi-icon name="close"></yi-icon>
-            <span>清除筛选</span>
-        </button>
+        <div class="sp-filter-group">
+            <span class="sp-filter-label">日志</span>
+            <button
+                v-for="opt in logOptions"
+                :key="'log-' + opt.value"
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedLog === opt.value }"
+                @click="selectLog(opt.value)"
+            >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
+            <button
+                v-if="selectedLog !== null"
+                type="button"
+                class="sp-filter-clear--inline"
+                @click="selectLog(selectedLog)"
+                title="清除日志筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
+        <div class="sp-filter-collapsed-row">
+            <div class="sp-filter-collapsed-scroll">
+                <span v-if="filterSummaryPills.length === 0 && !localSearchQuery" class="sp-filter-collapsed-empty">未选择筛选</span>
+                <span v-if="localSearchQuery" class="sp-filter-collapsed-pill">
+                    搜索: {{ localSearchQuery }}
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="localSearchQuery = ''" title="移除搜索">×</button>
+                </span>
+                <span v-for="pill in filterSummaryPills" :key="pill.type + '-' + pill.label" class="sp-filter-collapsed-pill">
+                    {{ pill.label }}
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="pill.clear()" title="移除筛选">×</button>
+                </span>
+            </div>
+            <button
+                v-if="hasActiveFilters"
+                type="button"
+                class="sp-filter-collapsed-clear"
+                @click="clearAllFilters"
+                title="清除所有筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
     </div>
 
     <div v-if="loading" class="sp-loading">

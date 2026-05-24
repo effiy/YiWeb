@@ -2,8 +2,7 @@
  * 故事任务面板 - 状态管理
  *
  * 数据源：远端 API query_documents，filter 服务端过滤 故事任务面板/ 目录。
- * 状态判定基于语义文档名（{project}-故事任务.md 等）
- * 类型推断通过读取远端技术评审文档内容
+ * 状态判定基于语义文档名（{project}-故事任务.md 等），按 5 阶段文档存在性定级
  */
 import { logInfo, logError } from '/cdn/utils/core/log.js';
 import { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';
@@ -13,8 +12,6 @@ const { ref } = Vue;
 const PROJECT_NAME = (typeof window !== 'undefined' && window.PROJECT_NAME) || 'YiWeb';
 const PROJECT_PREFIX = PROJECT_NAME + '-';
 
-const BASELINE_DOCS = ['使用场景', '技术评审', '测试设计', '安全审计'];
-
 function extractProjectTags(filenames) {
     const tags = new Set();
     for (const fn of filenames) {
@@ -23,8 +20,6 @@ function extractProjectTags(filenames) {
     }
     return [...tags].sort();
 }
-
-const TYPE_CONCURRENCY = 4;
 
 function extractStoryName(filePath) {
     const parts = (filePath || '').split('/');
@@ -39,78 +34,12 @@ function hasProjectFile(filenames, docType) {
 }
 
 function determineStatus(filenames) {
-    if (!hasProjectFile(filenames, '故事任务'))
-        return 'not_started';
-
-    const baselineComplete = BASELINE_DOCS.every(doc =>
-        hasProjectFile(filenames, doc)
-    );
-    if (!baselineComplete)
-        return 'docs_in_progress';
-
-    if (!hasProjectFile(filenames, '实施报告'))
-        return 'docs_done';
-
-    if (!hasProjectFile(filenames, '测试报告'))
-        return 'code_in_progress';
-
-    if (!hasProjectFile(filenames, '自改进复盘'))
-        return 'code_done';
-
-    return 'self_improve';
-}
-
-async function inferType(apiUrl, files, authHeaders) {
-    const reviewFile = files.find(f => {
-        const fn = (f.file_path || '').split('/').pop();
-        return fn === PROJECT_PREFIX + '技术评审.md';
-    });
-    if (!reviewFile) return 'meta';
-
-    try {
-        const res = await fetch(apiUrl + '/read-file', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...authHeaders,
-            },
-            credentials: 'omit',
-            body: JSON.stringify({ target_file: reviewFile.file_path }),
-        });
-        const data = await res.json();
-        const content = (data?.data?.content ?? data?.content ?? '').toLowerCase();
-
-        const hasBackend = /\b(api|数据|后端|服务端|接口|数据库|server|backend|服务|路由)\b/i.test(content);
-        const hasFrontend = /\b(组件|交互|样式|前端|页面|ui|frontend|界面|布局|渲染|响应式)\b/i.test(content);
-
-        if (hasBackend && hasFrontend) return 'fullstack';
-        if (hasBackend) return 'backend';
-        if (hasFrontend) return 'frontend';
-        return 'meta';
-    } catch {
-        return 'meta';
-    }
-}
-
-async function inferTypesBatch(apiUrl, storyFilesMap, authHeaders) {
-    const entries = [...storyFilesMap.entries()];
-    const results = new Map();
-    const queue = [...entries];
-
-    async function worker() {
-        while (queue.length > 0) {
-            const [name, files] = queue.shift();
-            results.set(name, await inferType(apiUrl, files, authHeaders));
-        }
-    }
-
-    const workers = Array.from(
-        { length: Math.min(TYPE_CONCURRENCY, entries.length) },
-        worker
-    );
-    await Promise.all(workers);
-    return results;
+    if (hasProjectFile(filenames, '自改进复盘')) return 'operations';
+    if (hasProjectFile(filenames, '测试报告'))   return 'testing';
+    if (hasProjectFile(filenames, '实施报告'))   return 'develop';
+    if (hasProjectFile(filenames, '使用场景'))   return 'design';
+    if (hasProjectFile(filenames, '故事任务'))   return 'planning';
+    return 'planning';
 }
 
 export function createStore() {
@@ -163,9 +92,6 @@ export function createStore() {
                 return;
             }
 
-            // 批量类型推断
-            const typeMap = await inferTypesBatch(apiUrl, storyMap, authHeaders);
-
             const results = [];
             for (const [name, files] of storyMap) {
                 const filenames = files.map(f =>
@@ -175,7 +101,6 @@ export function createStore() {
                 const projectTags = extractProjectTags(filenames);
 
                 const status = determineStatus(filenames);
-                const type = typeMap.get(name) || 'meta';
 
                 const maxTs = Math.max(...files.map(f => f.updatedAt || 0));
                 const createdTs = Math.min(
@@ -190,12 +115,11 @@ export function createStore() {
                 const description = storyTaskFile?.title || '';
 
                 const nextStepMap = {
-                    not_started: '启动文档管线',
-                    docs_in_progress: '补齐文档基线',
-                    docs_done: '启动编码实现',
-                    code_in_progress: '继续实现验证',
-                    self_improve: '执行自改进',
-                    code_done: '交付三步收口',
+                    planning: '创建故事任务',
+                    design: '编写使用场景',
+                    develop: '编写实施报告',
+                    testing: '编写测试报告',
+                    operations: '执行自改进复盘',
                 };
                 const nextStep = nextStepMap[status] || '';
 
@@ -215,10 +139,12 @@ export function createStore() {
                 const hasLog = !!logFile;
                 const logUpdatedAt = logFile?.updatedAt || 0;
 
+                const healthDocs = ['故事任务', '使用场景', '实施报告', '测试报告', '自改进复盘'];
+                const healthScore = healthDocs.filter(doc => filenames.includes(PROJECT_PREFIX + doc + '.md')).length;
+
                 results.push({
                     name,
                     status,
-                    type,
                     description,
                     nextStep,
                     projectTags,
@@ -226,6 +152,7 @@ export function createStore() {
                     hasLog,
                     notifyUpdatedAt,
                     logUpdatedAt,
+                    healthScore,
                     fileCount: files.length,
                     files: files.map(f => ({
                         filePath: f.file_path,

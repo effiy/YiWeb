@@ -11,12 +11,11 @@ registerGlobalComponent({
     computed: {
         label() {
             const map = {
-                not_started: '任务',
-                docs_in_progress: '设计',
-                docs_done: '实施',
-                code_in_progress: '测试',
-                self_improve: '改进',
-                code_done: '报告'
+                planning: '规划',
+                design: '设计',
+                develop: '开发',
+                testing: '测试',
+                operations: '运营'
             };
             return map[this.status] || this.status;
         },

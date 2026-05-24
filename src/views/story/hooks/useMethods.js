@@ -20,36 +20,24 @@ export function useMethods(store) {
 
     function statusLabel(status) {
         const map = {
-            not_started: '未开始',
-            docs_in_progress: '文档进行中',
-            docs_done: '文档完成',
-            code_in_progress: '编码进行中',
-            code_done: '编码完成',
-            self_improve: '自改进'
+            planning: '规划',
+            design: '设计',
+            develop: '开发',
+            testing: '测试',
+            operations: '运营'
         };
         return map[status] || status;
     }
 
     function statusVariant(status) {
         const map = {
-            not_started: '',
-            docs_in_progress: 'warning',
-            docs_done: 'info',
-            code_in_progress: 'accent',
-            code_done: 'success',
-            self_improve: 'accent'
+            planning: '',
+            design: 'warning',
+            develop: 'info',
+            testing: 'primary',
+            operations: 'success'
         };
         return map[status] || '';
-    }
-
-    function typeLabel(type) {
-        const map = {
-            backend: '后端',
-            frontend: '前端',
-            fullstack: '全栈',
-            meta: '元数据'
-        };
-        return map[type] || type;
     }
 
     return {
@@ -57,7 +45,6 @@ export function useMethods(store) {
         goBack,
         formatDate,
         statusLabel,
-        statusVariant,
-        typeLabel
+        statusVariant
     };
 }

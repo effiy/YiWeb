@@ -22,10 +22,15 @@ registerGlobalComponent({
             viewMode: 'board',
             panelStory: null,
             selectedProjectTag: null,
-            selectedStatus: null,
-            selectedType: null,
+            selectedHealth: null,
+            selectedDocFilter: null,
+            selectedNotify: null,
+            selectedLog: null,
             sortField: 'lastModified',
             sortDirection: 'desc',
+            filterBarCollapsed: true,
+            tagsScrollLeft: 0,
+            tagsScrollAtEnd: true,
         };
     },
     computed: {
@@ -48,72 +53,60 @@ registerGlobalComponent({
             return !!this.panelStory;
         },
         hasActiveFilters() {
-            return !!(this.localSearchQuery || this.selectedProjectTag || this.selectedStatus || this.selectedType);
+            return !!(this.localSearchQuery || this.selectedProjectTag || this.selectedHealth || this.selectedDocFilter || this.selectedNotify !== null || this.selectedLog !== null);
         },
-        statusOptions() {
+        healthOptions() {
+            const base = this._applyFilters(this.stories, 'health');
+            const counts = { complete: 0, healthy: 0, moderate: 0, starter: 0 };
+            for (const s of base) {
+                const level = this.getHealthLevel(s);
+                if (counts[level] !== undefined) counts[level]++;
+            }
             return [
-                { value: null, label: '全部状态' },
-                { value: 'not_started', label: '未开始' },
-                { value: 'docs_in_progress', label: '文档进行中' },
-                { value: 'docs_done', label: '文档完成' },
-                { value: 'code_in_progress', label: '编码进行中' },
-                { value: 'code_done', label: '编码完成' },
-                { value: 'self_improve', label: '自改进' },
+                { value: 'complete', label: '完整', count: counts.complete },
+                { value: 'healthy', label: '良好', count: counts.healthy },
+                { value: 'moderate', label: '一般', count: counts.moderate },
+                { value: 'starter', label: '起步', count: counts.starter },
             ];
         },
-        typeOptions() {
+        notifyOptions() {
+            const base = this._applyFilters(this.stories, 'notify');
+            const counts = { true: 0, false: 0 };
+            for (const s of base) {
+                if (s.hasNotify) counts.true++;
+                else counts.false++;
+            }
             return [
-                { value: null, label: '全部类型' },
-                { value: 'frontend', label: '前端' },
-                { value: 'backend', label: '后端' },
-                { value: 'fullstack', label: '全栈' },
-                { value: 'meta', label: '元数据' },
+                { value: true, label: '已配置', count: counts.true },
+                { value: false, label: '未配置', count: counts.false },
+            ];
+        },
+        logOptions() {
+            const base = this._applyFilters(this.stories, 'log');
+            const counts = { true: 0, false: 0 };
+            for (const s of base) {
+                if (s.hasLog) counts.true++;
+                else counts.false++;
+            }
+            return [
+                { value: true, label: '有日志', count: counts.true },
+                { value: false, label: '无日志', count: counts.false },
             ];
         },
         filteredStories() {
-            const tag = this.selectedProjectTag;
-            const q = (this.localSearchQuery || '').trim().toLowerCase();
-            let result = this.stories;
-
-            if (tag) {
-                result = result.filter(s => (s.projectTags || []).includes(tag));
-            }
-            if (this.selectedStatus) {
-                result = result.filter(s => s.status === this.selectedStatus);
-            }
-            if (this.selectedType) {
-                result = result.filter(s => s.type === this.selectedType);
-            }
-            if (q) {
-                result = result.filter(s =>
-                    s.name.toLowerCase().includes(q) ||
-                    s.status.toLowerCase().includes(q) ||
-                    s.type.toLowerCase().includes(q) ||
-                    (s.description || '').toLowerCase().includes(q) ||
-                    (s.nextStep || '').toLowerCase().includes(q)
-                );
-            }
-
-            return this.sortStories(result);
+            return this.sortStories(this._applyFilters(this.stories));
         },
         filteredStoriesByStatus() {
-            const tag = this.selectedProjectTag;
-            const q = (this.localSearchQuery || '').trim().toLowerCase();
+            const filtered = this._applyFilters(this.stories);
             const groups = {
-                not_started: [],
-                docs_in_progress: [],
-                docs_done: [],
-                code_in_progress: [],
-                code_done: [],
-                self_improve: []
+                planning: [],
+                design: [],
+                develop: [],
+                testing: [],
+                operations: []
             };
-            for (const story of this.stories) {
-                if (!groups[story.status]) continue;
-                if (tag && !(story.projectTags || []).includes(tag)) continue;
-                if (this.selectedStatus && story.status !== this.selectedStatus) continue;
-                if (this.selectedType && story.type !== this.selectedType) continue;
-                if (q && !this._matchSearch(story, q)) continue;
-                groups[story.status].push(story);
+            for (const story of filtered) {
+                if (groups[story.status]) groups[story.status].push(story);
             }
             return groups;
         },
@@ -125,19 +118,75 @@ registerGlobalComponent({
             ];
         },
         kanbanColumns() {
-            const order = ['not_started', 'docs_in_progress', 'docs_done', 'code_in_progress', 'code_done', 'self_improve'];
+            const order = ['planning', 'design', 'develop', 'testing', 'operations'];
             const groups = this.filteredStoriesByStatus;
             return order.map(status => ({ status, stories: groups[status] || [] }));
+        },
+        filterSummaryPills() {
+            const pills = [];
+            if (this.selectedProjectTag) {
+                pills.push({ type: 'tag', label: this.selectedProjectTag, clear: () => this.clearProjectTag() });
+            }
+            if (this.selectedHealth) {
+                const opt = this.healthOptions.find(o => o.value === this.selectedHealth);
+                pills.push({ type: 'health', label: opt ? opt.label : this.selectedHealth, clear: () => this.selectHealth(this.selectedHealth) });
+            }
+            if (this.selectedDocFilter) {
+                const docLabels = { story_task: '规划', scenario: '设计', implementation: '开发', test_report: '测试', retrospective: '运营' };
+                pills.push({ type: 'doc', label: docLabels[this.selectedDocFilter] || this.selectedDocFilter, clear: () => this.selectDocFilter(this.selectedDocFilter) });
+            }
+            if (this.selectedNotify !== null) {
+                const label = this.selectedNotify ? '已配置通知' : '未配置通知';
+                pills.push({ type: 'notify', label, clear: () => this.selectNotify(this.selectedNotify) });
+            }
+            if (this.selectedLog !== null) {
+                const label = this.selectedLog ? '有交互日志' : '无交互日志';
+                pills.push({ type: 'log', label, clear: () => this.selectLog(this.selectedLog) });
+            }
+            return pills;
         },
     },
     methods: {
         _matchSearch(story, q) {
             if (!q) return true;
             return story.name.toLowerCase().includes(q) ||
-                story.status.toLowerCase().includes(q) ||
-                story.type.toLowerCase().includes(q) ||
                 (story.description || '').toLowerCase().includes(q) ||
                 (story.nextStep || '').toLowerCase().includes(q);
+        },
+        _applyFilters(stories, exclude) {
+            let result = stories;
+            if (exclude !== 'projectTag' && this.selectedProjectTag) {
+                result = result.filter(s => (s.projectTags || []).includes(this.selectedProjectTag));
+            }
+            if (exclude !== 'health' && this.selectedHealth) {
+                result = result.filter(s => this.getHealthLevel(s) === this.selectedHealth);
+            }
+            if (exclude !== 'docFilter' && this.selectedDocFilter) {
+                const docSuffixes = {
+                    story_task: '-故事任务.md',
+                    scenario: '-使用场景.md',
+                    implementation: '-实施报告.md',
+                    test_report: '-测试报告.md',
+                    retrospective: '-自改进复盘.md',
+                };
+                const suffix = docSuffixes[this.selectedDocFilter];
+                if (suffix) {
+                    result = result.filter(s =>
+                        (s.files || []).some(f => (f.fileName || '').endsWith(suffix))
+                    );
+                }
+            }
+            if (exclude !== 'notify' && this.selectedNotify !== null) {
+                result = result.filter(s => !!s.hasNotify === this.selectedNotify);
+            }
+            if (exclude !== 'log' && this.selectedLog !== null) {
+                result = result.filter(s => !!s.hasLog === this.selectedLog);
+            }
+            if (exclude !== 'search' && this.localSearchQuery) {
+                const q = this.localSearchQuery.trim().toLowerCase();
+                if (q) result = result.filter(s => this._matchSearch(s, q));
+            }
+            return result;
         },
         sortStories(list) {
             const field = this.sortField;
@@ -196,14 +245,10 @@ registerGlobalComponent({
         },
         statusLabel(status) {
             const map = {
-                not_started: '任务', docs_in_progress: '设计', docs_done: '实施',
-                code_in_progress: '测试', self_improve: '改进', code_done: '报告'
+                planning: '规划', design: '设计', develop: '开发',
+                testing: '测试', operations: '运营'
             };
             return map[status] || status;
-        },
-        typeLabel(type) {
-            const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
-            return map[type] || type;
         },
         selectProjectTag(tag) {
             this.selectedProjectTag = this.selectedProjectTag === tag ? null : tag;
@@ -211,17 +256,45 @@ registerGlobalComponent({
         clearProjectTag() {
             this.selectedProjectTag = null;
         },
-        selectStatus(status) {
-            this.selectedStatus = this.selectedStatus === status ? null : status;
+        getHealthLevel(story) {
+            const score = story.healthScore || 0;
+            if (score >= 5) return 'complete';
+            if (score >= 4) return 'healthy';
+            if (score >= 3) return 'moderate';
+            return 'starter';
         },
-        selectType(type) {
-            this.selectedType = this.selectedType === type ? null : type;
+        selectHealth(level) {
+            this.selectedHealth = this.selectedHealth === level ? null : level;
+        },
+        selectNotify(val) {
+            this.selectedNotify = this.selectedNotify === val ? null : val;
+        },
+        selectLog(val) {
+            this.selectedLog = this.selectedLog === val ? null : val;
+        },
+        selectDocFilter(docType) {
+            this.selectedDocFilter = this.selectedDocFilter === docType ? null : docType;
+        },
+        toggleFilterBar() {
+            this.filterBarCollapsed = !this.filterBarCollapsed;
+        },
+        handleTagsScroll(event) {
+            const el = event.target;
+            this.tagsScrollLeft = el.scrollLeft;
+            this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+        },
+        checkTagsOverflow() {
+            const el = this.$el?.querySelector('.sp-header-tags-row');
+            if (!el) return;
+            this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
         },
         clearAllFilters() {
             this.localSearchQuery = '';
             this.selectedProjectTag = null;
-            this.selectedStatus = null;
-            this.selectedType = null;
+            this.selectedHealth = null;
+            this.selectedDocFilter = null;
+            this.selectedNotify = null;
+            this.selectedLog = null;
             this.sortField = 'lastModified';
             this.sortDirection = 'desc';
         },
@@ -238,6 +311,9 @@ registerGlobalComponent({
     },
     mounted() {
         document.addEventListener('keydown', this.onKeydown);
+        this.$nextTick(() => {
+            this.checkTagsOverflow();
+        });
     },
     beforeUnmount() {
         document.removeEventListener('keydown', this.onKeydown);

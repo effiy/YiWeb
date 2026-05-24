@@ -71,14 +71,3 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
 }
-.sp-type-tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-}
-.sp-type-tag--backend { background: var(--yi-primary-subtle); color: var(--yi-primary); }
-.sp-type-tag--frontend { background: var(--yi-info-subtle); color: var(--yi-info); }
-.sp-type-tag--fullstack { background: var(--yi-warning-subtle); color: var(--yi-warning-hover); }
-.sp-type-tag--meta { background: var(--yi-surface); color: var(--yi-text-muted); }
