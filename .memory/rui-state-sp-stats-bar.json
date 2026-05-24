@@ -1,0 +1,22 @@
+{
+  "story": "sp-stats-bar",
+  "version": "1.0.0",
+  "version_history": [
+    {
+      "version": "1.0.0",
+      "date": "2026-05-24",
+      "trigger": "/rui doc --from-code",
+      "change": "初始生成：sp-stats-bar 统计项重构"
+    }
+  ],
+  "current_stage": "code_done",
+  "blocked": false,
+  "block_reason": null,
+  "stages_completed": ["doc", "code"],
+  "doc_date": "2026-05-24",
+  "code_date": "2026-05-24",
+  "files_changed": [
+    "src/views/story/components/storyPanelPage/template.html"
+  ],
+  "branch": "feat/sp-stats-bar"
+}

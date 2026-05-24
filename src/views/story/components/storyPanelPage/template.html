@@ -62,23 +62,28 @@
             </div>
             <div class="sp-stat-item">
                 <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ statusCounts.not_started || 0 }}</span>
-                <span class="sp-stat-label">未开始</span>
+                <span class="sp-stat-value">{{ documentCounts.scenario || 0 }}</span>
+                <span class="sp-stat-label">任务</span>
             </div>
             <div class="sp-stat-item">
-                <yi-icon name="edit" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ (statusCounts.docs_in_progress || 0) + (statusCounts.code_in_progress || 0) }}</span>
-                <span class="sp-stat-label">进行中</span>
+                <yi-icon name="file-alt" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ documentCounts.story_task || 0 }}</span>
+                <span class="sp-stat-label">产品</span>
+            </div>
+            <div class="sp-stat-item">
+                <yi-icon name="code" class-name="sp-stat-icon"></yi-icon>
+                <span class="sp-stat-value">{{ documentCounts.implementation || 0 }}</span>
+                <span class="sp-stat-label">开发</span>
             </div>
             <div class="sp-stat-item">
                 <yi-icon name="check-circle" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ (statusCounts.docs_done || 0) + (statusCounts.code_done || 0) }}</span>
-                <span class="sp-stat-label">已完成</span>
+                <span class="sp-stat-value">{{ documentCounts.test_report || 0 }}</span>
+                <span class="sp-stat-label">测试</span>
             </div>
-            <div v-if="statusCounts.self_improve > 0" class="sp-stat-item">
+            <div class="sp-stat-item">
                 <yi-icon name="lightbulb" class-name="sp-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ statusCounts.self_improve || 0 }}</span>
-                <span class="sp-stat-label">自改进</span>
+                <span class="sp-stat-value">{{ documentCounts.retrospective || 0 }}</span>
+                <span class="sp-stat-label">运营</span>
             </div>
         </div>
     </div>

@@ -29,6 +29,18 @@ registerGlobalComponent({
         };
     },
     computed: {
+        documentCounts() {
+            const counts = { story_task: 0, scenario: 0, implementation: 0, test_report: 0, retrospective: 0 };
+            for (const story of this.stories) {
+                const names = (story.files || []).map(f => f.fileName || '');
+                if (names.some(n => n.endsWith('-故事任务.md'))) counts.story_task++;
+                if (names.some(n => n.endsWith('-使用场景.md'))) counts.scenario++;
+                if (names.some(n => n.endsWith('-实施报告.md'))) counts.implementation++;
+                if (names.some(n => n.endsWith('-测试报告.md'))) counts.test_report++;
+                if (names.some(n => n.endsWith('-自改进复盘.md'))) counts.retrospective++;
+            }
+            return counts;
+        },
         hasSelectedStory() {
             return !!this.selectedStory;
         },
