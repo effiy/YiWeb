@@ -103,12 +103,18 @@
     opacity: 1;
 }
 
-/* Filter toggle actions — inline inside tags row, pill-style matching project tags */
+/* Filter toggle actions — sticky left inside scrollable tags row */
 .aicr-meta-filter-actions {
     display: inline-flex;
     align-items: center;
     gap: 0;
     flex-shrink: 0;
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--yi-bg);
+    padding-right: 8px;
+    margin-right: 2px;
 }
 .aicr-meta-filter-toggle {
     display: inline-flex;
