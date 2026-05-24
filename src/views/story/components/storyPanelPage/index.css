@@ -709,7 +709,14 @@
     display: flex;
     flex-direction: column;
     z-index: 1001;
+    transform: translateX(0);
+    opacity: 1;
     animation: slideInRight 0.2s ease;
+}
+
+/* 全局动画冻结时，面板仍需可见 */
+body:not(.bg-animation-enabled) .sp-panel {
+    animation: none;
 }
 .sp-panel-header {
     display: flex;

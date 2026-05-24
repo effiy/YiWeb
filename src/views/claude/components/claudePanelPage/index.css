@@ -279,6 +279,7 @@
     inset: 0;
     background: rgba(var(--yi-dark-surface-rgb), 0.6);
     z-index: 1000;
+    opacity: 1;
     animation: fadeIn 0.15s ease;
 }
 
@@ -294,8 +295,16 @@
     display: flex;
     flex-direction: column;
     z-index: 1001;
+    transform: translateX(0);
+    opacity: 1;
     animation: slideInRight 0.2s ease;
     border-left: 1px solid var(--yi-border);
+}
+
+/* 全局动画冻结时，面板仍需可见 */
+body:not(.bg-animation-enabled) .cp-panel-backdrop,
+body:not(.bg-animation-enabled) .cp-panel {
+    animation: none;
 }
 
 .cp-panel-header {
