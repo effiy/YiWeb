@@ -1,7 +1,7 @@
 <div class="sp-page">
-    <header class="sp-header">
+    <header class="sp-header quantum-panel-header">
         <div class="sp-header-left">
-            <h1 class="sp-header-title">故事任务面板</h1>
+            <h1 class="sp-header-title quantum-header-title">故事任务面板</h1>
             <span v-if="totalStories > 0" class="sp-header-count">{{ totalStories }} 个故事</span>
         </div>
         <header-actions @clear-cache="clearCache">
@@ -76,7 +76,7 @@
                 :class="{ 'sp-stat-btn--active': selectedDocFilter === 'story_task' }"
                 @click="selectDocFilter('story_task')"
             >
-                <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
+                <yi-icon name="circle" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.story_task || 0 }}</span>
                 <span class="sp-stat-label">规划</span>
             </button>
@@ -85,7 +85,7 @@
                 :class="{ 'sp-stat-btn--active': selectedDocFilter === 'scenario' }"
                 @click="selectDocFilter('scenario')"
             >
-                <yi-icon name="file-alt" class-name="sp-stat-icon"></yi-icon>
+                <yi-icon name="file-alt" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.scenario || 0 }}</span>
                 <span class="sp-stat-label">设计</span>
             </button>
@@ -94,7 +94,7 @@
                 :class="{ 'sp-stat-btn--active': selectedDocFilter === 'implementation' }"
                 @click="selectDocFilter('implementation')"
             >
-                <yi-icon name="code" class-name="sp-stat-icon"></yi-icon>
+                <yi-icon name="code" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.implementation || 0 }}</span>
                 <span class="sp-stat-label">开发</span>
             </button>
@@ -103,7 +103,7 @@
                 :class="{ 'sp-stat-btn--active': selectedDocFilter === 'test_report' }"
                 @click="selectDocFilter('test_report')"
             >
-                <yi-icon name="check-circle" class-name="sp-stat-icon"></yi-icon>
+                <yi-icon name="check-circle" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.test_report || 0 }}</span>
                 <span class="sp-stat-label">测试</span>
             </button>
@@ -112,7 +112,7 @@
                 :class="{ 'sp-stat-btn--active': selectedDocFilter === 'retrospective' }"
                 @click="selectDocFilter('retrospective')"
             >
-                <yi-icon name="lightbulb" class-name="sp-stat-icon"></yi-icon>
+                <yi-icon name="lightbulb" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.retrospective || 0 }}</span>
                 <span class="sp-stat-label">运营</span>
             </button>
@@ -144,7 +144,7 @@
             <span v-else class="sp-filter-empty">没有故事</span>
         </div>
         <div class="sp-filter-group sp-filter-group--doc">
-            <span class="sp-filter-label">文档类型</span>
+            <span class="sp-filter-label">状态</span>
             <button
                 type="button"
                 class="sp-filter-tag"
@@ -181,6 +181,42 @@
                 class="sp-filter-clear--inline"
                 @click="selectDocFilter(selectedDocFilter)"
                 title="清除文档类型筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
+        <div class="sp-filter-group sp-filter-group--missing">
+            <span class="sp-filter-label">缺失</span>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedMissingFilter === 'design' }"
+                @click="selectMissingFilter('design')"
+            >缺设计</button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedMissingFilter === 'develop' }"
+                @click="selectMissingFilter('develop')"
+            >缺开发</button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedMissingFilter === 'testing' }"
+                @click="selectMissingFilter('testing')"
+            >缺测试</button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedMissingFilter === 'operations' }"
+                @click="selectMissingFilter('operations')"
+            >缺运营</button>
+            <button
+                v-if="selectedMissingFilter"
+                type="button"
+                class="sp-filter-clear--inline"
+                @click="selectMissingFilter(selectedMissingFilter)"
+                title="清除缺失筛选"
             >
                 <yi-icon name="close"></yi-icon>
             </button>

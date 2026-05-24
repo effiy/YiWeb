@@ -13,14 +13,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 24px;
-    border-bottom: 1px solid transparent;
-    border-image: var(--quantum-header-border) 1;
     flex-wrap: wrap;
     gap: 12px;
     flex-shrink: 0;
-    background: var(--quantum-meta-row-bg);
-    background-size: 200% 100%;
-    animation: quantumFieldFlow 8s ease infinite;
 }
 .cp-header-left {
     display: flex;
@@ -31,12 +26,6 @@
     font-size: 22px;
     font-weight: 700;
     margin: 0;
-    background: var(--quantum-heading-text);
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: quantumTextWave 12s ease infinite;
 }
 .cp-header-count {
     font-size: 13px;
@@ -195,9 +184,6 @@
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
     flex-wrap: wrap;
-    background: var(--quantum-stats-bar-bg);
-    background-size: 200% 100%;
-    animation: quantumFieldFlow 10s ease infinite;
 }
 .cp-stat-item {
     display: flex;
@@ -209,7 +195,6 @@
 .cp-stat-icon {
     font-size: 14px;
     color: var(--yi-primary);
-    animation: quantumIconPulse 4s ease-in-out infinite;
 }
 .cp-stat-value {
     font-weight: 600;
@@ -285,11 +270,7 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
     z-index: 1000;
-    animation: cp-backdrop-in 0.15s ease;
-}
-@keyframes cp-backdrop-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    animation: fadeIn 0.15s ease;
 }
 
 .cp-panel {
@@ -304,12 +285,8 @@
     display: flex;
     flex-direction: column;
     z-index: 1001;
-    animation: cp-panel-in 0.2s ease;
+    animation: slideInRight 0.2s ease;
     border-left: 1px solid var(--yi-border);
-}
-@keyframes cp-panel-in {
-    from { transform: translateX(100%); }
-    to   { transform: translateX(0); }
 }
 
 .cp-panel-header {
@@ -388,25 +365,3 @@
     }
     .cp-stats-bar {
         gap: 16px;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .cp-header-title {
-        animation: none !important;
-        -webkit-text-fill-color: inherit;
-        background: none;
-        color: var(--yi-text);
-    }
-    .cp-stat-icon {
-        animation: none !important;
-    }
-    .cp-stats-bar {
-        animation: none !important;
-    }
-    .cp-header,
-    .cp-filter-bar {
-        border-image: none;
-        border-bottom: 1px solid var(--yi-border);
-    }
-}

@@ -32,9 +32,21 @@
                 <td class="sp-td sp-td--status">
                     <story-status-badge :status="story.status" size="sm"></story-status-badge>
                 </td>
-                <td class="sp-td sp-td--next">{{ story.nextStep }}</td>
-                <td class="sp-td sp-td--notify">{{ story.hasNotify ? '📨' : '—' }}</td>
-                <td class="sp-td sp-td--log">{{ story.hasLog ? '📜' : '—' }}</td>
+                <td class="sp-td sp-td--tags">
+                    <span v-if="story.projectTags && story.projectTags.length > 0" class="sp-td-tags">
+                        <span v-for="tag in story.projectTags" :key="tag" class="sp-td-tag">{{ tag }}</span>
+                    </span>
+                    <span v-else class="sp-td-empty">—</span>
+                </td>
+                <td class="sp-td sp-td--stages">
+                    <span class="sp-stage-items">
+                        <span class="sp-stage-item">规<span class="sp-stage-num">{{ stageCounts(story).plan }}</span></span>
+                        <span class="sp-stage-item">设<span class="sp-stage-num">{{ stageCounts(story).design }}</span></span>
+                        <span class="sp-stage-item">开<span class="sp-stage-num">{{ stageCounts(story).dev }}</span></span>
+                        <span class="sp-stage-item">测<span class="sp-stage-num">{{ stageCounts(story).test }}</span></span>
+                        <span class="sp-stage-item">运<span class="sp-stage-num">{{ stageCounts(story).ops }}</span></span>
+                    </span>
+                </td>
                 <td class="sp-td sp-td--files">{{ story.fileCount }}</td>
                 <td class="sp-td sp-td--modified">{{ formatDate(story.lastModified) }}</td>
             </tr>

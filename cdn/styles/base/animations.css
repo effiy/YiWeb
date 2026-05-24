@@ -4,6 +4,86 @@
  * 说明：所有过渡/缓动变量定义已迁移至 theme.css（--yi-duration-* / --yi-easing-*），本文件仅保留关键帧动画和动画工具类。
  */
 
+/* ============================================
+   Body Background Animation Keyframes — 页面背景动画
+   由 reset.css 中 body / body::before / body::after 引用
+   ============================================ */
+
+/* 基础渐变位移 — body 层缓慢扫过 */
+@keyframes quantumBaseShift {
+  0%, 100% { background-position: 0% 50%, 0% 50%, 0% 50%; }
+  33% { background-position: 50% 100%, 100% 0%, 50% 50%; }
+  66% { background-position: 100% 0%, 0% 100%, 100% 50%; }
+}
+
+/* 极光流动 — 多层渐变交错扫过 + 色相旋转 */
+@keyframes quantumAurora {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  20% {
+    background-position: 100% 0%;
+  }
+  40% {
+    background-position: 50% 100%;
+    filter: hue-rotate(15deg);
+  }
+  60% {
+    background-position: 0% 50%;
+  }
+  80% {
+    background-position: 100% 100%;
+    filter: hue-rotate(-10deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+}
+
+/* 星云粒子 — 多彩光球旋转漂移 */
+@keyframes quantumNebula {
+  0% {
+    background-position: 0% 0%;
+    transform: scale(1);
+  }
+  15% {
+    background-position: 100% 0%;
+    transform: scale(1.05);
+  }
+  30% {
+    background-position: 100% 100%;
+    transform: scale(1);
+  }
+  45% {
+    background-position: 50% 50%;
+    transform: scale(1.08);
+  }
+  60% {
+    background-position: 0% 100%;
+    transform: scale(1);
+  }
+  75% {
+    background-position: 100% 50%;
+    transform: scale(1.04);
+  }
+  90% {
+    background-position: 0% 0%;
+    transform: scale(1);
+  }
+  100% {
+    background-position: 0% 0%;
+    transform: scale(1);
+  }
+}
+
+/* 呼吸感 — 透明度缓慢脉动 */
+@keyframes quantumBreath {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
 /* 基础量子动画定义 */
 @keyframes quantumParticles {
     0% {
@@ -608,19 +688,6 @@
     100% {
         transform: scale(3) rotate(360deg);
         opacity: 0;
-    }
-}
-
-/* 快捷键模块特定动画 */
-@keyframes smoothRotate {
-    0%, 100% {
-        transform: rotate(0deg) translate3d(0, 0, 0);
-    }
-    25% {
-        transform: rotate(5deg);
-    }
-    75% {
-        transform: rotate(-5deg);
     }
 }
 

@@ -346,6 +346,34 @@
 }
 
 /* ============================================
+   View Panel Effects — 视图面板共享动画
+   ============================================ */
+
+/* Quantum Panel Header — animated gradient header bar (shared by aicr/claude/story) */
+.quantum-panel-header {
+  border-bottom: 1px solid transparent;
+  border-image: var(--quantum-header-border) 1;
+  background: var(--quantum-meta-row-bg);
+  background-size: 200% 100%;
+  animation: quantumFieldFlow 8s ease infinite;
+}
+
+/* Quantum Header Title — gradient text wave for page titles (shared by aicr/claude/story) */
+.quantum-header-title {
+  background: var(--quantum-heading-text);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: quantumTextWave 12s ease infinite;
+}
+
+/* Quantum Stat Icon — glow pulse for stat bar icons (shared by aicr/claude/story) */
+.quantum-stat-icon {
+  animation: quantumIconPulse 4s ease-in-out infinite;
+}
+
+/* ============================================
    Accessibility — 无障碍降级
    ============================================ */
 
@@ -354,11 +382,14 @@
   .quantum-surface-elevated,
   .quantum-meta-row,
   .quantum-stats-bar,
+  .quantum-panel-header,
   .quantum-text,
   .quantum-text-heading,
   .quantum-text-accent,
+  .quantum-header-title,
   .quantum-icon,
   .quantum-icon-fill,
+  .quantum-stat-icon,
   .quantum-card::before,
   .quantum-particles::before,
   .quantum-particles::after {
@@ -366,9 +397,14 @@
   }
   .quantum-text,
   .quantum-text-heading,
-  .quantum-text-accent {
+  .quantum-text-accent,
+  .quantum-header-title {
     -webkit-text-fill-color: inherit;
     background: none;
+  }
+  .quantum-panel-header {
+    border-image: none;
+    border-bottom: 1px solid var(--yi-border);
   }
   .quantum-surface-hover::after {
     display: none;

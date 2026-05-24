@@ -1,6 +1,17 @@
 <div class="header-actions">
   <slot></slot>
   <button
+    v-if="showBgAnimationToggle"
+    type="button"
+    class="header-icon-btn"
+    :class="{ active: bgAnimationEnabled }"
+    @click="toggleBgAnimation"
+    :title="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
+    :aria-label="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
+  >
+    <yi-icon name="palette"></yi-icon>
+  </button>
+  <button
     v-if="showAuthButton"
     type="button"
     class="header-icon-btn"

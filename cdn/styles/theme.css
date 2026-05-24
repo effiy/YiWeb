@@ -135,6 +135,10 @@
   --yi-easing-in: cubic-bezier(0.4, 0, 1, 1);
   --yi-easing-out: cubic-bezier(0, 0, 0.2, 1);
 
+  /* Animation state control — 动画统一开关 */
+  --anim-play-state: running;
+  --anim-enabled: 1;
+
   /* --- Z-Index --- */
   --yi-z-dropdown: 1000;
   --yi-z-sticky: 1020;
@@ -415,5 +419,7 @@
     --transition-fast: 0ms;
     --transition-normal: 0ms;
     --transition-slow: 0ms;
+    --anim-play-state: paused;
+    --anim-enabled: 0;
   }
 }

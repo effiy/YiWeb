@@ -727,6 +727,24 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     walk(store.fileTree.value);
                     return count;
                 },
+                designReviewCount: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+                    let count = 0;
+                    const walk = (items) => {
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const name = item.name || '';
+                                const lastDot = name.lastIndexOf('.');
+                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                                const parts = base.split('-');
+                                if (parts.length > 1 && parts[parts.length - 1] === '技术评审') count++;
+                            }
+                            if (item.children) walk(item.children);
+                        }
+                    };
+                    walk(store.fileTree.value);
+                    return count;
+                },
                 retrospectiveCount: function () {
                     if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
                     let count = 0;

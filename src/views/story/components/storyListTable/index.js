@@ -17,9 +17,8 @@ registerGlobalComponent({
             return [
                 { field: 'name', label: '故事名称', sortable: true },
                 { field: 'status', label: '状态', sortable: true },
-                { field: 'nextStep', label: '下一步', sortable: false },
-                { field: null, label: '消息', sortable: false },
-                { field: null, label: '日志', sortable: false },
+                { field: null, label: '项目标签', sortable: false },
+                { field: null, label: '阶段进度', sortable: false },
                 { field: 'fileCount', label: '文件数', sortable: true },
                 { field: 'lastModified', label: '最后修改', sortable: true },
             ];
@@ -32,6 +31,16 @@ registerGlobalComponent({
             if (isNaN(d.getTime())) return '—';
             const pad = (n) => String(n).padStart(2, '0');
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        },
+        stageCounts(story) {
+            const names = (story.files || []).map(f => f.fileName || '');
+            return {
+                plan: names.filter(n => n.endsWith('-故事任务.md')).length,
+                design: names.filter(n => n.endsWith('-使用场景.md')).length,
+                dev: names.filter(n => n.endsWith('-实施报告.md')).length,
+                test: names.filter(n => n.endsWith('-测试报告.md')).length,
+                ops: names.filter(n => n.endsWith('-自改进复盘.md')).length,
+            };
         },
         onSort(field) {
             if (!field) return;

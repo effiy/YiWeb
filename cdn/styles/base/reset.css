@@ -28,8 +28,11 @@ body {
   font-weight: var(--font-weight-normal, 400);
   line-height: var(--line-height-normal, 1.5);
   color: var(--text-primary, #F8FAFC);
-  background: var(--bg-gradient, #09090B);
-  background-size: 400% 400%;
+  background:
+    linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, transparent 30%),
+    linear-gradient(0deg, rgba(34, 211, 238, 0.04) 0%, transparent 35%),
+    var(--bg-gradient, #09090B);
+  background-size: 100% 100%, 100% 100%, 400% 400%;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -38,31 +41,52 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* 3. 背景动画与装饰 */
+body.bg-animation-enabled {
+  background-size: 100% 100%, 100% 100%, 400% 400%;
+  animation: quantumBaseShift 30s ease infinite;
+}
+
+/* 3. 背景动画与装饰 — Aurora Flow 层 */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
-  background: var(--bg-gradient, #09090B);
-  background-size: 400% 400%;
-  animation: quantumFlow 30s ease infinite;
+  background:
+    linear-gradient(45deg, rgba(139, 92, 246, 0.15) 0%, transparent 35%),
+    linear-gradient(135deg, rgba(34, 211, 238, 0.13) 0%, transparent 40%),
+    linear-gradient(225deg, rgba(99, 102, 241, 0.14) 0%, transparent 35%),
+    linear-gradient(315deg, rgba(236, 72, 153, 0.1) 0%, transparent 40%),
+    linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, transparent 45%),
+    linear-gradient(0deg, rgba(250, 204, 21, 0.05) 0%, transparent 50%);
+  background-size: 600% 600%;
   pointer-events: none;
   z-index: -2;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
+body.bg-animation-enabled::after {
+  animation: quantumAurora 25s ease infinite, quantumBreath 8s ease-in-out infinite;
+}
+
+/* 3b. 背景动画与装饰 — Nebula 粒子层 */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
-  background-size: 200% 200%;
-  animation: quantumParticles 20s ease infinite;
+    radial-gradient(circle at 15% 85%, rgba(139, 92, 246, 0.22) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.2) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 75% 70%, rgba(236, 72, 153, 0.14) 0%, transparent 38%),
+    radial-gradient(circle at 25% 20%, rgba(16, 185, 129, 0.13) 0%, transparent 38%),
+    radial-gradient(circle at 60% 8%, rgba(250, 204, 21, 0.09) 0%, transparent 35%);
+  background-size: 300% 300%;
   pointer-events: none;
   z-index: -1;
+}
+
+body.bg-animation-enabled::before {
+  animation: quantumNebula 18s ease infinite, quantumBreath 6s ease-in-out infinite reverse;
 }
 
 /* 4. 标题、文本、结构元素重置 */
@@ -302,7 +326,9 @@ a:focus-visible {
     scroll-behavior: auto !important;
   }
   body::before,
-  body::after {
+  body::after,
+  body.bg-animation-enabled::before,
+  body.bg-animation-enabled::after {
     animation: none !important;
   }
 }
@@ -341,14 +367,12 @@ a:focus-visible {
   }
 }
 
-/* 22. 动画定义 */
-@keyframes quantumFlow {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-@keyframes quantumParticles {
-  0%, 100% { background-position: 0% 0%; }
-  25% { background-position: 100% 0%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
+/* 22. 动画定义 — 关键帧已统一迁移至 animations.css，此处仅保留全局开关 */
+
+/* 23. 动画全局开关 — 关闭背景动画时冻结所有 CSS animation */
+body:not(.bg-animation-enabled),
+body:not(.bg-animation-enabled) *,
+body:not(.bg-animation-enabled) ::before,
+body:not(.bg-animation-enabled) ::after {
+  animation-play-state: paused !important;
 }

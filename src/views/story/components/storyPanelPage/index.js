@@ -24,6 +24,7 @@ registerGlobalComponent({
             selectedProjectTags: [],
             selectedStoryTags: [],
             selectedDocFilter: null,
+            selectedMissingFilter: null,
             sortField: 'lastModified',
             sortDirection: 'desc',
             filterBarCollapsed: true,
@@ -51,7 +52,7 @@ registerGlobalComponent({
             return !!this.panelStory;
         },
         hasActiveFilters() {
-            return !!(this.localSearchQuery || this.selectedProjectTags.length > 0 || this.selectedStoryTags.length > 0 || this.selectedDocFilter);
+            return !!(this.localSearchQuery || this.selectedProjectTags.length > 0 || this.selectedStoryTags.length > 0 || this.selectedDocFilter || this.selectedMissingFilter);
         },
         storyOptions() {
             const base = this._applyFilters(this.stories, 'storyTag');
@@ -171,6 +172,10 @@ registerGlobalComponent({
                 const docLabels = { story_task: '规划', scenario: '设计', implementation: '开发', test_report: '测试', retrospective: '运营' };
                 pills.push({ type: 'doc', label: docLabels[this.selectedDocFilter] || this.selectedDocFilter, clear: () => this.selectDocFilter(this.selectedDocFilter) });
             }
+            if (this.selectedMissingFilter) {
+                const missingLabels = { design: '缺设计', develop: '缺开发', testing: '缺测试', operations: '缺运营' };
+                pills.push({ type: 'missing', label: missingLabels[this.selectedMissingFilter] || this.selectedMissingFilter, clear: () => this.selectMissingFilter(this.selectedMissingFilter) });
+            }
             return pills;
         },
     },
@@ -201,6 +206,20 @@ registerGlobalComponent({
                 if (suffix) {
                     result = result.filter(s =>
                         (s.files || []).some(f => (f.fileName || '').endsWith(suffix))
+                    );
+                }
+            }
+            if (exclude !== 'missingFilter' && this.selectedMissingFilter) {
+                const missingSuffixes = {
+                    design: '-使用场景.md',
+                    develop: '-实施报告.md',
+                    testing: '-测试报告.md',
+                    operations: '-自改进复盘.md',
+                };
+                const suffix = missingSuffixes[this.selectedMissingFilter];
+                if (suffix) {
+                    result = result.filter(s =>
+                        !(s.files || []).some(f => (f.fileName || '').endsWith(suffix))
                     );
                 }
             }
@@ -305,6 +324,9 @@ registerGlobalComponent({
         selectDocFilter(docType) {
             this.selectedDocFilter = this.selectedDocFilter === docType ? null : docType;
         },
+        selectMissingFilter(filter) {
+            this.selectedMissingFilter = this.selectedMissingFilter === filter ? null : filter;
+        },
         toggleFilterBar() {
             this.filterBarCollapsed = !this.filterBarCollapsed;
         },
@@ -323,6 +345,7 @@ registerGlobalComponent({
             this.selectedProjectTags = [];
             this.selectedStoryTags = [];
             this.selectedDocFilter = null;
+            this.selectedMissingFilter = null;
             this.sortField = 'lastModified';
             this.sortDirection = 'desc';
         },

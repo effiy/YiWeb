@@ -20,14 +20,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 24px;
-    border-bottom: 1px solid transparent;
-    border-image: var(--quantum-header-border) 1;
     flex-wrap: wrap;
     gap: 12px;
     flex-shrink: 0;
-    background: var(--quantum-meta-row-bg);
-    background-size: 200% 100%;
-    animation: quantumFieldFlow 8s ease infinite;
 }
 .aicr-header-left {
     display: flex;
@@ -38,12 +33,6 @@
     font-size: 22px;
     font-weight: 700;
     margin: 0;
-    background: var(--quantum-heading-text);
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: quantumTextWave 12s ease infinite;
 }
 .aicr-header-count {
     font-size: 13px;
@@ -56,9 +45,6 @@
     align-items: center;
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
-    background: var(--quantum-meta-row-bg);
-    background-size: 200% 100%;
-    animation: quantumFieldFlow 8s ease infinite;
 }
 /* Tags wrapper — fills remaining space in meta row, positions fade overlays */
 .aicr-header-tags-wrapper {
@@ -201,9 +187,6 @@
     flex-shrink: 0;
     flex-wrap: wrap;
     margin-left: auto;
-    background: var(--quantum-stats-bar-bg);
-    background-size: 200% 100%;
-    animation: quantumFieldFlow 10s ease infinite;
 }
 .aicr-stat-item {
     display: flex;
@@ -218,7 +201,6 @@
 .aicr-stat-icon {
     font-size: 14px;
     color: var(--yi-primary);
-    animation: quantumIconPulse 4s ease-in-out infinite;
 }
 .aicr-stat-value {
     font-weight: 600;
@@ -545,27 +527,5 @@
 @media (max-width: 768px) {
     .aicr-main {
         flex-direction: column;
-    }
-}
-
-/* 减少动画 — 动画禁用由 quantum-effects.css 统一处理，此处仅处理视图特有选择器 */
-@media (prefers-reduced-motion: reduce) {
-    .aicr-header-title {
-        animation: none !important;
-        -webkit-text-fill-color: inherit;
-        background: none;
-        color: var(--yi-text);
-    }
-    .aicr-stat-icon {
-        animation: none !important;
-    }
-    .aicr-meta-row,
-    .aicr-stats-bar {
-        animation: none !important;
-    }
-    .aicr-header,
-    .aicr-filter-bar {
-        border-image: none;
-        border-bottom: 1px solid var(--yi-border);
     }
 }

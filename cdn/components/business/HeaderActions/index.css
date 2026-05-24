@@ -29,6 +29,12 @@
   box-shadow: var(--yi-shadow-md);
 }
 
+.header-icon-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
 .header-icon-btn::after {
   content: attr(title);
   position: absolute;

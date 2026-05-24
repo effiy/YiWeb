@@ -27,6 +27,7 @@ registerGlobalComponent({
     showClearCache: { type: Boolean, default: true },
     showAuthButton: { type: Boolean, default: true },
     showEnvBadge: { type: Boolean, default: true },
+    showBgAnimationToggle: { type: Boolean, default: true },
   },
   emits: ['clear-cache', 'open-auth'],
   setup(props, { emit }) {
@@ -35,6 +36,36 @@ registerGlobalComponent({
       console.error('[HeaderActions] Vue not available on window');
       return {};
     }
+
+    const STORAGE_KEY = 'yiweb-bg-animation-enabled';
+
+    function readStored() {
+      try {
+        const val = localStorage.getItem(STORAGE_KEY);
+        return val === 'true';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function applyBodyClass(enabled) {
+      if (enabled) {
+        document.body.classList.add('bg-animation-enabled');
+      } else {
+        document.body.classList.remove('bg-animation-enabled');
+      }
+    }
+
+    const bgAnimationEnabled = Vue.ref(readStored());
+    applyBodyClass(bgAnimationEnabled.value);
+
+    const toggleBgAnimation = () => {
+      bgAnimationEnabled.value = !bgAnimationEnabled.value;
+      try {
+        localStorage.setItem(STORAGE_KEY, String(bgAnimationEnabled.value));
+      } catch (_) {}
+      applyBodyClass(bgAnimationEnabled.value);
+    };
 
     const envType = Vue.ref(detectEnvironment());
     const envLabel = Vue.computed(() => envType.value === 'local' ? 'LOCAL' : 'PROD');
@@ -46,6 +77,6 @@ registerGlobalComponent({
       }
     };
 
-    return { envType, envLabel, openAuth };
+    return { envType, envLabel, bgAnimationEnabled, toggleBgAnimation, openAuth };
   }
 });
