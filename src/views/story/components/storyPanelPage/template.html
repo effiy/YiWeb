@@ -143,6 +143,48 @@
             </template>
             <span v-else class="sp-filter-empty">没有故事</span>
         </div>
+        <div class="sp-filter-group sp-filter-group--doc">
+            <span class="sp-filter-label">文档类型</span>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedDocFilter === 'story_task' }"
+                @click="selectDocFilter('story_task')"
+            >规划 <span class="sp-filter-count">{{ documentCounts.story_task || 0 }}</span></button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedDocFilter === 'scenario' }"
+                @click="selectDocFilter('scenario')"
+            >设计 <span class="sp-filter-count">{{ documentCounts.scenario || 0 }}</span></button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedDocFilter === 'implementation' }"
+                @click="selectDocFilter('implementation')"
+            >开发 <span class="sp-filter-count">{{ documentCounts.implementation || 0 }}</span></button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedDocFilter === 'test_report' }"
+                @click="selectDocFilter('test_report')"
+            >测试 <span class="sp-filter-count">{{ documentCounts.test_report || 0 }}</span></button>
+            <button
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedDocFilter === 'retrospective' }"
+                @click="selectDocFilter('retrospective')"
+            >运营 <span class="sp-filter-count">{{ documentCounts.retrospective || 0 }}</span></button>
+            <button
+                v-if="selectedDocFilter"
+                type="button"
+                class="sp-filter-clear--inline"
+                @click="selectDocFilter(selectedDocFilter)"
+                title="清除文档类型筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
         <div class="sp-filter-collapsed-row">
             <div class="sp-filter-collapsed-scroll">
                 <span v-if="filterSummaryPills.length === 0 && !localSearchQuery" class="sp-filter-collapsed-empty">未选择筛选</span>
