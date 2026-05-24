@@ -1,14 +1,20 @@
-<div v-if="story" :class="cardClass" @click="onClick">
-    <div class="sc-card-name">{{ story.name }}</div>
-    <div class="sc-card-badge">
-        <story-status-badge :status="story.status" size="sm"></story-status-badge>
+<div v-if="story" :class="cardClass" :style="tagAccentStyle" @click="onClick">
+    <div class="sc-card-tags">
+        <span v-if="story.projectTags.length > 0" class="sc-card-tags-left">
+            <span v-for="tag in story.projectTags" :key="tag" class="sc-card-tag">{{ tag }}</span>
+        </span>
+        <span class="sc-card-date">{{ formatDate(story.lastModified) }}</span>
     </div>
-    <div class="sc-card-meta">
-        <span class="sc-card-files">{{ story.fileCount }} 个文件</span>
-        <span v-if="story.hasNotify" class="sc-card-badge-icon" title="有消息通知">📨</span>
-        <span v-if="story.hasLog" class="sc-card-badge-icon" title="有交互日志">📜</span>
+    <div class="sc-card-name">
+        {{ story.name }}
+        <span class="sc-card-file-count">{{ story.fileCount }}</span>
     </div>
-    <div class="sc-card-date">{{ formatDate(story.lastModified) }}</div>
-    <div class="sc-card-next">{{ story.nextStep }}</div>
+    <div v-if="stageCounts" class="sc-card-stages">
+        <span class="sc-stage-item">规<span class="sc-stage-num">{{ stageCounts.plan }}</span></span>
+        <span class="sc-stage-item">设<span class="sc-stage-num">{{ stageCounts.design }}</span></span>
+        <span class="sc-stage-item">开<span class="sc-stage-num">{{ stageCounts.dev }}</span></span>
+        <span class="sc-stage-item">测<span class="sc-stage-num">{{ stageCounts.test }}</span></span>
+        <span class="sc-stage-item">运<span class="sc-stage-num">{{ stageCounts.ops }}</span></span>
+    </div>
 </div>
 <div v-else class="sc-card sc-card--empty">—</div>

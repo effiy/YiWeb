@@ -21,11 +21,9 @@ registerGlobalComponent({
             localSearchQuery: '',
             viewMode: 'board',
             panelStory: null,
-            selectedProjectTag: null,
-            selectedHealth: null,
+            selectedProjectTags: [],
+            selectedStoryTags: [],
             selectedDocFilter: null,
-            selectedNotify: null,
-            selectedLog: null,
             sortField: 'lastModified',
             sortDirection: 'desc',
             filterBarCollapsed: true,
@@ -36,7 +34,7 @@ registerGlobalComponent({
     computed: {
         documentCounts() {
             const counts = { story_task: 0, scenario: 0, implementation: 0, test_report: 0, retrospective: 0 };
-            for (const story of this.stories) {
+            for (const story of this.filteredStories) {
                 const names = (story.files || []).map(f => f.fileName || '');
                 if (names.some(n => n.endsWith('-故事任务.md'))) counts.story_task++;
                 if (names.some(n => n.endsWith('-使用场景.md'))) counts.scenario++;
@@ -53,48 +51,45 @@ registerGlobalComponent({
             return !!this.panelStory;
         },
         hasActiveFilters() {
-            return !!(this.localSearchQuery || this.selectedProjectTag || this.selectedHealth || this.selectedDocFilter || this.selectedNotify !== null || this.selectedLog !== null);
+            return !!(this.localSearchQuery || this.selectedProjectTags.length > 0 || this.selectedStoryTags.length > 0 || this.selectedDocFilter);
         },
-        healthOptions() {
-            const base = this._applyFilters(this.stories, 'health');
-            const counts = { complete: 0, healthy: 0, moderate: 0, starter: 0 };
+        storyOptions() {
+            const base = this._applyFilters(this.stories, 'storyTag');
+            const result = [];
             for (const s of base) {
-                const level = this.getHealthLevel(s);
-                if (counts[level] !== undefined) counts[level]++;
+                result.push({ value: s.name, label: s.name, count: s.fileCount });
             }
-            return [
-                { value: 'complete', label: '完整', count: counts.complete },
-                { value: 'healthy', label: '良好', count: counts.healthy },
-                { value: 'moderate', label: '一般', count: counts.moderate },
-                { value: 'starter', label: '起步', count: counts.starter },
-            ];
-        },
-        notifyOptions() {
-            const base = this._applyFilters(this.stories, 'notify');
-            const counts = { true: 0, false: 0 };
-            for (const s of base) {
-                if (s.hasNotify) counts.true++;
-                else counts.false++;
-            }
-            return [
-                { value: true, label: '已配置', count: counts.true },
-                { value: false, label: '未配置', count: counts.false },
-            ];
-        },
-        logOptions() {
-            const base = this._applyFilters(this.stories, 'log');
-            const counts = { true: 0, false: 0 };
-            for (const s of base) {
-                if (s.hasLog) counts.true++;
-                else counts.false++;
-            }
-            return [
-                { value: true, label: '有日志', count: counts.true },
-                { value: false, label: '无日志', count: counts.false },
-            ];
+            result.sort((a, b) => a.label.localeCompare(b.label));
+            return result;
         },
         filteredStories() {
             return this.sortStories(this._applyFilters(this.stories));
+        },
+        groupedStories() {
+            const groups = new Map();
+            for (const story of this.filteredStories) {
+                const tags = (story.projectTags && story.projectTags.length > 0) ? story.projectTags : ['__uncategorized__'];
+                for (const tag of tags) {
+                    if (!groups.has(tag)) {
+                        groups.set(tag, []);
+                    }
+                    groups.get(tag).push(story);
+                }
+            }
+            const result = [];
+            for (const [tag, stories] of groups) {
+                result.push({
+                    tag: tag === '__uncategorized__' ? null : tag,
+                    label: tag === '__uncategorized__' ? '未分类' : tag,
+                    stories
+                });
+            }
+            result.sort((a, b) => {
+                if (a.tag === null) return 1;
+                if (b.tag === null) return -1;
+                return a.tag.localeCompare(b.tag);
+            });
+            return result;
         },
         filteredStoriesByStatus() {
             const filtered = this._applyFilters(this.stories);
@@ -105,8 +100,26 @@ registerGlobalComponent({
                 testing: [],
                 operations: []
             };
+            const stageSuffixes = [
+                { key: 'operations', suffix: '-自改进复盘.md' },
+                { key: 'testing',    suffix: '-测试报告.md' },
+                { key: 'develop',    suffix: '-实施报告.md' },
+                { key: 'design',     suffix: '-使用场景.md' },
+                { key: 'planning',   suffix: '-故事任务.md' },
+            ];
             for (const story of filtered) {
-                if (groups[story.status]) groups[story.status].push(story);
+                const names = (story.files || []).map(f => f.fileName || '');
+                let placed = false;
+                for (const { key, suffix } of stageSuffixes) {
+                    if (names.some(n => n.endsWith(suffix))) {
+                        groups[key].push(story);
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    groups.planning.push(story);
+                }
             }
             return groups;
         },
@@ -122,26 +135,41 @@ registerGlobalComponent({
             const groups = this.filteredStoriesByStatus;
             return order.map(status => ({ status, stories: groups[status] || [] }));
         },
+        projectTagCounts() {
+            const counts = {};
+            for (const story of this.stories) {
+                for (const tag of (story.projectTags || [])) {
+                    counts[tag] = (counts[tag] || 0) + 1;
+                }
+            }
+            return counts;
+        },
+        tagColorMap() {
+            const map = {};
+            for (const tag of this.allProjectTags) {
+                let hash = 0;
+                for (let i = 0; i < tag.length; i++) {
+                    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const hue = Math.abs(hash) % 360;
+                map[tag] = {
+                    '--sc-accent': `hsl(${hue}, 55%, 50%)`,
+                    '--sc-accent-bg': `hsla(${hue}, 55%, 50%, 0.12)`,
+                };
+            }
+            return map;
+        },
         filterSummaryPills() {
             const pills = [];
-            if (this.selectedProjectTag) {
-                pills.push({ type: 'tag', label: this.selectedProjectTag, clear: () => this.clearProjectTag() });
+            for (const tag of this.selectedProjectTags) {
+                pills.push({ type: 'tag', label: tag, clear: () => this.toggleProjectTag(tag) });
             }
-            if (this.selectedHealth) {
-                const opt = this.healthOptions.find(o => o.value === this.selectedHealth);
-                pills.push({ type: 'health', label: opt ? opt.label : this.selectedHealth, clear: () => this.selectHealth(this.selectedHealth) });
+            for (const tag of this.selectedStoryTags) {
+                pills.push({ type: 'story', label: tag, clear: () => this.toggleStoryTag(tag) });
             }
             if (this.selectedDocFilter) {
                 const docLabels = { story_task: '规划', scenario: '设计', implementation: '开发', test_report: '测试', retrospective: '运营' };
                 pills.push({ type: 'doc', label: docLabels[this.selectedDocFilter] || this.selectedDocFilter, clear: () => this.selectDocFilter(this.selectedDocFilter) });
-            }
-            if (this.selectedNotify !== null) {
-                const label = this.selectedNotify ? '已配置通知' : '未配置通知';
-                pills.push({ type: 'notify', label, clear: () => this.selectNotify(this.selectedNotify) });
-            }
-            if (this.selectedLog !== null) {
-                const label = this.selectedLog ? '有交互日志' : '无交互日志';
-                pills.push({ type: 'log', label, clear: () => this.selectLog(this.selectedLog) });
             }
             return pills;
         },
@@ -155,11 +183,11 @@ registerGlobalComponent({
         },
         _applyFilters(stories, exclude) {
             let result = stories;
-            if (exclude !== 'projectTag' && this.selectedProjectTag) {
-                result = result.filter(s => (s.projectTags || []).includes(this.selectedProjectTag));
+            if (exclude !== 'projectTag' && this.selectedProjectTags.length > 0) {
+                result = result.filter(s => (s.projectTags || []).some(t => this.selectedProjectTags.includes(t)));
             }
-            if (exclude !== 'health' && this.selectedHealth) {
-                result = result.filter(s => this.getHealthLevel(s) === this.selectedHealth);
+            if (exclude !== 'storyTag' && this.selectedStoryTags.length > 0) {
+                result = result.filter(s => this.selectedStoryTags.includes(s.name));
             }
             if (exclude !== 'docFilter' && this.selectedDocFilter) {
                 const docSuffixes = {
@@ -175,12 +203,6 @@ registerGlobalComponent({
                         (s.files || []).some(f => (f.fileName || '').endsWith(suffix))
                     );
                 }
-            }
-            if (exclude !== 'notify' && this.selectedNotify !== null) {
-                result = result.filter(s => !!s.hasNotify === this.selectedNotify);
-            }
-            if (exclude !== 'log' && this.selectedLog !== null) {
-                result = result.filter(s => !!s.hasLog === this.selectedLog);
             }
             if (exclude !== 'search' && this.localSearchQuery) {
                 const q = this.localSearchQuery.trim().toLowerCase();
@@ -250,27 +272,35 @@ registerGlobalComponent({
             };
             return map[status] || status;
         },
-        selectProjectTag(tag) {
-            this.selectedProjectTag = this.selectedProjectTag === tag ? null : tag;
+        toggleProjectTag(tag) {
+            const idx = this.selectedProjectTags.indexOf(tag);
+            if (idx >= 0) {
+                this.selectedProjectTags.splice(idx, 1);
+            } else {
+                this.selectedProjectTags.push(tag);
+            }
         },
-        clearProjectTag() {
-            this.selectedProjectTag = null;
+        clearProjectTags() {
+            this.selectedProjectTags = [];
         },
-        getHealthLevel(story) {
-            const score = story.healthScore || 0;
-            if (score >= 5) return 'complete';
-            if (score >= 4) return 'healthy';
-            if (score >= 3) return 'moderate';
-            return 'starter';
+        toggleStoryTag(tag) {
+            const idx = this.selectedStoryTags.indexOf(tag);
+            if (idx >= 0) {
+                this.selectedStoryTags.splice(idx, 1);
+            } else {
+                this.selectedStoryTags.push(tag);
+                const story = this.stories.find(s => s.name === tag);
+                if (story && story.projectTags) {
+                    for (const pt of story.projectTags) {
+                        if (!this.selectedProjectTags.includes(pt)) {
+                            this.selectedProjectTags.push(pt);
+                        }
+                    }
+                }
+            }
         },
-        selectHealth(level) {
-            this.selectedHealth = this.selectedHealth === level ? null : level;
-        },
-        selectNotify(val) {
-            this.selectedNotify = this.selectedNotify === val ? null : val;
-        },
-        selectLog(val) {
-            this.selectedLog = this.selectedLog === val ? null : val;
+        clearStoryTags() {
+            this.selectedStoryTags = [];
         },
         selectDocFilter(docType) {
             this.selectedDocFilter = this.selectedDocFilter === docType ? null : docType;
@@ -290,16 +320,17 @@ registerGlobalComponent({
         },
         clearAllFilters() {
             this.localSearchQuery = '';
-            this.selectedProjectTag = null;
-            this.selectedHealth = null;
+            this.selectedProjectTags = [];
+            this.selectedStoryTags = [];
             this.selectedDocFilter = null;
-            this.selectedNotify = null;
-            this.selectedLog = null;
             this.sortField = 'lastModified';
             this.sortDirection = 'desc';
         },
         clearCache() {
             clearCacheAndRefresh();
+        },
+        tagColorStyle(tag) {
+            return this.tagColorMap[tag] || {};
         },
         formatDate(ts) {
             if (!ts) return '—';

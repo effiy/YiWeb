@@ -55,16 +55,17 @@
                 </div>
                 <button
                     class="sp-project-tag"
-                    :class="{ 'sp-project-tag--active': !selectedProjectTag }"
-                    @click="clearProjectTag"
-                >全部</button>
+                    :class="{ 'sp-project-tag--active': selectedProjectTags.length === 0 }"
+                    @click="clearProjectTags"
+                >全部<span class="sp-project-tag-count">{{ totalStories }}</span></button>
                 <button
                     v-for="tag in allProjectTags"
                     :key="tag"
                     class="sp-project-tag"
-                    :class="{ 'sp-project-tag--active': selectedProjectTag === tag }"
-                    @click="selectProjectTag(tag)"
-                >{{ tag }}</button>
+                    :class="{ 'sp-project-tag--active': selectedProjectTags.includes(tag) }"
+                    :style="tagColorStyle(tag)"
+                    @click="toggleProjectTag(tag)"
+                >{{ tag }}<span class="sp-project-tag-count">{{ projectTagCounts[tag] || 0 }}</span></button>
             </div>
             <div class="sp-tags-fade sp-tags-fade--left" :class="{ 'is-visible': tagsScrollLeft > 0 }"></div>
             <div class="sp-tags-fade sp-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
@@ -100,64 +101,27 @@
 
     <div v-if="totalStories > 0 && !loading" class="sp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
         <div class="sp-filter-group">
-            <span class="sp-filter-label">健康度</span>
-            <button
-                v-for="opt in healthOptions"
-                :key="'health-' + opt.value"
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedHealth === opt.value }"
-                @click="selectHealth(opt.value)"
-            >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
-            <button
-                v-if="selectedHealth"
-                type="button"
-                class="sp-filter-clear--inline"
-                @click="selectHealth(selectedHealth)"
-                title="清除健康度筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
-        </div>
-        <div class="sp-filter-group">
-            <span class="sp-filter-label">通知</span>
-            <button
-                v-for="opt in notifyOptions"
-                :key="'notify-' + opt.value"
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedNotify === opt.value }"
-                @click="selectNotify(opt.value)"
-            >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
-            <button
-                v-if="selectedNotify !== null"
-                type="button"
-                class="sp-filter-clear--inline"
-                @click="selectNotify(selectedNotify)"
-                title="清除通知筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
-        </div>
-        <div class="sp-filter-group">
-            <span class="sp-filter-label">日志</span>
-            <button
-                v-for="opt in logOptions"
-                :key="'log-' + opt.value"
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedLog === opt.value }"
-                @click="selectLog(opt.value)"
-            >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
-            <button
-                v-if="selectedLog !== null"
-                type="button"
-                class="sp-filter-clear--inline"
-                @click="selectLog(selectedLog)"
-                title="清除日志筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
+            <span class="sp-filter-label">故事</span>
+            <template v-if="storyOptions.length > 0">
+                <button
+                    v-for="opt in storyOptions"
+                    :key="'story-' + opt.value"
+                    type="button"
+                    class="sp-filter-tag"
+                    :class="{ active: selectedStoryTags.includes(opt.value) }"
+                    @click="toggleStoryTag(opt.value)"
+                >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
+                <button
+                    v-if="selectedStoryTags.length > 0"
+                    type="button"
+                    class="sp-filter-clear--inline"
+                    @click="clearStoryTags"
+                    title="清除故事筛选"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </template>
+            <span v-else class="sp-filter-empty">没有故事</span>
         </div>
         <div class="sp-filter-collapsed-row">
             <div class="sp-filter-collapsed-scroll">
@@ -166,7 +130,7 @@
                     搜索: {{ localSearchQuery }}
                     <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="localSearchQuery = ''" title="移除搜索">×</button>
                 </span>
-                <span v-for="pill in filterSummaryPills" :key="pill.type + '-' + pill.label" class="sp-filter-collapsed-pill">
+                <span v-for="pill in filterSummaryPills" :key="pill.type + '-' + pill.label" class="sp-filter-collapsed-pill" :style="pill.type === 'tag' ? tagColorStyle(pill.label) : {}">
                     {{ pill.label }}
                     <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="pill.clear()" title="移除筛选">×</button>
                 </span>
@@ -212,12 +176,18 @@
 
         <!-- Card Grid View -->
         <div v-if="viewMode === 'cards'" class="sp-card-grid">
-            <story-card
-                v-for="story in filteredStories"
-                :key="story.name"
-                :story="story"
-                @select="openDetail"
-            ></story-card>
+            <template v-for="group in groupedStories" :key="group.label">
+                <div class="sp-card-group-header" :style="group.tag ? tagColorStyle(group.tag) : {}">
+                    <span class="sp-card-group-label">{{ group.label }}</span>
+                    <span class="sp-card-group-count">{{ group.stories.length }}</span>
+                </div>
+                <story-card
+                    v-for="story in group.stories"
+                    :key="group.label + '-' + story.name"
+                    :story="story"
+                    @select="openDetail"
+                ></story-card>
+            </template>
             <div v-if="filteredStories.length === 0" class="sp-card-grid-empty">
                 <span>{{ hasActiveFilters ? '没有匹配的故事' : '暂无故事' }}</span>
                 <button
@@ -231,15 +201,21 @@
 
         <!-- List View -->
         <div v-if="viewMode === 'list'" class="sp-list-view">
-            <story-list-table
-                :stories="filteredStories"
-                :loading="false"
-                :error="null"
-                :sort-field="sortField"
-                :sort-direction="sortDirection"
-                @select="openDetail"
-                @sort="toggleSort"
-            ></story-list-table>
+            <template v-for="group in groupedStories" :key="group.label">
+                <div class="sp-list-group-header" :style="group.tag ? tagColorStyle(group.tag) : {}">
+                    <span class="sp-list-group-label">{{ group.label }}</span>
+                    <span class="sp-list-group-count">{{ group.stories.length }}</span>
+                </div>
+                <story-list-table
+                    :stories="group.stories"
+                    :loading="false"
+                    :error="null"
+                    :sort-field="sortField"
+                    :sort-direction="sortDirection"
+                    @select="openDetail"
+                    @sort="toggleSort"
+                ></story-list-table>
+            </template>
         </div>
     </template>
 
