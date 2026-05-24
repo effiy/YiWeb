@@ -1,5 +1,7 @@
 /**
  * 故事任务面板 - 状态管理
+ *
+ * 数据源：远端 API query_documents，filter 服务端过滤 故事任务面板/ 目录。
  * 状态判定基于语义文档名（{project}-故事任务.md 等）
  * 类型推断通过读取远端技术评审文档内容
  */
@@ -127,7 +129,7 @@ export function createStore() {
             const body = {
                 module_name: 'services.database.data_service',
                 method_name: 'query_documents',
-                parameters: { cname: 'sessions', limit: 10000 },
+                parameters: { cname: 'sessions', limit: 10000, filter: { file_path: '故事任务面板/' } },
             };
             const res = await fetch(apiUrl + '/', {
                 method: 'POST',
