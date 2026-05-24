@@ -173,17 +173,17 @@
 
 /* 消息类型样式 - 量子渐变 */
 .message-success {
-  background: linear-gradient(135deg, #10B981, #34D399);
+  background: var(--success-gradient);
   border-color: rgba(16, 185, 129, 0.2);
 }
 
 .message-error {
-  background: linear-gradient(135deg, #EF4444, #F87171);
+  background: var(--error-gradient);
   border-color: rgba(239, 68, 68, 0.2);
 }
 
 .message-warning {
-  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  background: var(--warning-gradient);
   border-color: rgba(245, 158, 11, 0.2);
 }
 

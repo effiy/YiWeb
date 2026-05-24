@@ -54,6 +54,7 @@
   --yi-surface-elevated: #1A1A2E;
   --yi-surface-hover: #1E1E36;
   --yi-surface-active: #2A2A48;
+  --yi-bg-muted: rgba(127, 127, 127, 0.08);
 
   /* --- Colors: Borders (Iridescent) --- */
   --yi-border: rgba(255, 255, 255, 0.08);
@@ -207,7 +208,7 @@
   --primary-hover: var(--yi-primary-hover);
   --primary-light: #A78BFA;
   --primary-dark: var(--yi-primary-hover);
-  --primary-dark-rgb: 124, 58, 237;
+  --primary-dark-rgb: var(--yi-primary-rgb);
   --primary-blue: #6366F1;
   --primary-cyan: var(--yi-info);
   --primary-gradient: var(--quantum-wave);
@@ -229,15 +230,6 @@
   --danger-color: var(--yi-danger);
   --danger-color-alpha: var(--yi-danger-subtle);
 
-  --scientist-purple: #8B5CF6;
-  --scientist-cyan: var(--yi-info);
-  --geek-green: var(--yi-success);
-  --geek-teal: #14B8A6;
-  --artist-purple: var(--yi-self-improve);
-  --artist-pink: #F472B6;
-  --artist-orange: var(--yi-warning);
-  --artist-emerald: var(--yi-success);
-
   --gradient-primary: var(--quantum-wave);
   --gradient-secondary: var(--quantum-coherence);
   --gradient-success: var(--success-gradient);
@@ -249,12 +241,6 @@
   --gradient-sunset: linear-gradient(135deg, #8B5CF6 0%, #F472B6 50%, #F59E0B 100%);
   --gradient-ocean: linear-gradient(135deg, #22D3EE 0%, #6366F1 50%, #8B5CF6 100%);
   --gradient-forest: linear-gradient(135deg, #10B981 0%, #14B8A6 50%, #22D3EE 100%);
-
-  --pet-color-1: var(--quantum-wave);
-  --pet-color-2: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
-  --pet-color-3: linear-gradient(135deg, #22D3EE 0%, #6366F1 100%);
-  --pet-color-4: var(--gradient-forest);
-  --pet-color-5: linear-gradient(135deg, #F472B6 0%, #8B5CF6 100%);
 
   --gray-50: #F8FAFC;
   --gray-100: #F1F5F9;
@@ -270,7 +256,7 @@
 
   --bg-primary: var(--yi-dark-surface);
   --bg-secondary: var(--yi-code-bg);
-  --bg-tertiary: #1A1A2E;
+  --bg-tertiary: var(--yi-surface-elevated);
   --bg-elevated: rgba(18, 18, 26, 0.95);
   --bg-glass: rgba(139, 92, 246, 0.03);
   --bg-surface: rgba(18, 18, 26, 0.6);
@@ -355,14 +341,16 @@
   --font-family-mono: var(--yi-font-code);
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
+  --line-height-relaxed: 1.625;
 
   --transition-fast: var(--yi-duration-fast) var(--yi-easing-default);
   --transition-normal: var(--yi-duration-normal) var(--yi-easing-default);

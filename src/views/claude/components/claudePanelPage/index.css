@@ -129,12 +129,21 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
 .cp-filter-label {
     font-size: 12px;
     color: var(--yi-text-muted);
     margin-right: 4px;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--yi-bg);
+    padding-right: 6px;
 }
 .cp-filter-tag {
     display: inline-flex;
@@ -268,7 +277,7 @@
 .cp-panel-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(var(--yi-dark-surface-rgb), 0.6);
     z-index: 1000;
     animation: fadeIn 0.15s ease;
 }
