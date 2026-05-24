@@ -74,32 +74,32 @@
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': tagFilterNoTags }"
-                @click="toggleTagFilterNoTags"
+                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('故事任务') }"
+                @click="toggleSuffixTag('故事任务')"
             >
                 <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ subTags.length }}</span>
+                <span class="aicr-stat-value">{{ storyTaskCount }}</span>
                 <span class="aicr-stat-label">故事</span>
             </button>
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedPrefixTags && selectedPrefixTags.length > 0 }"
-                @click="filterBarCollapsed = false; clearPrefixTags()"
+                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('使用场景') }"
+                @click="toggleSuffixTag('使用场景')"
             >
-                <yi-icon name="server" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ prefixTags.length }}</span>
-                <span class="aicr-stat-label">前缀</span>
+                <yi-icon name="layout" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ scenarioCount }}</span>
+                <span class="aicr-stat-label">场景</span>
             </button>
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.length > 0 }"
-                @click="filterBarCollapsed = false; clearSuffixTags()"
+                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('自改进复盘') }"
+                @click="toggleSuffixTag('自改进复盘')"
             >
-                <yi-icon name="server" class-name="aicr-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ suffixTags.length }}</span>
-                <span class="aicr-stat-label">后缀</span>
+                <yi-icon name="refresh" class-name="aicr-stat-icon"></yi-icon>
+                <span class="aicr-stat-value">{{ retrospectiveCount }}</span>
+                <span class="aicr-stat-label">自改进</span>
             </button>
         </div>
     </div>

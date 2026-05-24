@@ -181,6 +181,22 @@
 .sp-stat-label {
     color: var(--yi-text-muted);
 }
+.sp-stat-btn {
+    background: none;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+.sp-stat-btn:hover {
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border);
+}
+.sp-stat-btn--active {
+    background: var(--yi-primary-subtle);
+    border-color: var(--yi-primary);
+}
 
 /* Filter Bar — 对齐 aicr filter bar 规格 */
 .sp-filter-bar {

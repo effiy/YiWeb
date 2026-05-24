@@ -690,6 +690,61 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         .map(([suffix, count]) => ({ suffix, count }))
                         .sort((a, b) => b.count - a.count || a.suffix.localeCompare(b.suffix));
                 },
+                // 特定后缀文档计数（供 stats-bar 使用，直接从 fileTree 统计，不受筛选影响）
+                storyTaskCount: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+                    let count = 0;
+                    const walk = (items) => {
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const name = item.name || '';
+                                const lastDot = name.lastIndexOf('.');
+                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                                const parts = base.split('-');
+                                if (parts.length > 1 && parts[parts.length - 1] === '故事任务') count++;
+                            }
+                            if (item.children) walk(item.children);
+                        }
+                    };
+                    walk(store.fileTree.value);
+                    return count;
+                },
+                scenarioCount: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+                    let count = 0;
+                    const walk = (items) => {
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const name = item.name || '';
+                                const lastDot = name.lastIndexOf('.');
+                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                                const parts = base.split('-');
+                                if (parts.length > 1 && parts[parts.length - 1] === '使用场景') count++;
+                            }
+                            if (item.children) walk(item.children);
+                        }
+                    };
+                    walk(store.fileTree.value);
+                    return count;
+                },
+                retrospectiveCount: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+                    let count = 0;
+                    const walk = (items) => {
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const name = item.name || '';
+                                const lastDot = name.lastIndexOf('.');
+                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                                const parts = base.split('-');
+                                if (parts.length > 1 && parts[parts.length - 1] === '自改进复盘') count++;
+                            }
+                            if (item.children) walk(item.children);
+                        }
+                    };
+                    walk(store.fileTree.value);
+                    return count;
+                },
                 // 二级标签计数（四级联动：受一级标签、前缀标签和后缀标签选中过滤）
                 subTagCounts: function () {
                     const counts = {};

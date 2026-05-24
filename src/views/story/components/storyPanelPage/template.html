@@ -71,31 +71,51 @@
             <div class="sp-tags-fade sp-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
         </div>
         <div class="sp-stats-bar">
-            <div class="sp-stat-item">
+            <button type="button"
+                class="sp-stat-item sp-stat-btn"
+                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'story_task' }"
+                @click="selectDocFilter('story_task')"
+            >
                 <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.story_task || 0 }}</span>
                 <span class="sp-stat-label">规划</span>
-            </div>
-            <div class="sp-stat-item">
+            </button>
+            <button type="button"
+                class="sp-stat-item sp-stat-btn"
+                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'scenario' }"
+                @click="selectDocFilter('scenario')"
+            >
                 <yi-icon name="file-alt" class-name="sp-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.scenario || 0 }}</span>
                 <span class="sp-stat-label">设计</span>
-            </div>
-            <div class="sp-stat-item">
+            </button>
+            <button type="button"
+                class="sp-stat-item sp-stat-btn"
+                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'implementation' }"
+                @click="selectDocFilter('implementation')"
+            >
                 <yi-icon name="code" class-name="sp-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.implementation || 0 }}</span>
                 <span class="sp-stat-label">开发</span>
-            </div>
-            <div class="sp-stat-item">
+            </button>
+            <button type="button"
+                class="sp-stat-item sp-stat-btn"
+                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'test_report' }"
+                @click="selectDocFilter('test_report')"
+            >
                 <yi-icon name="check-circle" class-name="sp-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.test_report || 0 }}</span>
                 <span class="sp-stat-label">测试</span>
-            </div>
-            <div class="sp-stat-item">
+            </button>
+            <button type="button"
+                class="sp-stat-item sp-stat-btn"
+                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'retrospective' }"
+                @click="selectDocFilter('retrospective')"
+            >
                 <yi-icon name="lightbulb" class-name="sp-stat-icon"></yi-icon>
                 <span class="sp-stat-value">{{ documentCounts.retrospective || 0 }}</span>
                 <span class="sp-stat-label">运营</span>
-            </div>
+            </button>
         </div>
     </div>
 
