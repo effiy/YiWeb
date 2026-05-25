@@ -192,25 +192,25 @@
                 class="sp-filter-tag"
                 :class="{ active: selectedMissingFilter === 'design' }"
                 @click="selectMissingFilter('design')"
-            >缺设计</button>
+            >缺设计 <span class="sp-filter-count">{{ missingCounts.design || 0 }}</span></button>
             <button
                 type="button"
                 class="sp-filter-tag"
                 :class="{ active: selectedMissingFilter === 'develop' }"
                 @click="selectMissingFilter('develop')"
-            >缺开发</button>
+            >缺开发 <span class="sp-filter-count">{{ missingCounts.develop || 0 }}</span></button>
             <button
                 type="button"
                 class="sp-filter-tag"
                 :class="{ active: selectedMissingFilter === 'testing' }"
                 @click="selectMissingFilter('testing')"
-            >缺测试</button>
+            >缺测试 <span class="sp-filter-count">{{ missingCounts.testing || 0 }}</span></button>
             <button
                 type="button"
                 class="sp-filter-tag"
                 :class="{ active: selectedMissingFilter === 'operations' }"
                 @click="selectMissingFilter('operations')"
-            >缺运营</button>
+            >缺运营 <span class="sp-filter-count">{{ missingCounts.operations || 0 }}</span></button>
             <button
                 v-if="selectedMissingFilter"
                 type="button"

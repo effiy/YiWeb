@@ -160,6 +160,18 @@ registerGlobalComponent({
             }
             return map;
         },
+        missingCounts() {
+            const base = this._applyFilters(this.stories, 'missingFilter');
+            const counts = { design: 0, develop: 0, testing: 0, operations: 0 };
+            for (const story of base) {
+                const names = (story.files || []).map(f => f.fileName || '');
+                if (!names.some(n => n.endsWith('-使用场景.md'))) counts.design++;
+                if (!names.some(n => n.endsWith('-实施报告.md'))) counts.develop++;
+                if (!names.some(n => n.endsWith('-测试报告.md'))) counts.testing++;
+                if (!names.some(n => n.endsWith('-自改进复盘.md'))) counts.operations++;
+            }
+            return counts;
+        },
         filterSummaryPills() {
             const pills = [];
             for (const tag of this.selectedProjectTags) {
