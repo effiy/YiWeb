@@ -11,34 +11,43 @@
 
 /* 基础渐变位移 — body 层缓慢扫过 */
 @keyframes quantumBaseShift {
-  0%, 100% { background-position: 0% 50%, 0% 50%, 0% 50%; }
-  33% { background-position: 50% 100%, 100% 0%, 50% 50%; }
-  66% { background-position: 100% 0%, 0% 100%, 100% 50%; }
+  0%, 100% { background-position: 0% 50%, 0% 50%, 0% 50%, 0% 50%; }
+  25% { background-position: 100% 0%, 50% 100%, 0% 50%, 50% 50%; }
+  50% { background-position: 50% 100%, 100% 50%, 100% 0%, 100% 50%; }
+  75% { background-position: 0% 50%, 0% 0%, 50% 100%, 50% 0%; }
 }
 
 /* 极光流动 — 多层渐变交错扫过 + 色相旋转 */
 @keyframes quantumAurora {
   0% {
     background-position: 0% 50%;
-    filter: hue-rotate(0deg);
+    filter: hue-rotate(0deg) brightness(1);
   }
-  20% {
+  15% {
     background-position: 100% 0%;
   }
-  40% {
+  30% {
     background-position: 50% 100%;
-    filter: hue-rotate(15deg);
+    filter: hue-rotate(25deg) brightness(1.05);
+  }
+  45% {
+    background-position: 0% 25%;
   }
   60% {
-    background-position: 0% 50%;
-  }
-  80% {
     background-position: 100% 100%;
-    filter: hue-rotate(-10deg);
+    filter: hue-rotate(-20deg) brightness(1.02);
+  }
+  75% {
+    background-position: 50% 0%;
+    filter: hue-rotate(10deg) brightness(1.04);
+  }
+  90% {
+    background-position: 0% 75%;
+    filter: hue-rotate(-5deg) brightness(1);
   }
   100% {
     background-position: 0% 50%;
-    filter: hue-rotate(0deg);
+    filter: hue-rotate(0deg) brightness(1);
   }
 }
 
@@ -46,42 +55,77 @@
 @keyframes quantumNebula {
   0% {
     background-position: 0% 0%;
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
   }
-  15% {
+  12% {
     background-position: 100% 0%;
-    transform: scale(1.05);
+    transform: scale(1.08) rotate(1deg);
   }
-  30% {
+  25% {
     background-position: 100% 100%;
-    transform: scale(1);
+    transform: scale(1) rotate(2deg);
   }
-  45% {
+  37% {
+    background-position: 25% 75%;
+    transform: scale(1.12) rotate(1deg);
+  }
+  50% {
     background-position: 50% 50%;
-    transform: scale(1.08);
+    transform: scale(1.04) rotate(0deg);
   }
-  60% {
-    background-position: 0% 100%;
-    transform: scale(1);
+  62% {
+    background-position: 75% 25%;
+    transform: scale(1.15) rotate(-1deg);
   }
   75% {
     background-position: 100% 50%;
-    transform: scale(1.04);
+    transform: scale(1.06) rotate(-2deg);
   }
-  90% {
-    background-position: 0% 0%;
-    transform: scale(1);
+  87% {
+    background-position: 50% 0%;
+    transform: scale(1) rotate(-1deg);
   }
   100% {
     background-position: 0% 0%;
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
   }
 }
 
 /* 呼吸感 — 透明度缓慢脉动 */
 @keyframes quantumBreath {
-  0%, 100% { opacity: 0.75; }
+  0%, 100% { opacity: 0.65; }
+  25% { opacity: 0.9; }
   50% { opacity: 1; }
+  75% { opacity: 0.8; }
+}
+
+/* 微光扫过 — 对角线光带周期掠过 */
+@keyframes quantumShimmer {
+  0%, 100% {
+    background-position: -200% -200%, 200% 200%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.12;
+  }
+  20% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 0.1;
+  }
+  65% {
+    opacity: 0;
+  }
+  80% {
+    opacity: 0;
+  }
+  90% {
+    opacity: 0.08;
+  }
 }
 
 /* 基础量子动画定义 */
@@ -117,10 +161,10 @@
 
 @keyframes quantumGlow {
     0%, 100% {
-        box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        box-shadow: 0 0 20px rgba(var(--yi-primary-rgb), 0.15);
     }
     50% {
-        box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), 0 0 80px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 0 40px rgba(var(--yi-primary-rgb), 0.30), 0 0 80px rgba(var(--yi-primary-rgb), 0.15);
     }
 }
 

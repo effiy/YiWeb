@@ -18,6 +18,143 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
         // 在外部创建 store，以便在 onMounted 中访问
         const store = createStore();
 
+        // 共享过滤上下文 — 供 computed 中所有计数函数复用
+        const buildFilterContext = () => {
+            const selectedTags = store.selectedSessionTags?.value || [];
+            const selectedPrefixes = store.selectedPrefixTags?.value || [];
+            const hasPrefix = selectedPrefixes.length > 0;
+            const selectedSuffixes = store.selectedSuffixTags?.value || [];
+            const hasSuffix = selectedSuffixes.length > 0;
+            const noTags = store.tagFilterNoTags?.value || false;
+            const anyTagFilter = selectedTags.length > 0 || noTags || hasPrefix || hasSuffix;
+            const sessionQuery = store.sessionSearchQuery?.value?.trim().toLowerCase() || '';
+
+            const firstLevelNames = new Set();
+            for (const item of store.fileTree?.value || []) {
+                if (item.type === 'folder') firstLevelNames.add(item.name);
+            }
+            const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
+            const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
+
+            const getPrefix = (name) => {
+                const sepIdx = Math.min(
+                    ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                );
+                return sepIdx !== Infinity && sepIdx > 0 ? name.substring(0, sepIdx) : null;
+            };
+
+            const getSuffix = (name) => {
+                const lastDot = name.lastIndexOf('.');
+                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
+                const parts = base.split('-');
+                if (parts.length <= 1) return null;
+                return parts[parts.length - 1];
+            };
+
+            const fileMatches = (name) => {
+                if (hasPrefix) {
+                    const p = getPrefix(name);
+                    if (!p || !selectedPrefixes.includes(p)) return false;
+                }
+                if (hasSuffix) {
+                    const s = getSuffix(name);
+                    if (!s || !selectedSuffixes.includes(s)) return false;
+                }
+                return true;
+            };
+
+            const matchesTagFilter = (itemName, depth) => {
+                if (depth === 0 && firstLevelTags.length > 0 && !firstLevelTags.includes(itemName)) return false;
+                if (depth === 1 && secondLevelTags.length > 0 && !secondLevelTags.includes(itemName)) return false;
+                return true;
+            };
+
+            const filterBySearch = (items) => {
+                if (!sessionQuery) return items;
+                return items.filter(item => {
+                    if (item.type === 'folder') {
+                        const nameMatch = (item.name || '').toLowerCase().includes(sessionQuery);
+                        if (nameMatch) return true;
+                        if (Array.isArray(item.children)) {
+                            return item.children.some(child =>
+                                (child.name || '').toLowerCase().includes(sessionQuery)
+                            );
+                        }
+                        return false;
+                    }
+                    return (item.name || '').toLowerCase().includes(sessionQuery);
+                });
+            };
+
+            return {
+                firstLevelTags, secondLevelTags, anyTagFilter, sessionQuery, noTags,
+                fileMatches, getSuffix, matchesTagFilter, filterBySearch,
+                hasPrefix, hasSuffix, selectedPrefixes
+            };
+        };
+
+        // 按后缀统计筛选后的文件数 — 供 stats-bar 四级联动计数复用
+        // 注意：不应用后缀筛选自身，否则选中一个后缀会导致其他三项归零
+        const _countBySuffix = (targetSuffix) => {
+            if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+            const ctx = buildFilterContext();
+
+            // 仅检查前缀筛选（跳过后缀筛选），让各分类独立计数
+            const prefixOnly = (name) => {
+                if (ctx.hasPrefix) {
+                    const sepIdx = Math.min(
+                        ...['-', '_', '.'].map(s => { const i = name.indexOf(s); return i === -1 ? Infinity : i; })
+                    );
+                    const p = sepIdx !== Infinity && sepIdx > 0 ? name.substring(0, sepIdx) : null;
+                    if (!p || !ctx.selectedPrefixes.includes(p)) return false;
+                }
+                return true;
+            };
+
+            let count = 0;
+            const walk = (items, depth) => {
+                if (!Array.isArray(items)) return;
+                for (const item of items) {
+                    if (item.type === 'file') {
+                        const name = item.name || '';
+                        if (!prefixOnly(name)) continue;
+                        const suffix = ctx.getSuffix(name);
+                        if (suffix === targetSuffix) count++;
+                    } else if (item.type === 'folder' && item.children) {
+                        if (!ctx.matchesTagFilter(item.name, depth)) continue;
+                        walk(item.children, depth + 1);
+                    }
+                }
+            };
+
+            // 后缀筛选自身不算 anyTagFilter — 仅检查标签/前缀/无标签/搜索
+            const effectiveFilter = (ctx.firstLevelTags.length > 0 || ctx.secondLevelTags.length > 0 ||
+                                      ctx.noTags || ctx.hasPrefix || ctx.sessionQuery);
+
+            if (!effectiveFilter) {
+                walk(store.fileTree.value, 0);
+                return count;
+            }
+
+            let filteredItems = store.fileTree.value;
+            if (ctx.sessionQuery) {
+                filteredItems = ctx.filterBySearch(filteredItems);
+            }
+
+            if (ctx.noTags && ctx.firstLevelTags.length === 0 && ctx.secondLevelTags.length === 0 && !ctx.hasPrefix) {
+                for (const item of filteredItems) {
+                    if (item.type === 'file') {
+                        const name = item.name || '';
+                        if (prefixOnly(name) && ctx.getSuffix(name) === targetSuffix) count++;
+                    }
+                }
+                return count;
+            }
+
+            walk(filteredItems, 0);
+            return count;
+        };
+
         const app = await createBaseView({
             createStore: () => store,
             useComputed,
@@ -690,78 +827,18 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         .map(([suffix, count]) => ({ suffix, count }))
                         .sort((a, b) => b.count - a.count || a.suffix.localeCompare(b.suffix));
                 },
-                // 特定后缀文档计数（供 stats-bar 使用，直接从 fileTree 统计，不受筛选影响）
+                // 特定后缀文档计数（供 stats-bar 使用，四级联动：与筛选操作联动）
                 storyTaskCount: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
-                    let count = 0;
-                    const walk = (items) => {
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                const name = item.name || '';
-                                const lastDot = name.lastIndexOf('.');
-                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
-                                const parts = base.split('-');
-                                if (parts.length > 1 && parts[parts.length - 1] === '故事任务') count++;
-                            }
-                            if (item.children) walk(item.children);
-                        }
-                    };
-                    walk(store.fileTree.value);
-                    return count;
+                    return _countBySuffix('故事任务');
                 },
                 scenarioCount: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
-                    let count = 0;
-                    const walk = (items) => {
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                const name = item.name || '';
-                                const lastDot = name.lastIndexOf('.');
-                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
-                                const parts = base.split('-');
-                                if (parts.length > 1 && parts[parts.length - 1] === '使用场景') count++;
-                            }
-                            if (item.children) walk(item.children);
-                        }
-                    };
-                    walk(store.fileTree.value);
-                    return count;
+                    return _countBySuffix('使用场景');
                 },
                 designReviewCount: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
-                    let count = 0;
-                    const walk = (items) => {
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                const name = item.name || '';
-                                const lastDot = name.lastIndexOf('.');
-                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
-                                const parts = base.split('-');
-                                if (parts.length > 1 && parts[parts.length - 1] === '技术评审') count++;
-                            }
-                            if (item.children) walk(item.children);
-                        }
-                    };
-                    walk(store.fileTree.value);
-                    return count;
+                    return _countBySuffix('技术评审');
                 },
                 retrospectiveCount: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
-                    let count = 0;
-                    const walk = (items) => {
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                const name = item.name || '';
-                                const lastDot = name.lastIndexOf('.');
-                                const base = lastDot > 0 ? name.substring(0, lastDot) : name;
-                                const parts = base.split('-');
-                                if (parts.length > 1 && parts[parts.length - 1] === '自改进复盘') count++;
-                            }
-                            if (item.children) walk(item.children);
-                        }
-                    };
-                    walk(store.fileTree.value);
-                    return count;
+                    return _countBySuffix('自改进复盘');
                 },
                 // 二级标签计数（四级联动：受一级标签、前缀标签和后缀标签选中过滤）
                 subTagCounts: function () {

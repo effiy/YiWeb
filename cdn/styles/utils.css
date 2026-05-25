@@ -8,10 +8,10 @@
    ============================================ */
 
 .card {
-  background: var(--bg-secondary, #12121A);
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+  background: var(--bg-secondary, #2d2d32);
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.10));
   border-radius: var(--radius-lg, 0.75rem);
-  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.4));
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.30));
   transition: all var(--transition-normal, 250ms ease);
 }
 
@@ -32,7 +32,7 @@
 .card-footer {
   padding: 16px 20px;
   border-top: 1px solid var(--border-primary, rgba(255,255,255,0.08));
-  background: var(--bg-tertiary, #1A1A2E);
+  background: var(--bg-tertiary, #3a3a40);
   border-radius: 0 0 var(--radius-lg, 0.75rem) var(--radius-lg, 0.75rem);
 }
 
@@ -96,25 +96,25 @@
 .alert-info {
   background: var(--yi-primary-subtle);
   border-color: rgba(var(--yi-primary-rgb), 0.3);
-  color: var(--info, #8B5CF6);
+  color: var(--info, #0ea5b8);
 }
 
 .alert-success {
   background: var(--yi-success-subtle);
   border-color: rgba(var(--yi-success-rgb), 0.3);
-  color: var(--success, #10B981);
+  color: var(--success, #0ea5b8);
 }
 
 .alert-warning {
   background: var(--yi-warning-subtle);
   border-color: rgba(var(--yi-warning-rgb), 0.3);
-  color: var(--warning, #F59E0B);
+  color: var(--warning, #888888);
 }
 
 .alert-error {
   background: var(--yi-danger-subtle);
   border-color: rgba(var(--yi-danger-rgb), 0.3);
-  color: var(--error, #EF4444);
+  color: var(--error, #333333);
 }
 
 /* ============================================
@@ -189,7 +189,7 @@
 
 .message-info {
   background: var(--quantum-wave);
-  border-color: rgba(139, 92, 246, 0.2);
+  border-color: rgba(var(--yi-primary-rgb), 0.2);
 }
 
 /* 消息内容布局 */

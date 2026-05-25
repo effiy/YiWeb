@@ -27,12 +27,14 @@ body {
   font-size: var(--font-size-base, 1rem);
   font-weight: var(--font-weight-normal, 400);
   line-height: var(--line-height-normal, 1.5);
-  color: var(--text-primary, #F8FAFC);
+  color: var(--text-primary, #ffffff);
   background:
-    linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, transparent 30%),
-    linear-gradient(0deg, rgba(34, 211, 238, 0.04) 0%, transparent 35%),
-    var(--bg-gradient, #09090B);
-  background-size: 100% 100%, 100% 100%, 400% 400%;
+    var(--yi-body-bg-gradient-1),
+    var(--yi-body-bg-gradient-2),
+    var(--yi-body-bg-gradient-3),
+    var(--quantum-body-shimmer),
+    var(--bg-gradient, #2a2a2e);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 300% 300%, 400% 400%;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -42,8 +44,8 @@ body {
 }
 
 body.bg-animation-enabled {
-  background-size: 100% 100%, 100% 100%, 400% 400%;
-  animation: quantumBaseShift 30s ease infinite;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 300% 300%, 400% 400%;
+  animation: quantumBaseShift 30s ease infinite, quantumShimmer 12s ease-in-out infinite;
 }
 
 /* 3. 背景动画与装饰 — Aurora Flow 层 */
@@ -51,21 +53,15 @@ body::after {
   content: '';
   position: fixed;
   inset: 0;
-  background:
-    linear-gradient(45deg, rgba(139, 92, 246, 0.15) 0%, transparent 35%),
-    linear-gradient(135deg, rgba(34, 211, 238, 0.13) 0%, transparent 40%),
-    linear-gradient(225deg, rgba(99, 102, 241, 0.14) 0%, transparent 35%),
-    linear-gradient(315deg, rgba(236, 72, 153, 0.1) 0%, transparent 40%),
-    linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, transparent 45%),
-    linear-gradient(0deg, rgba(250, 204, 21, 0.05) 0%, transparent 50%);
-  background-size: 600% 600%;
+  background: var(--quantum-body-aurora);
+  background-size: 800% 800%;
   pointer-events: none;
   z-index: -2;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 body.bg-animation-enabled::after {
-  animation: quantumAurora 25s ease infinite, quantumBreath 8s ease-in-out infinite;
+  animation: quantumAurora 20s ease infinite, quantumBreath 8s ease-in-out infinite;
 }
 
 /* 3b. 背景动画与装饰 — Nebula 粒子层 */
@@ -73,20 +69,14 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(circle at 15% 85%, rgba(139, 92, 246, 0.22) 0%, transparent 40%),
-    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.2) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.16) 0%, transparent 45%),
-    radial-gradient(circle at 75% 70%, rgba(236, 72, 153, 0.14) 0%, transparent 38%),
-    radial-gradient(circle at 25% 20%, rgba(16, 185, 129, 0.13) 0%, transparent 38%),
-    radial-gradient(circle at 60% 8%, rgba(250, 204, 21, 0.09) 0%, transparent 35%);
-  background-size: 300% 300%;
+  background: var(--quantum-body-nebula);
+  background-size: 400% 400%;
   pointer-events: none;
   z-index: -1;
 }
 
 body.bg-animation-enabled::before {
-  animation: quantumNebula 18s ease infinite, quantumBreath 6s ease-in-out infinite reverse;
+  animation: quantumNebula 15s ease infinite, quantumBreath 6s ease-in-out infinite reverse;
 }
 
 /* 4. 标题、文本、结构元素重置 */
@@ -240,7 +230,7 @@ pre {
 hr {
   border: none;
   height: 1px;
-  background: var(--border-primary, rgba(255,255,255,0.08));
+  background: var(--border-primary, rgba(255,255,255,0.10));
   margin: 0;
   padding: 0;
 }
@@ -254,7 +244,7 @@ hr {
 }
 .focus-visible,
 *:focus-visible {
-  outline: 2px solid var(--primary, #8B5CF6);
+  outline: 2px solid var(--primary, #0ea5b8);
   outline-offset: 2px;
 }
 .gpu-accelerated {
@@ -269,7 +259,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--primary, #8B5CF6);
+  outline: 2px solid var(--primary, #0ea5b8);
   outline-offset: 2px;
 }
 
@@ -278,7 +268,7 @@ a:focus-visible {
   position: absolute;
   top: -40px;
   left: 6px;
-  background: var(--primary, #8B5CF6);
+  background: var(--primary, #0ea5b8);
   color: #fff;
   padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
   text-decoration: none;

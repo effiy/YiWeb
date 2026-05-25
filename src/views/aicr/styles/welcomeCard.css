@@ -17,7 +17,7 @@
 .welcome-card:hover {
     background: var(--yi-surface-hover) !important;
     border-left-color: var(--yi-primary) !important;
-    box-shadow: 0 0 24px rgba(139, 92, 246, 0.12), var(--yi-shadow-md) !important;
+    box-shadow: 0 0 24px rgba(14, 165, 184, 0.08), var(--yi-shadow-md) !important;
 }
 
 .welcome-card-header {

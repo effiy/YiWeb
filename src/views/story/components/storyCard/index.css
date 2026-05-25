@@ -16,7 +16,7 @@
 }
 .sc-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 0 20px rgba(var(--yi-primary-rgb), 0.08), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .sc-card--planning     { border-left-color: var(--sc-accent, var(--yi-text-muted)); }
@@ -67,7 +67,7 @@
     font-size: 10px;
     font-weight: 500;
     color: var(--sc-accent, var(--yi-primary));
-    background: var(--sc-accent-bg, rgba(139, 92, 246, 0.12));
+    background: var(--sc-accent-bg, rgba(var(--yi-primary-rgb), 0.10));
     padding: 1px 6px;
     border-radius: 4px;
     vertical-align: middle;

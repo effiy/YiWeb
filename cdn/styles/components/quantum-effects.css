@@ -33,11 +33,11 @@
 /* Quantum Icon Pulse — gentle glow breathing for icons */
 @keyframes quantumIconPulse {
   0%, 100% {
-    filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.3));
+    filter: drop-shadow(0 0 2px rgba(var(--yi-primary-rgb), 0.2));
     opacity: 0.85;
   }
   50% {
-    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+    filter: drop-shadow(0 0 8px rgba(var(--yi-primary-rgb), 0.4));
     opacity: 1;
   }
 }
@@ -72,11 +72,11 @@
 .quantum-surface {
   background: linear-gradient(
     135deg,
-    rgba(139, 92, 246, 0.04) 0%,
-    rgba(99, 102, 241, 0.03) 25%,
-    rgba(34, 211, 238, 0.03) 50%,
-    rgba(139, 92, 246, 0.04) 75%,
-    rgba(99, 102, 241, 0.03) 100%
+    rgba(var(--yi-primary-rgb), 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(var(--yi-primary-rgb), 0.03) 50%,
+    rgba(255, 255, 255, 0.02) 75%,
+    rgba(var(--yi-primary-rgb), 0.04) 100%
   );
   background-size: 400% 400%;
   animation: quantumFieldFlow 12s ease infinite;
@@ -86,12 +86,12 @@
 .quantum-surface-elevated {
   background: linear-gradient(
     135deg,
-    rgba(139, 92, 246, 0.06) 0%,
-    rgba(99, 102, 241, 0.04) 20%,
-    rgba(34, 211, 238, 0.04) 40%,
-    rgba(16, 185, 129, 0.03) 60%,
-    rgba(139, 92, 246, 0.05) 80%,
-    rgba(99, 102, 241, 0.03) 100%
+    rgba(var(--yi-primary-rgb), 0.06) 0%,
+    rgba(255, 255, 255, 0.03) 20%,
+    rgba(var(--yi-primary-rgb), 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 60%,
+    rgba(var(--yi-primary-rgb), 0.05) 80%,
+    rgba(255, 255, 255, 0.02) 100%
   );
   background-size: 400% 400%;
   animation: quantumFieldFlow 15s ease infinite;
@@ -109,9 +109,9 @@
   background: linear-gradient(
     105deg,
     transparent 35%,
-    rgba(139, 92, 246, 0.06) 45%,
-    rgba(34, 211, 238, 0.06) 50%,
-    rgba(139, 92, 246, 0.06) 55%,
+    rgba(var(--yi-primary-rgb), 0.05) 45%,
+    rgba(var(--yi-primary-rgb), 0.04) 50%,
+    rgba(var(--yi-primary-rgb), 0.05) 55%,
     transparent 65%
   );
   background-size: 200% 100%;
@@ -139,12 +139,12 @@
 .quantum-text {
   background: linear-gradient(
     135deg,
-    #A78BFA 0%,
-    #8B5CF6 20%,
-    #22D3EE 40%,
-    #8B5CF6 60%,
-    #A78BFA 80%,
-    #C084FC 100%
+    var(--yi-primary) 0%,
+    var(--yi-primary-light) 20%,
+    var(--yi-primary) 40%,
+    var(--yi-primary-light) 60%,
+    var(--yi-primary) 80%,
+    var(--yi-primary-hover) 100%
   );
   background-size: 300% 300%;
   -webkit-background-clip: text;
@@ -168,9 +168,9 @@
 .quantum-text-accent {
   background: linear-gradient(
     90deg,
-    rgba(139, 92, 246, 0.9) 0%,
-    rgba(34, 211, 238, 0.9) 50%,
-    rgba(139, 92, 246, 0.9) 100%
+    rgba(var(--yi-primary-rgb), 0.9) 0%,
+    rgba(var(--yi-primary-rgb), 0.7) 50%,
+    rgba(var(--yi-primary-rgb), 0.9) 100%
   );
   background-size: 200% 100%;
   -webkit-background-clip: text;
@@ -200,7 +200,7 @@
 
 /* Quantum Icon Fill — gradient fill for SVG icons */
 .quantum-icon-fill {
-  color: #8B5CF6;
+  color: var(--yi-primary);
   animation: quantumPhaseShift 6s ease infinite;
 }
 
@@ -213,9 +213,9 @@
   border-bottom: 2px solid transparent;
   border-image: linear-gradient(
     90deg,
-    rgba(139, 92, 246, 0.4) 0%,
-    rgba(34, 211, 238, 0.4) 50%,
-    rgba(139, 92, 246, 0.4) 100%
+    rgba(var(--yi-primary-rgb), 0.35) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(var(--yi-primary-rgb), 0.35) 100%
   ) 1;
   animation: quantumFieldFlow 8s ease infinite;
 }
@@ -227,9 +227,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(139, 92, 246, 0.3) 20%,
-    rgba(34, 211, 238, 0.3) 50%,
-    rgba(139, 92, 246, 0.3) 80%,
+    rgba(var(--yi-primary-rgb), 0.20) 20%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(var(--yi-primary-rgb), 0.20) 80%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -255,11 +255,11 @@
   padding: 1px;
   background: linear-gradient(
     135deg,
-    rgba(139, 92, 246, 0.3) 0%,
-    rgba(99, 102, 241, 0.15) 30%,
-    rgba(34, 211, 238, 0.2) 50%,
-    rgba(139, 92, 246, 0.15) 70%,
-    rgba(99, 102, 241, 0.3) 100%
+    rgba(var(--yi-primary-rgb), 0.20) 0%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(var(--yi-primary-rgb), 0.15) 50%,
+    rgba(255, 255, 255, 0.04) 70%,
+    rgba(var(--yi-primary-rgb), 0.20) 100%
   );
   background-size: 300% 300%;
   animation: quantumFieldFlow 10s ease infinite;
@@ -271,11 +271,11 @@
 
 /* Quantum Card Glow — elevated card with animated glow */
 .quantum-card-glow {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 20px rgba(var(--yi-primary-rgb), 0.08), 0 4px 12px rgba(0, 0, 0, 0.25);
   transition: box-shadow 0.4s ease;
 }
 .quantum-card-glow:hover {
-  box-shadow: 0 0 40px rgba(139, 92, 246, 0.2), 0 0 80px rgba(99, 102, 241, 0.1), 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 40px rgba(var(--yi-primary-rgb), 0.15), 0 0 80px rgba(var(--yi-primary-rgb), 0.08), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 /* ============================================
@@ -292,7 +292,7 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--yi-primary-rgb), 0.05) 0%, transparent 70%);
   top: -40px;
   right: -40px;
   animation: quantumParticleDrift 12s ease-in-out infinite;
@@ -304,7 +304,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
   bottom: -20px;
   left: -20px;
   animation: quantumParticleDrift 10s ease-in-out infinite reverse;
@@ -320,9 +320,9 @@
   border-left: 1px solid transparent;
   border-image: linear-gradient(
     180deg,
-    rgba(139, 92, 246, 0.4) 0%,
-    rgba(34, 211, 238, 0.2) 50%,
-    rgba(139, 92, 246, 0.4) 100%
+    rgba(var(--yi-primary-rgb), 0.25) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(var(--yi-primary-rgb), 0.25) 100%
   ) 1;
 }
 
@@ -419,6 +419,6 @@
     background: none;
   }
   .quantum-card::before {
-    background: rgba(139, 92, 246, 0.5);
+    background: rgba(var(--yi-primary-rgb), 0.5);
   }
 }

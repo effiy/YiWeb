@@ -1,7 +1,7 @@
 .cd-detail {
     background: var(--yi-surface);
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: var(--yi-shadow-sm);
 }
 .cd-detail--panel {
@@ -16,8 +16,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 20px;
-    padding: 14px 16px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
     background: var(--yi-surface-hover);
     border-radius: 8px;
 }
@@ -43,8 +43,8 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 20px;
-    padding: 14px 16px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
     background: var(--yi-surface-hover);
     border-radius: 8px;
 }
@@ -75,8 +75,8 @@
 .cd-meta {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 .cd-meta-item {
     display: flex;
@@ -102,7 +102,7 @@
 
 /* File section */
 .cd-section {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 .cd-section-title {
     font-size: 14px;
