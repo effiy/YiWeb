@@ -20,6 +20,9 @@ registerGlobalComponent({
         return {
             localSearchQuery: '',
             panelProject: null,
+            filterBarCollapsed: false,
+            tagsScrollLeft: 0,
+            tagsScrollAtEnd: true,
             healthFilters: {
                 hasClaudeMd: false,
                 hasSettings: false,
@@ -27,8 +30,6 @@ registerGlobalComponent({
                 hasAgents: false,
                 hasMemory: false,
             },
-            sortField: 'lastModified',
-            sortDirection: 'desc',
         };
     },
     computed: {
@@ -65,45 +66,20 @@ registerGlobalComponent({
                 result = result.filter(p => p.hasMemory);
             }
 
-            return this.sortProjects(result);
-        },
-        sortOptions() {
-            return [
-                { value: 'name-asc', label: '名称 A-Z', field: 'name', dir: 'asc' },
-                { value: 'name-desc', label: '名称 Z-A', field: 'name', dir: 'desc' },
-                { value: 'lastModified-desc', label: '最近修改', field: 'lastModified', dir: 'desc' },
-                { value: 'lastModified-asc', label: '最早修改', field: 'lastModified', dir: 'asc' },
-                { value: 'fileCount-desc', label: '文件数 ↓', field: 'fileCount', dir: 'desc' },
-                { value: 'skillCount-desc', label: 'Skills 数 ↓', field: 'skillCount', dir: 'desc' },
-            ];
-        },
-        currentSortLabel() {
-            const opt = this.sortOptions.find(o => o.field === this.sortField && o.dir === this.sortDirection);
-            return opt ? opt.label : '排序';
+            return result;
         },
     },
     methods: {
-        sortProjects(list) {
-            const field = this.sortField;
-            const dir = this.sortDirection;
-            const sorted = [...list];
-            sorted.sort((a, b) => {
-                let va = a[field];
-                let vb = b[field];
-                if (typeof va === 'string') va = va.toLowerCase();
-                if (typeof vb === 'string') vb = vb.toLowerCase();
-                if (va < vb) return dir === 'asc' ? -1 : 1;
-                if (va > vb) return dir === 'asc' ? 1 : -1;
-                return 0;
-            });
-            return sorted;
-        },
-        setSort(field, dir) {
-            this.sortField = field;
-            this.sortDirection = dir;
-        },
         toggleHealthFilter(key) {
             this.healthFilters[key] = !this.healthFilters[key];
+        },
+        toggleFilterBar() {
+            this.filterBarCollapsed = !this.filterBarCollapsed;
+        },
+        handleTagsScroll(e) {
+            const el = e.target;
+            this.tagsScrollLeft = el.scrollLeft;
+            this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
         },
         clearAllFilters() {
             this.localSearchQuery = '';
@@ -114,8 +90,6 @@ registerGlobalComponent({
                 hasAgents: false,
                 hasMemory: false,
             };
-            this.sortField = 'lastModified';
-            this.sortDirection = 'desc';
         },
         openDetail(project) {
             if (typeof project === 'string') {
