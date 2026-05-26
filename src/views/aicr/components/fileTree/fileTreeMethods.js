@@ -63,7 +63,7 @@ const fileTreeMethods = {
     },
     handleViewModeChange(mode) {
         return safeExecute(() => {
-            if (mode === 'tree' || mode === 'tags') {
+            if (mode === 'tree' || mode === 'cards') {
                 this.$emit('view-mode-change', mode);
             }
         }, '视图模式切换处理');

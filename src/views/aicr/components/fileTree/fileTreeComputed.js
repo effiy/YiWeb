@@ -360,6 +360,27 @@ const fileTreeComputed = {
 
         flatten(this.sortedTree);
         return files;
+    },
+    groupedFiles() {
+        const groups = [];
+        const collect = (items, storyName) => {
+            if (!Array.isArray(items)) return;
+            for (const item of items) {
+                if (item.type === 'file') {
+                    const name = storyName || '未归类';
+                    let group = groups.find(g => g.name === name);
+                    if (!group) {
+                        group = { name, files: [] };
+                        groups.push(group);
+                    }
+                    group.files.push(item);
+                } else if (item.type === 'folder' && Array.isArray(item.children)) {
+                    collect(item.children, item.name);
+                }
+            }
+        };
+        collect(this.sortedTree, '');
+        return groups;
     }
 };
 

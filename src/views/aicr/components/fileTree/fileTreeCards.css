@@ -1,0 +1,116 @@
+/* 卡片视图（按故事名分组） */
+.file-cards-view {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.cards-group {
+    margin-bottom: 24px;
+}
+
+.cards-group:last-child {
+    margin-bottom: 0;
+}
+
+.cards-group-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--yi-text-secondary);
+    margin: 0 0 12px 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--yi-border);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+    align-content: start;
+}
+
+.file-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 14px 16px;
+    background: var(--yi-surface);
+    border: 1px solid var(--yi-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    text-align: center;
+    min-height: 110px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle top accent bar — hidden until hover/select */
+.file-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--yi-primary);
+    opacity: 0;
+    transition: opacity var(--yi-duration-fast) var(--yi-easing-default);
+}
+
+.file-card:hover {
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--yi-shadow-md), 0 0 12px rgba(var(--yi-primary-rgb), 0.10);
+}
+
+.file-card:hover::before {
+    opacity: 1;
+}
+
+.file-card.selected {
+    background: var(--yi-primary-subtle);
+    border-color: var(--yi-primary);
+    box-shadow: 0 0 0 1px var(--yi-primary), 0 0 16px rgba(var(--yi-primary-rgb), 0.12);
+}
+
+.file-card.selected::before {
+    opacity: 1;
+}
+
+.file-card.batch-selected {
+    background: rgba(var(--yi-primary-rgb), 0.14);
+    border-color: var(--yi-primary);
+    box-shadow: 0 0 0 1px var(--yi-primary);
+}
+
+.file-card.batch-selected::before {
+    opacity: 1;
+}
+
+.file-card-icon {
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.file-card-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--yi-text);
+    line-height: 1.3;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.file-card-size {
+    font-size: 11px;
+    color: var(--yi-text-muted);
+    flex-shrink: 0;
+}

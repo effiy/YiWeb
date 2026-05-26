@@ -2,7 +2,7 @@
 
 .tooltip {
     position: absolute;
-    z-index: 10000;
+    z-index: var(--z-tooltip);
     padding: 8px 12px;
     background: var(--yi-tooltip-bg);
     color: white;
@@ -105,7 +105,7 @@
 /* 首次使用提示 */
 .first-time-hint {
     position: absolute;
-    z-index: 9999;
+    z-index: var(--z-tooltip);
     padding: 12px 16px;
     background: linear-gradient(135deg, rgba(var(--yi-primary-rgb), 0.95), var(--yi-tooltip-bg));
     color: white;
@@ -167,7 +167,7 @@
 
 .hint-content {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-local-1);
 }
 
 .hint-title {
@@ -233,7 +233,7 @@
     border-radius: 50%;
     box-shadow: 0 0 0 4px rgba(var(--yi-primary-rgb), 0.3);
     animation: hintDotPulse 2s ease-in-out infinite;
-    z-index: 9998;
+    z-index: var(--z-tooltip);
     pointer-events: none;
 }
 
@@ -256,7 +256,7 @@
     right: 0;
     bottom: 0;
     background: var(--yi-overlay-bg);
-    z-index: 9997;
+    z-index: var(--z-modal-backdrop);
     pointer-events: auto;
     animation: overlayFadeIn 0.3s ease;
 }
@@ -268,7 +268,7 @@
     border-radius: 8px;
     box-shadow: 0 0 0 9999px var(--yi-overlay-bg), 0 0 20px rgba(var(--yi-primary-rgb), 0.4);
     pointer-events: none;
-    z-index: 9998;
+    z-index: var(--z-popover);
     transition: all 0.3s ease;
 }
 

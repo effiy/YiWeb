@@ -38,7 +38,7 @@ html, body {
     box-shadow: var(--yi-shadow-sm);
     overflow: visible;
     transition: width var(--yi-duration-fast) var(--yi-easing-default), box-shadow var(--yi-duration-normal) var(--yi-easing-default), border-color var(--yi-duration-normal) var(--yi-easing-default);
-    z-index: 10;
+    z-index: var(--z-local-10);
     position: sticky;
     top: 0;
     align-self: flex-start;
@@ -212,7 +212,7 @@ html, body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 9999;
+    z-index: var(--z-overlay);
     background: var(--yi-dark-surface);
     padding: var(--spacing-lg);
 }
@@ -332,7 +332,7 @@ html, body {
     justify-content: center;
     opacity: 0;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    z-index: 10;
+    z-index: var(--z-local-10);
     font-size: 11px;
 }
 

@@ -840,6 +840,13 @@ const componentOptions = {
                     return;
                 }
 
+                // 0. 自动展开侧边栏（如果已收起）
+                const sidebarWasCollapsed = this.viewContext?.sidebarCollapsed?.value === true;
+                if (sidebarWasCollapsed) {
+                    console.log('[scrollToFileInTree] 侧边栏已收起，自动展开');
+                    this.viewContext.sidebarCollapsed.value = false;
+                }
+
                 // 1. 展开文件所在路径的所有父文件夹
                 let expandMethodCalled = false;
                 if (this.viewContext?.expandPathToFile) {
@@ -856,9 +863,9 @@ const componentOptions = {
                     console.log('[scrollToFileInTree] window.aicrStore:', window.aicrStore);
                 }
 
-                // 2. 等待Vue更新DOM
+                // 2. 等待Vue更新DOM（侧边栏展开需额外等待CSS过渡 0.3s）
                 this.$nextTick(() => {
-                    // 再给多一点时间确保DOM完全更新
+                    const delay = sidebarWasCollapsed ? 350 : 200;
                     setTimeout(() => {
                         const fileTreeContainer = document.querySelector('.file-tree-container');
                         if (!fileTreeContainer) {
@@ -934,7 +941,7 @@ const componentOptions = {
                         }, 2000);
 
                         if (window.showSuccess) window.showSuccess('已定位到文件');
-                    }, 200);
+                    }, delay);
                 });
             }, '在文件树中定位');
         },
@@ -1128,7 +1135,7 @@ const componentOptions = {
             root.className = 'codeview-image-preview';
             root.setAttribute('role', 'dialog');
             root.setAttribute('aria-modal', 'true');
-            root.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(var(--yi-dark-surface-rgb), 0.72);backdrop-filter:blur(2px)';
+            root.style.cssText = 'position:fixed;inset:0;z-index:var(--z-overlay);display:none;align-items:center;justify-content:center;padding:18px;background:rgba(var(--yi-dark-surface-rgb), 0.72);backdrop-filter:blur(2px)';
             root.innerHTML = `
                 <div class="codeview-image-preview-frame">
                     <img class="codeview-image-preview-img" alt="预览图片" />

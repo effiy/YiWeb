@@ -56,7 +56,7 @@ body::after {
   background: var(--quantum-body-aurora);
   background-size: 800% 800%;
   pointer-events: none;
-  z-index: -2;
+  z-index: var(--z-below);
   opacity: 0.9;
 }
 
@@ -72,7 +72,7 @@ body::before {
   background: var(--quantum-body-nebula);
   background-size: 400% 400%;
   pointer-events: none;
-  z-index: -1;
+  z-index: var(--z-below);
 }
 
 body.bg-animation-enabled::before {

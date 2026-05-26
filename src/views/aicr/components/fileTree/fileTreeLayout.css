@@ -29,7 +29,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: var(--z-local-100);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -296,7 +296,7 @@
 .file-tree-sticky-header {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: var(--z-local-10);
     background: var(--yi-code-bg);
     flex-shrink: 0;
 }
@@ -318,7 +318,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 30;
+    z-index: var(--z-local-30);
     transition: all var(--yi-duration-normal) var(--yi-easing-default);
     color: var(--yi-text-secondary);
     box-shadow: var(--yi-shadow-sm);

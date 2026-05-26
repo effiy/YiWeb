@@ -161,7 +161,7 @@ function showError(message, duration = 5000) {
             errorDiv.style.padding = '12px 32px';
             errorDiv.style.borderRadius = '8px';
             errorDiv.style.fontSize = '1rem';
-            errorDiv.style.zIndex = '99999';
+            errorDiv.style.zIndex = 'var(--z-debug)';
             errorDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
             errorDiv.style.display = 'none';
             document.body.appendChild(errorDiv);
@@ -306,7 +306,7 @@ function showSuccess(message) {
         successDiv.style.padding = '12px 24px';
         successDiv.style.borderRadius = '8px';
         successDiv.style.fontSize = '0.9rem';
-        successDiv.style.zIndex = '99999';
+        successDiv.style.zIndex = 'var(--z-debug)';
         successDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
         successDiv.textContent = message;
         document.body.appendChild(successDiv);
@@ -400,7 +400,7 @@ const __yiPerf = (() => {
                 root.style.maxWidth = 'calc(100vw - 24px)';
                 root.style.maxHeight = '50vh';
                 root.style.overflow = 'hidden';
-                root.style.zIndex = '99998';
+                root.style.zIndex = 'var(--z-debug)';
                 root.style.border = '1px solid rgba(0,0,0,0.18)';
                 root.style.borderRadius = '12px';
                 root.style.background = 'rgba(17,24,39,0.92)';

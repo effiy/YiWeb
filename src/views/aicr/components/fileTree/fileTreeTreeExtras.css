@@ -333,7 +333,6 @@
     .file-tree-collapse,
     .empty-state,
     .empty-icon,
-    .file-tag,
     .file-actions,
     .file-tree-item,
     .folder-count {
@@ -341,99 +340,8 @@
     }
 
     .file-tree-item.dragging,
-    .file-tag:hover,
     .empty-state:hover .empty-icon {
         transform: none;
     }
 }
 
-/* ========== 标签视图样式 ========== */
-.file-tags-view {
-    padding: var(--spacing-md);
-    /* 移除独立的滚动，由 .file-tree-content 处理 */
-    overflow: visible;
-    height: auto;
-    min-height: 100%;
-}
-
-.tags-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    align-items: flex-start;
-}
-
-.file-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 6px;
-    background: var(--yi-surface-hover);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    font-size: 11px;
-    color: var(--yi-text-secondary);
-    position: relative;
-    border: 1px solid var(--border-primary, var(--yi-surface-hover));
-}
-
-.file-tag:hover {
-    background: var(--yi-surface-hover);
-    color: var(--yi-code-text);
-}
-
-.file-tag.selected {
-    background: rgba(var(--yi-primary-rgb), 0.15);
-    color: var(--yi-code-text);
-    font-weight: 500;
-}
-
-.file-tag.batch-selected {
-    background: rgba(var(--yi-success-rgb), 0.15);
-    border-color: var(--yi-success);
-}
-
-.tag-icon {
-    font-size: 11px;
-    opacity: 0.8;
-}
-
-.tag-name {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
-}
-
-/* 响应式设计 */
-@media (max-width: 950px) {
-    .tags-container {
-        gap: var(--spacing-xs);
-    }
-    
-    .file-tag {
-        font-size: 11px;
-        padding: 2px 6px;
-    }
-    
-    .tag-name {
-        max-width: 150px;
-    }
-}
-
-@media (max-width: 640px) {
-    .file-tag {
-        font-size: 11px;
-        padding: 3px 6px;
-    }
-    
-    .tag-name {
-        max-width: 120px;
-    }
-    
-    .tag-icon {
-        font-size: 12px;
-    }
-}

@@ -155,7 +155,7 @@
 .loading-indicator {
   position: fixed;
   inset: 0;
-  z-index: 20000;
+  z-index: var(--z-loading);
   display: none;
   opacity: 0;
   transition: opacity var(--yi-duration-fast) var(--yi-easing-default);

@@ -83,7 +83,7 @@ export function createResizer(sidebarElement, store, type, options) {
         width: 8px !important;
         height: 100% !important;
         cursor: col-resize !important;
-        z-index: 10 !important;
+        z-index: var(--z-local-10) !important;
         background: transparent !important;
         transition: background 0.2s ease !important;
     `;

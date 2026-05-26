@@ -19,7 +19,7 @@
             :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage"
             :collapsed="sidebarCollapsed" :search-query="searchQuery"
             :session-search-query="sessionSearchQuery || ''"
-            :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="'tree'"
+            :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="viewMode || 'tree'"
             :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
             :tag-filter-no-tags="tagFilterNoTags || false" :selected-prefix-tags="selectedPrefixTags || []" :selected-suffix-tags="selectedSuffixTags || []" @file-select="handleFileSelect"
             @folder-toggle="handleFolderToggle" @create-folder="handleCreateFolder"

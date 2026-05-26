@@ -50,26 +50,31 @@
             </template>
         </ul>
 
-        <!-- 标签视图 -->
-        <div v-else-if="viewMode === 'tags'" class="file-tags-view">
-            <div class="tags-container">
-                <button
-                    type="button"
-                    v-for="file in flattenedFiles"
-                    :key="file.key"
-                    :class="['file-tag', {
-                        'selected': !batchMode && isFileSelected(file.key),
-                        'batch-selected': batchMode && isFileSelected(file.key)
-                    }]"
-                    @click="handleTagClick(file.key)"
-                    :title="`文件: ${file.name}`"
-                    :aria-label="`打开文件: ${file.name}`"
-                >
-                    <span class="tag-icon">{{ getFileIcon(file) }}</span>
-                    <span class="tag-name">{{ file.name }}</span>
-                </button>
+        <!-- 卡片视图（按故事名分组） -->
+        <div v-else-if="viewMode === 'cards'" class="file-cards-view">
+            <div v-for="group in groupedFiles" :key="group.name" class="cards-group">
+                <h3 class="cards-group-title">{{ group.name }}</h3>
+                <div class="cards-grid">
+                    <button
+                        type="button"
+                        v-for="file in group.files"
+                        :key="file.key"
+                        :class="['file-card', {
+                            'selected': !batchMode && isFileSelected(file.key),
+                            'batch-selected': batchMode && isFileSelected(file.key)
+                        }]"
+                        @click="handleTagClick(file.key)"
+                        :title="`文件: ${file.name}`"
+                        :aria-label="`打开文件: ${file.name}`"
+                    >
+                        <span class="file-card-icon">{{ getFileIcon(file) }}</span>
+                        <span class="file-card-name">{{ file.name }}</span>
+                        <span v-if="file.size" class="file-card-size">{{ getFileSizeDisplay(file) }}</span>
+                    </button>
+                </div>
             </div>
         </div>
+
     </div>
 
     <!-- 空状态 -->

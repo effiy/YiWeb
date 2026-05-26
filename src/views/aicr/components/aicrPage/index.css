@@ -73,7 +73,7 @@
     bottom: 0;
     width: 64px;
     pointer-events: none;
-    z-index: 2;
+    z-index: var(--z-local-2);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -97,7 +97,7 @@
     flex-shrink: 0;
     position: sticky;
     left: 0;
-    z-index: 3;
+    z-index: var(--z-local-3);
     background: var(--yi-bg);
     padding-right: 8px;
     margin-right: 2px;
@@ -288,6 +288,48 @@
 .aicr-search-clear:hover {
     background: var(--yi-text-secondary);
 }
+
+/* View Segmented — 对齐 story .sp-view-segmented */
+.aicr-view-segmented {
+    display: inline-flex;
+    border: 1px solid var(--yi-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--yi-surface);
+}
+.aicr-view-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: none;
+    border-right: 1px solid var(--yi-border);
+    background: transparent;
+    color: var(--yi-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+}
+.aicr-view-seg:last-child {
+    border-right: none;
+}
+.aicr-view-seg:hover {
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
+}
+.aicr-view-seg--active {
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+}
+.aicr-view-seg--active:hover {
+    background: var(--yi-primary-hover);
+    color: var(--yi-text-on-primary);
+}
+.aicr-view-seg-label {
+    font-size: 12px;
+    font-weight: 500;
+}
 .aicr-filter-group {
     display: flex;
     align-items: center;
@@ -305,7 +347,7 @@
     white-space: nowrap;
     position: sticky;
     left: 0;
-    z-index: 2;
+    z-index: var(--z-local-2);
     background: var(--yi-bg);
     padding-right: 6px;
 }
@@ -523,6 +565,18 @@
     overflow: hidden;
     background: var(--yi-dark-surface);
     position: relative;
+}
+
+/* 卡片视图 — 铺满 aicr-main */
+.aicr-main.is-cards .aicr-code-area,
+.aicr-main.is-cards .aicr-code {
+    display: none;
+}
+.aicr-main.is-cards .aicr-sidebar {
+    flex: 1;
+    width: 100% !important;
+    border-right: none;
+    box-shadow: none;
 }
 
 /* 响应式调整 */

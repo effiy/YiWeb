@@ -20,6 +20,12 @@ registerGlobalComponent({
         };
     },
     computed: {
+        viewModes() {
+            return [
+                { value: 'tree', label: '树形', icon: 'list' },
+                { value: 'cards', label: '卡片', icon: 'grid' }
+            ];
+        },
         filterSummaryText() {
             const parts = [];
             if (this.tagFilterNoTags) {

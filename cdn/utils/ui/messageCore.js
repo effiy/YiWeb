@@ -172,7 +172,7 @@ const createMessageContainer = () => {
 
     // 添加容器样式
     messageContainer.style.position = 'fixed';
-    messageContainer.style.zIndex = '9999';
+    messageContainer.style.zIndex = 'var(--z-toast)';
     messageContainer.style.display = 'flex';
     messageContainer.style.flexDirection = 'column';
     messageContainer.style.gap = `${MESSAGE_CONFIG.gap}px`;

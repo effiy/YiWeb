@@ -9,7 +9,7 @@ function createFullscreenStyle() {
     .mermaid-fullscreen-overlay {
       position: fixed;
       inset: 0;
-      z-index: 9999;
+      z-index: var(--z-overlay);
       background: rgba(0, 0, 0, 0.85);
       display: flex;
       align-items: center;

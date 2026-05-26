@@ -49,7 +49,7 @@ const componentOptions = {
         viewMode: {
             type: String,
             default: 'tree',
-            validator: (value) => ['tree', 'tags'].includes(value)
+            validator: (value) => ['tree', 'cards'].includes(value)
         },
         selectedTags: {
             type: Array,

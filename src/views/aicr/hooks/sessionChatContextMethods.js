@@ -333,7 +333,7 @@ export const createSessionChatContextMethods = ({
                 root.className = 'aicr-image-preview';
                 root.setAttribute('role', 'dialog');
                 root.setAttribute('aria-modal', 'true');
-                root.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(var(--yi-dark-surface-rgb), 0.72);backdrop-filter:blur(2px)';
+                root.style.cssText = 'position:fixed;inset:0;z-index:var(--z-overlay);display:none;align-items:center;justify-content:center;padding:18px;background:rgba(var(--yi-dark-surface-rgb), 0.72);backdrop-filter:blur(2px)';
                 root.innerHTML = `
                     <div class="aicr-image-preview-frame">
                         <img class="aicr-image-preview-img" alt="预览图片" />

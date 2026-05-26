@@ -28,7 +28,7 @@ function showStatus(message, duration) {
         const el = document.createElement('div');
         el.textContent = message;
         el.style.cssText =
-            'position:fixed;top:0;left:0;right:0;z-index:99999;' +
+            'position:fixed;top:0;left:0;right:0;z-index:var(--z-debug);' +
             'background:#1a73e8;color:#fff;text-align:center;padding:10px 16px;' +
             'font-size:14px;font-family:system-ui,sans-serif;transition:opacity .3s;';
         document.body.appendChild(el);

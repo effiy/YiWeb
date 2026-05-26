@@ -26,6 +26,19 @@
                         <yi-icon name="close"></yi-icon>
                     </button>
                 </div>
+                <div class="aicr-view-segmented">
+                    <button
+                        v-for="mode in viewModes"
+                        :key="mode.value"
+                        class="aicr-view-seg"
+                        :class="{ 'aicr-view-seg--active': viewMode === mode.value }"
+                        @click="setViewMode(mode.value)"
+                        :title="mode.label"
+                    >
+                        <yi-icon :name="mode.icon"></yi-icon>
+                        <span class="aicr-view-seg-label">{{ mode.label }}</span>
+                    </button>
+                </div>
             </header-actions>
     </header>
 
@@ -116,7 +129,7 @@
 
     <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
         <div class="aicr-filter-group">
-            <span class="aicr-filter-label">故事</span>
+            <span class="aicr-filter-label">故事 ({{ (subTags ? subTags.length : 0) + (subTagCounts && subTagCounts.noTagsCount > 0 ? 1 : 0) }})</span>
             <template v-if="subTags && subTags.length > 0">
                 <button
                     v-if="subTagCounts && subTagCounts.noTagsCount > 0"
@@ -146,7 +159,7 @@
             <span v-else class="aicr-filter-empty">没有故事</span>
         </div>
         <div class="aicr-filter-group aicr-filter-group--prefix">
-            <span class="aicr-filter-label">前缀</span>
+            <span class="aicr-filter-label">前缀 ({{ prefixTags ? prefixTags.length : 0 }})</span>
             <template v-if="prefixTags && prefixTags.length > 0">
                 <button
                     v-for="pt in prefixTags"
@@ -169,7 +182,7 @@
             <span v-else class="aicr-filter-empty">没有前缀</span>
         </div>
         <div class="aicr-filter-group aicr-filter-group--suffix">
-            <span class="aicr-filter-label">后缀</span>
+            <span class="aicr-filter-label">后缀 ({{ suffixTags ? suffixTags.length : 0 }})</span>
             <template v-if="suffixTags && suffixTags.length > 0">
                 <button
                     v-for="st in suffixTags"
@@ -223,7 +236,7 @@
         </div>
     </div>
 
-    <main class="aicr-main">
+    <main class="aicr-main" :class="{ 'is-cards': viewMode === 'cards' }">
         <aicr-sidebar></aicr-sidebar>
         <aicr-code-area></aicr-code-area>
     </main>

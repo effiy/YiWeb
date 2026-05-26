@@ -150,6 +150,16 @@
   --anim-enabled: 1;
 
   /* --- Z-Index --- */
+  --yi-z-below: -1;
+  --yi-z-local-1: 1;
+  --yi-z-local-2: 2;
+  --yi-z-local-3: 3;
+  --yi-z-local-5: 5;
+  --yi-z-local-10: 10;
+  --yi-z-local-20: 20;
+  --yi-z-local-30: 30;
+  --yi-z-local-50: 50;
+  --yi-z-local-100: 100;
   --yi-z-dropdown: 1000;
   --yi-z-sticky: 1020;
   --yi-z-fixed: 1030;
@@ -157,6 +167,10 @@
   --yi-z-modal: 1050;
   --yi-z-popover: 1060;
   --yi-z-tooltip: 1070;
+  --yi-z-toast: 1080;
+  --yi-z-overlay: 9999;
+  --yi-z-loading: 20000;
+  --yi-z-debug: 99999;
 
   /* ============================================
      Gradient System — Cyan + Monochrome
@@ -386,6 +400,16 @@
   --transition-normal: var(--yi-duration-normal) var(--yi-easing-default);
   --transition-slow: var(--yi-duration-slow) var(--yi-easing-default);
 
+  --z-below: -1;
+  --z-local-1: 1;
+  --z-local-2: 2;
+  --z-local-3: 3;
+  --z-local-5: 5;
+  --z-local-10: 10;
+  --z-local-20: 20;
+  --z-local-30: 30;
+  --z-local-50: 50;
+  --z-local-100: 100;
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-fixed: 1030;
@@ -393,6 +417,10 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+  --z-toast: 1080;
+  --z-overlay: 9999;
+  --z-loading: 20000;
+  --z-debug: 99999;
   --z-pet: 2147483647;
   --z-chat-window: 2147483648;
   --z-modal-top: 2147483649;
