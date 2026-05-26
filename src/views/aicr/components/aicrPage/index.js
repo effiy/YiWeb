@@ -53,22 +53,6 @@ registerGlobalComponent({
             }
             return all.length > 0 ? `全部故事 · ${all.join(', ')}` : '没有故事';
         },
-        prefixFilterSummaryText() {
-            if (!this.selectedPrefixTags || this.selectedPrefixTags.length === 0) {
-                if (!this.prefixTags || this.prefixTags.length === 0) return '没有前缀';
-                const all = this.prefixTags.map(pt => `${pt.prefix} (${pt.count})`);
-                return `全部前缀 · ${all.join(', ')}`;
-            }
-            return this.selectedPrefixTags.join(', ');
-        },
-        suffixFilterSummaryText() {
-            if (!this.selectedSuffixTags || this.selectedSuffixTags.length === 0) {
-                if (!this.suffixTags || this.suffixTags.length === 0) return '没有后缀';
-                const all = this.suffixTags.map(st => `${st.suffix} (${st.count})`);
-                return `全部后缀 · ${all.join(', ')}`;
-            }
-            return this.selectedSuffixTags.join(', ');
-        }
     },
     mounted() {
         this._onKeydown = (e) => {
@@ -80,16 +64,16 @@ registerGlobalComponent({
                 const hasSearch = this.searchQuery && this.searchQuery.length > 0;
                 const hasTags = this.selectedSessionTags && this.selectedSessionTags.length > 0;
                 const hasNoTags = this.tagFilterNoTags;
+                const hasStoryNoTags = this.storyLevelNoTags;
                 const hasSessionSearch = this.sessionSearchQuery && this.sessionSearchQuery.length > 0;
-                const hasPrefixTags = this.selectedPrefixTags && this.selectedPrefixTags.length > 0;
-                const hasSuffixTags = this.selectedSuffixTags && this.selectedSuffixTags.length > 0;
-                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasPrefixTags || hasSuffixTags) {
+                const hasTypeTags = this.selectedTypeTags && this.selectedTypeTags.length > 0;
+                if (hasSearch || hasTags || hasNoTags || hasStoryNoTags || hasSessionSearch || hasTypeTags) {
                     e.preventDefault();
                     if (typeof this.clearSearch === 'function') this.clearSearch();
                     if (typeof this.handleTagClear === 'function') this.handleTagClear();
                     if (typeof this.clearSessionSearch === 'function') this.clearSessionSearch();
-                    if (typeof this.handlePrefixTagClear === 'function') this.handlePrefixTagClear();
-                    if (typeof this.handleSuffixTagClear === 'function') this.handleSuffixTagClear();
+                    if (typeof this.handleStoryLevelNoTags === 'function') this.handleStoryLevelNoTags(false);
+                    if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
                 }
             }
 
@@ -176,6 +160,11 @@ registerGlobalComponent({
                 this.handleTagSelect(newTags);
             }
         },
+        toggleTypeTag(type) {
+            if (typeof this.handleTypeTagToggle === 'function') {
+                this.handleTypeTagToggle(type);
+            }
+        },
         handleFilterToggle() {
             this.filterBarCollapsed = !this.filterBarCollapsed;
         },
@@ -186,36 +175,27 @@ registerGlobalComponent({
             this.clearSessionSearch();
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
-            if (typeof this.handlePrefixTagClear === 'function') this.handlePrefixTagClear();
-            if (typeof this.handleSuffixTagClear === 'function') this.handleSuffixTagClear();
+            if (typeof this.handleStoryLevelNoTags === 'function') this.handleStoryLevelNoTags(false);
+            if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
         },
         clearAllTags() {
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
             if (typeof this.handleTagFilterNoTags === 'function') this.handleTagFilterNoTags(false);
+            if (typeof this.handleStoryLevelNoTags === 'function') this.handleStoryLevelNoTags(false);
+        },
+        clearTypeTags() {
+            if (typeof this.handleTypeTagClear === 'function') {
+                this.handleTypeTagClear();
+            }
         },
         toggleTagFilterNoTags() {
             if (typeof this.handleTagFilterNoTags === 'function') {
                 this.handleTagFilterNoTags(!this.tagFilterNoTags);
             }
         },
-        togglePrefixTag(prefix) {
-            if (typeof this.handlePrefixTagToggle === 'function') {
-                this.handlePrefixTagToggle(prefix);
-            }
-        },
-        clearPrefixTags() {
-            if (typeof this.handlePrefixTagClear === 'function') {
-                this.handlePrefixTagClear();
-            }
-        },
-        toggleSuffixTag(suffix) {
-            if (typeof this.handleSuffixTagToggle === 'function') {
-                this.handleSuffixTagToggle(suffix);
-            }
-        },
-        clearSuffixTags() {
-            if (typeof this.handleSuffixTagClear === 'function') {
-                this.handleSuffixTagClear();
+        toggleStoryLevelNoTags() {
+            if (typeof this.handleStoryLevelNoTags === 'function') {
+                this.handleStoryLevelNoTags(!this.storyLevelNoTags);
             }
         },
         handleTagsScroll(event) {

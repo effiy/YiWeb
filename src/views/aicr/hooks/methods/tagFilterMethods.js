@@ -5,6 +5,7 @@
  */
 
 import { safeExecute } from '/cdn/utils/core/error.js';
+import { buildParentChildMap, getFirstLevelNames } from '/src/views/aicr/utils/filterHelpers.js';
 
 /**
  * 创建标签筛选方法
@@ -13,8 +14,32 @@ import { safeExecute } from '/cdn/utils/core/error.js';
  * @returns {Object} 标签筛选方法集合
  */
 export const createTagFilterMethods = ({ store }) => {
+
+    /**
+     * 获取最新的父子映射和一级目录名（从当前文件树重建）
+     */
+    const getTreeMeta = () => {
+        const tree = store.fileTree?.value;
+        return {
+            parentChildMap: buildParentChildMap(tree),
+            firstLevelNames: getFirstLevelNames(tree)
+        };
+    };
+
+    /**
+     * 获取项目的所有子故事名
+     */
+    const getChildStories = (projectName, parentChildMap) => {
+        const children = [];
+        for (const [child, parent] of parentChildMap) {
+            if (parent === projectName) children.push(child);
+        }
+        return children;
+    };
+
     /**
      * 处理标签选择（双向联动：选故事自动选父项目，去项目自动去子故事）
+     * O(1) 查询，不再遍历文件树
      */
     const handleTagSelect = (tags) => {
         return safeExecute(() => {
@@ -26,30 +51,14 @@ export const createTagFilterMethods = ({ store }) => {
 
             let newTags = [...tags];
 
-            // 构建一级目录名集合（项目级标签）
-            const firstLevelNames = new Set();
-            if (store.fileTree?.value) {
-                for (const item of store.fileTree.value) {
-                    if (item.type === 'folder') firstLevelNames.add(item.name);
-                }
-            }
+            const { parentChildMap, firstLevelNames } = getTreeMeta();
 
             // 自动选中故事标签的父项目
             for (const tag of added) {
                 if (!firstLevelNames.has(tag)) {
-                    if (store.fileTree?.value) {
-                        for (const item of store.fileTree.value) {
-                            if (item.type === 'folder' && Array.isArray(item.children)) {
-                                for (const child of item.children) {
-                                    if (child.type === 'folder' && child.name === tag) {
-                                        if (!newTags.includes(item.name)) {
-                                            newTags.push(item.name);
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                    const parent = parentChildMap.get(tag);
+                    if (parent && !newTags.includes(parent)) {
+                        newTags.push(parent);
                     }
                 }
             }
@@ -57,18 +66,8 @@ export const createTagFilterMethods = ({ store }) => {
             // 自动移除被取消项目标签下的子故事标签
             for (const tag of removed) {
                 if (firstLevelNames.has(tag)) {
-                    if (store.fileTree?.value) {
-                        for (const item of store.fileTree.value) {
-                            if (item.type === 'folder' && item.name === tag && Array.isArray(item.children)) {
-                                for (const child of item.children) {
-                                    if (child.type === 'folder') {
-                                        newTags = newTags.filter(t => t !== child.name);
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                    }
+                    const children = getChildStories(tag, parentChildMap);
+                    newTags = newTags.filter(t => !children.includes(t));
                 }
             }
 
@@ -88,7 +87,7 @@ export const createTagFilterMethods = ({ store }) => {
     };
 
     /**
-     * 切换无标签筛选
+     * 切换无标签筛选（项目级别：根目录下无子目录的文件）
      */
     const handleTagFilterNoTags = (noTags) => {
         return safeExecute(() => {
@@ -96,6 +95,17 @@ export const createTagFilterMethods = ({ store }) => {
                 store.tagFilterNoTags.value = noTags;
             }
         }, '切换无标签筛选');
+    };
+
+    /**
+     * 切换无故事筛选（故事级别：项目下不在任何故事子目录中的文件）
+     */
+    const handleStoryLevelNoTags = (noTags) => {
+        return safeExecute(() => {
+            if (store.storyLevelNoTags) {
+                store.storyLevelNoTags.value = noTags;
+            }
+        }, '切换无故事筛选');
     };
 
     /**
@@ -110,69 +120,40 @@ export const createTagFilterMethods = ({ store }) => {
     };
 
     /**
-     * 切换前缀标签选中状态
+     * 切换类型标签选中状态
      */
-    const handlePrefixTagToggle = (prefix) => {
+    const handleTypeTagToggle = (type) => {
         return safeExecute(() => {
-            if (store.selectedPrefixTags) {
-                const current = store.selectedPrefixTags.value || [];
-                const idx = current.indexOf(prefix);
+            if (store.selectedTypeTags) {
+                const current = store.selectedTypeTags.value || [];
+                const idx = current.indexOf(type);
                 if (idx > -1) {
-                    store.selectedPrefixTags.value = current.filter(p => p !== prefix);
+                    store.selectedTypeTags.value = current.filter(t => t !== type);
                 } else {
-                    store.selectedPrefixTags.value = [...current, prefix];
+                    store.selectedTypeTags.value = [...current, type];
                 }
             }
-        }, '切换前缀标签');
+        }, '切换类型标签');
     };
 
     /**
-     * 清除所有前缀标签
+     * 清除所有类型标签
      */
-    const handlePrefixTagClear = () => {
+    const handleTypeTagClear = () => {
         return safeExecute(() => {
-            if (store.selectedPrefixTags) {
-                store.selectedPrefixTags.value = [];
+            if (store.selectedTypeTags) {
+                store.selectedTypeTags.value = [];
             }
-        }, '清除前缀标签');
-    };
-
-    /**
-     * 切换后缀标签选中状态
-     */
-    const handleSuffixTagToggle = (suffix) => {
-        return safeExecute(() => {
-            if (store.selectedSuffixTags) {
-                const current = store.selectedSuffixTags.value || [];
-                const idx = current.indexOf(suffix);
-                if (idx > -1) {
-                    store.selectedSuffixTags.value = current.filter(s => s !== suffix);
-                } else {
-                    store.selectedSuffixTags.value = [...current, suffix];
-                }
-            }
-        }, '切换后缀标签');
-    };
-
-    /**
-     * 清除所有后缀标签
-     */
-    const handleSuffixTagClear = () => {
-        return safeExecute(() => {
-            if (store.selectedSuffixTags) {
-                store.selectedSuffixTags.value = [];
-            }
-        }, '清除后缀标签');
+        }, '清除类型标签');
     };
 
     return {
         handleTagSelect,
         handleTagClear,
         handleTagFilterNoTags,
+        handleStoryLevelNoTags,
         handleSessionSearchChange,
-        handlePrefixTagToggle,
-        handlePrefixTagClear,
-        handleSuffixTagToggle,
-        handleSuffixTagClear
+        handleTypeTagToggle,
+        handleTypeTagClear
     };
 };

@@ -108,9 +108,9 @@ export function createAicrStoreState(vueRef) {
     const modelsError = vueRef(null);
 
     const tagFilterNoTags = vueRef(false);
+    const storyLevelNoTags = vueRef(false);
     const tagOrder = vueRef(null);
-    const selectedPrefixTags = vueRef([]);
-    const selectedSuffixTags = vueRef([]);
+    const selectedTypeTags = vueRef([]);
 
     if (!sessions.value || !Array.isArray(sessions.value)) {
         sessions.value = [];
@@ -213,9 +213,9 @@ export function createAicrStoreState(vueRef) {
             sessionEditGenerating,
             sessionEditData,
             tagFilterNoTags,
+            storyLevelNoTags,
             tagOrder,
-            selectedPrefixTags,
-            selectedSuffixTags,
+            selectedTypeTags,
             availableModels,
             modelsLoading,
             modelsError

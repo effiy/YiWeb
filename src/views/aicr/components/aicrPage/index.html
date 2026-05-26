@@ -87,8 +87,8 @@
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('故事任务') }"
-                @click="toggleSuffixTag('故事任务')"
+                :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes('故事任务') }"
+                @click="toggleTypeTag('故事任务')"
             >
                 <yi-icon name="tag" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ storyTaskCount }}</span>
@@ -97,8 +97,8 @@
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('使用场景') }"
-                @click="toggleSuffixTag('使用场景')"
+                :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes('使用场景') }"
+                @click="toggleTypeTag('使用场景')"
             >
                 <yi-icon name="layout" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ scenarioCount }}</span>
@@ -107,8 +107,8 @@
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('技术评审') }"
-                @click="toggleSuffixTag('技术评审')"
+                :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes('技术评审') }"
+                @click="toggleTypeTag('技术评审')"
             >
                 <yi-icon name="edit" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ designReviewCount }}</span>
@@ -117,8 +117,8 @@
             <button
                 type="button"
                 class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedSuffixTags && selectedSuffixTags.includes('自改进复盘') }"
-                @click="toggleSuffixTag('自改进复盘')"
+                :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes('自改进复盘') }"
+                @click="toggleTypeTag('自改进复盘')"
             >
                 <yi-icon name="refresh" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
                 <span class="aicr-stat-value">{{ retrospectiveCount }}</span>
@@ -135,8 +135,8 @@
                     v-if="subTagCounts && subTagCounts.noTagsCount > 0"
                     type="button"
                     class="aicr-filter-tag"
-                    :class="{ active: tagFilterNoTags }"
-                    @click="toggleTagFilterNoTags"
+                    :class="{ active: storyLevelNoTags }"
+                    @click="toggleStoryLevelNoTags"
                 >没有故事 ({{ subTagCounts.noTagsCount }})</button>
                 <button
                     v-for="tag in subTags"
@@ -158,74 +158,51 @@
             </template>
             <span v-else class="aicr-filter-empty">没有故事</span>
         </div>
-        <div class="aicr-filter-group aicr-filter-group--prefix">
-            <span class="aicr-filter-label">前缀 ({{ prefixTags ? prefixTags.length : 0 }})</span>
-            <template v-if="prefixTags && prefixTags.length > 0">
+        <div class="aicr-filter-group aicr-filter-group--type">
+            <span class="aicr-filter-label">类型 ({{ typeTags ? typeTags.length : 0 }})</span>
+            <template v-if="typeTags && typeTags.length > 0">
                 <button
-                    v-for="pt in prefixTags"
-                    :key="pt.prefix"
+                    v-for="tt in typeTags"
+                    :key="tt.type"
                     type="button"
-                    class="aicr-filter-tag aicr-filter-tag--prefix"
-                    :class="{ active: selectedPrefixTags && selectedPrefixTags.includes(pt.prefix) }"
-                    @click="togglePrefixTag(pt.prefix)"
-                >{{ pt.prefix }} ({{ pt.count }})</button>
+                    class="aicr-filter-tag aicr-filter-tag--type"
+                    :class="{ active: selectedTypeTags && selectedTypeTags.includes(tt.type) }"
+                    @click="toggleTypeTag(tt.type)"
+                >{{ tt.type }} ({{ tt.count }})</button>
                 <button
-                    v-if="selectedPrefixTags && selectedPrefixTags.length > 0"
+                    v-if="selectedTypeTags && selectedTypeTags.length > 0"
                     type="button"
                     class="aicr-filter-clear aicr-filter-clear--inline"
-                    @click="clearPrefixTags"
-                    title="清除前缀筛选"
+                    @click="clearTypeTags"
+                    title="清除类型筛选"
                 >
                     <yi-icon name="close"></yi-icon>
                 </button>
             </template>
-            <span v-else class="aicr-filter-empty">没有前缀</span>
-        </div>
-        <div class="aicr-filter-group aicr-filter-group--suffix">
-            <span class="aicr-filter-label">后缀 ({{ suffixTags ? suffixTags.length : 0 }})</span>
-            <template v-if="suffixTags && suffixTags.length > 0">
-                <button
-                    v-for="st in suffixTags"
-                    :key="st.suffix"
-                    type="button"
-                    class="aicr-filter-tag aicr-filter-tag--suffix"
-                    :class="{ active: selectedSuffixTags && selectedSuffixTags.includes(st.suffix) }"
-                    @click="toggleSuffixTag(st.suffix)"
-                >{{ st.suffix }} ({{ st.count }})</button>
-                <button
-                    v-if="selectedSuffixTags && selectedSuffixTags.length > 0"
-                    type="button"
-                    class="aicr-filter-clear aicr-filter-clear--inline"
-                    @click="clearSuffixTags"
-                    title="清除后缀筛选"
-                >
-                    <yi-icon name="close"></yi-icon>
-                </button>
-            </template>
-            <span v-else class="aicr-filter-empty">没有后缀</span>
+            <span v-else class="aicr-filter-empty">没有类型</span>
         </div>
         <div class="aicr-filter-collapsed-row">
             <div class="aicr-filter-collapsed-scroll">
-                <span v-if="!tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) && (!selectedPrefixTags || selectedPrefixTags.length === 0) && (!selectedSuffixTags || selectedSuffixTags.length === 0)" class="aicr-filter-collapsed-empty">未选择筛选</span>
+                <span v-if="!tagFilterNoTags && !storyLevelNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) && (!selectedTypeTags || selectedTypeTags.length === 0)" class="aicr-filter-collapsed-empty">未选择筛选</span>
                 <span v-if="tagFilterNoTags" class="aicr-filter-collapsed-pill">
-                    没有故事
+                    没有标签
                     <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleTagFilterNoTags" title="移除筛选">×</button>
+                </span>
+                <span v-if="storyLevelNoTags" class="aicr-filter-collapsed-pill">
+                    没有故事
+                    <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleStoryLevelNoTags" title="移除筛选">×</button>
                 </span>
                 <span v-for="tag in (selectedSessionTags || [])" :key="tag" class="aicr-filter-collapsed-pill">
                     {{ tag }}
                     <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleAicrTag(tag)" title="移除筛选">×</button>
                 </span>
-                <span v-for="prefix in (selectedPrefixTags || [])" :key="prefix" class="aicr-filter-collapsed-pill aicr-filter-collapsed-pill--prefix">
-                    {{ prefix }}
-                    <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="togglePrefixTag(prefix)" title="移除筛选">×</button>
-                </span>
-                <span v-for="suffix in (selectedSuffixTags || [])" :key="suffix" class="aicr-filter-collapsed-pill aicr-filter-collapsed-pill--suffix">
-                    {{ suffix }}
-                    <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleSuffixTag(suffix)" title="移除筛选">×</button>
+                <span v-for="type in (selectedTypeTags || [])" :key="type" class="aicr-filter-collapsed-pill aicr-filter-collapsed-pill--type">
+                    {{ type }}
+                    <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleTypeTag(type)" title="移除筛选">×</button>
                 </span>
             </div>
             <button
-                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedPrefixTags && selectedPrefixTags.length > 0) || (selectedSuffixTags && selectedSuffixTags.length > 0)"
+                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || storyLevelNoTags || (selectedTypeTags && selectedTypeTags.length > 0)"
                 type="button"
                 class="aicr-filter-collapsed-clear"
                 @click="clearAllAicrFilters"

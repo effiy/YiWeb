@@ -430,6 +430,15 @@ export const createMainPageMethods = (store) => {
                 logError('[主页面] 无标签筛选切换处理失败:', error);
             }
         },
+        handleStoryLevelNoTags: function (noTags) {
+            logInfo('[主页面] 收到无故事筛选切换事件:', noTags);
+            try {
+                const methods = useMethods(store);
+                methods.handleStoryLevelNoTags(noTags);
+            } catch (error) {
+                logError('[主页面] 无故事筛选切换处理失败:', error);
+            }
+        },
         handleSessionSearchChange: function (query) {
             logInfo('[主页面] 收到会话搜索变化事件:', query);
             try {

@@ -59,17 +59,13 @@ const componentOptions = {
             type: Boolean,
             default: false
         },
-        selectedPrefixTags: {
-            type: Array,
-            default: () => []
-        },
-        selectedSuffixTags: {
-            type: Array,
-            default: () => []
-        },
         sessionSearchQuery: {
             type: String,
             default: ''
+        },
+        selectedTypeTags: {
+            type: Array,
+            default: () => []
         }
     },
     computed: fileTreeComputed,

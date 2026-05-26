@@ -209,23 +209,24 @@
 .aicr-stat-label {
     color: var(--yi-text-muted);
 }
+/* Stats button — clickable to toggle type filter */
 .aicr-stat-btn {
-    background: none;
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    font-family: inherit;
-    font-size: inherit;
-    color: inherit;
 }
 .aicr-stat-btn:hover {
+    border-color: var(--yi-primary);
     background: var(--yi-surface-hover);
-    border-color: var(--yi-border);
 }
 .aicr-stat-btn--active {
-    background: var(--yi-primary-subtle);
     border-color: var(--yi-primary);
+    background: var(--yi-primary);
 }
-
+.aicr-stat-btn--active .aicr-stat-icon,
+.aicr-stat-btn--active .aicr-stat-value,
+.aicr-stat-btn--active .aicr-stat-label {
+    color: var(--yi-text-on-primary);
+}
 /* Filter Bar — matching story */
 .aicr-filter-bar {
     display: flex;
@@ -378,21 +379,11 @@
     border-color: var(--yi-primary);
     color: var(--yi-text-on-primary);
 }
-/* 前缀标签：虚线边框与目录标签区分 */
-.aicr-filter-tag--prefix {
+/* Type filter tag — dotted border to distinguish from directory tags */
+.aicr-filter-tag--type {
     border-style: dashed;
 }
-.aicr-filter-tag--prefix.active {
-    border-style: solid;
-}
-/* 后缀标签：点线边框与目录标签/前缀标签区分 */
-.aicr-filter-tag--suffix {
-    border-style: dotted;
-}
-.aicr-filter-tag--suffix.active {
-    border-style: solid;
-}
-/* 前缀标签组内清除按钮 */
+/* 标签组内清除按钮 */
 .aicr-filter-clear--inline {
     display: inline-flex;
     align-items: center;
@@ -510,12 +501,6 @@
     color: var(--yi-text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
-}
-.aicr-filter-collapsed-pill--prefix {
-    border-style: dashed;
-}
-.aicr-filter-collapsed-pill--suffix {
-    border-style: dotted;
 }
 .aicr-filter-collapsed-pill-close {
     display: inline-flex;
