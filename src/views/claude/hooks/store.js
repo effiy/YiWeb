@@ -69,19 +69,44 @@ export function createStore() {
                 }
 
                 const readmeMap = new Map();
+                const claudeMdMap = new Map();
                 for (const item of items) {
                     const fp = item.file_path || '';
-                    if (fp.includes('/.claude/')) continue;
                     const parts = fp.split('/');
                     if (parts.length < 2) continue;
-                    if (parts[parts.length - 1].toLowerCase() === 'readme.md') {
+                    const filename = parts[parts.length - 1];
+
+                    if (!fp.includes('/.claude/')) {
+                        if (filename.toLowerCase() === 'readme.md') {
+                            const proj = parts[0];
+                            if (!readmeMap.has(proj)) readmeMap.set(proj, item);
+                        }
+                    }
+
+                    if (filename === 'CLAUDE.md') {
                         const proj = parts[0];
-                        if (!readmeMap.has(proj)) readmeMap.set(proj, item);
+                        if (!claudeMdMap.has(proj)) claudeMdMap.set(proj, item);
                     }
                 }
 
                 const results = [];
                 for (const [name, files] of projectMap) {
+                    const claudeMdItem = claudeMdMap.get(name);
+                    if (claudeMdItem && !isClaudeFile(claudeMdItem.file_path)) {
+                        const alreadyHas = files.some(f => (f.file_path || '').split('/').pop() === 'CLAUDE.md');
+                        if (!alreadyHas) {
+                            files.push(claudeMdItem);
+                        }
+                    }
+
+                    const readmeItem = readmeMap.get(name);
+                    if (readmeItem) {
+                        const alreadyHas = files.some(f => (f.file_path || '').split('/').pop().toLowerCase() === 'readme.md');
+                        if (!alreadyHas) {
+                            files.push(readmeItem);
+                        }
+                    }
+
                     const skillCount = countByDir(files, 'skills');
                     const agentCount = countByDir(files, 'agents');
                     const ruleCount = countByDir(files, 'rules');
