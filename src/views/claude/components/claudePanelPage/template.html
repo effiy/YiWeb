@@ -49,6 +49,12 @@
                 <button
                     type="button"
                     class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasReadmeMd }"
+                    @click="toggleHealthFilter('hasReadmeMd')"
+                >README.md</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
                     :class="{ 'cp-project-tag--active': healthFilters.hasClaudeMd }"
                     @click="toggleHealthFilter('hasClaudeMd')"
                 >CLAUDE.md</button>
@@ -109,6 +115,15 @@
             <button
                 type="button"
                 class="cp-stat-item cp-stat-btn"
+                :class="{ 'cp-stat-btn--active': healthFilters.hasReadmeMd }"
+                @click="toggleHealthFilter('hasReadmeMd')"
+            >
+                <span class="cp-stat-value">{{ healthSummary.withReadmeMd || 0 }}/{{ totalProjects }}</span>
+                <span class="cp-stat-label">含 README.md</span>
+            </button>
+            <button
+                type="button"
+                class="cp-stat-item cp-stat-btn"
                 :class="{ 'cp-stat-btn--active': healthFilters.hasClaudeMd }"
                 @click="toggleHealthFilter('hasClaudeMd')"
             >
@@ -130,6 +145,12 @@
     <div v-if="totalProjects > 0 && !loading" class="cp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
         <div class="cp-filter-group">
             <span class="cp-filter-label">配置筛选</span>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasReadmeMd }"
+                @click="toggleHealthFilter('hasReadmeMd')"
+            >README.md</button>
             <button
                 type="button"
                 class="cp-filter-tag"
@@ -176,6 +197,10 @@
                 <span v-if="localSearchQuery" class="cp-filter-collapsed-pill">
                     搜索: {{ localSearchQuery }}
                     <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="localSearchQuery = ''" title="移除搜索">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasReadmeMd" class="cp-filter-collapsed-pill">
+                    README.md
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasReadmeMd')" title="移除筛选">&times;</button>
                 </span>
                 <span v-if="healthFilters.hasClaudeMd" class="cp-filter-collapsed-pill">
                     CLAUDE.md

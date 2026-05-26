@@ -24,6 +24,7 @@ registerGlobalComponent({
             tagsScrollLeft: 0,
             tagsScrollAtEnd: true,
             healthFilters: {
+                hasReadmeMd: false,
                 hasClaudeMd: false,
                 hasSettings: false,
                 hasSkills: false,
@@ -50,6 +51,9 @@ registerGlobalComponent({
                 result = result.filter(p => p.name.toLowerCase().includes(q));
             }
 
+            if (this.healthFilters.hasReadmeMd) {
+                result = result.filter(p => p.hasReadmeMd);
+            }
             if (this.healthFilters.hasClaudeMd) {
                 result = result.filter(p => p.hasClaudeMd);
             }
@@ -84,6 +88,7 @@ registerGlobalComponent({
         clearAllFilters() {
             this.localSearchQuery = '';
             this.healthFilters = {
+                hasReadmeMd: false,
                 hasClaudeMd: false,
                 hasSettings: false,
                 hasSkills: false,

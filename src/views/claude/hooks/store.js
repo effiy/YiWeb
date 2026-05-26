@@ -68,6 +68,18 @@ export function createStore() {
                     projectMap.get(name).push(item);
                 }
 
+                const readmeMap = new Map();
+                for (const item of items) {
+                    const fp = item.file_path || '';
+                    if (fp.includes('/.claude/')) continue;
+                    const parts = fp.split('/');
+                    if (parts.length < 2) continue;
+                    if (parts[parts.length - 1].toLowerCase() === 'readme.md') {
+                        const proj = parts[0];
+                        if (!readmeMap.has(proj)) readmeMap.set(proj, item);
+                    }
+                }
+
                 const results = [];
                 for (const [name, files] of projectMap) {
                     const skillCount = countByDir(files, 'skills');
@@ -96,6 +108,8 @@ export function createStore() {
                     const maxTs = Math.max(...files.map(f => f.updatedAt || 0));
                     const createdTs = Math.min(...files.map(f => f.createdAt || Infinity));
 
+                    const hasReadmeMd = readmeMap.has(name);
+
                     results.push({
                         name,
                         skillCount,
@@ -108,6 +122,7 @@ export function createStore() {
                         hasHooks,
                         hasRules,
                         hasTemplates,
+                        hasReadmeMd,
                         ruleCount,
                         templateCount,
                         memoryFileCount: memoryFiles.length,

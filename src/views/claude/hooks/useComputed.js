@@ -15,17 +15,19 @@ export function useComputed(store) {
     );
 
     const healthSummary = computed(() => {
+        let withReadmeMd = 0;
         let withClaudeMd = 0;
         let withSettings = 0;
         let withSkills = 0;
         let withAgents = 0;
         for (const p of store.projects.value) {
+            if (p.hasReadmeMd) withReadmeMd++;
             if (p.hasClaudeMd) withClaudeMd++;
             if (p.hasSettings) withSettings++;
             if (p.skillCount > 0) withSkills++;
             if (p.agentCount > 0) withAgents++;
         }
-        return { withClaudeMd, withSettings, withSkills, withAgents };
+        return { withReadmeMd, withClaudeMd, withSettings, withSkills, withAgents };
     });
 
     return {

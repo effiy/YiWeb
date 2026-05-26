@@ -23,6 +23,8 @@
     </div>
 
     <div class="cc-card-flags">
+        <span v-if="project.hasReadmeMd" class="cc-flag cc-flag--on" title="有 README.md">README.md</span>
+        <span v-else class="cc-flag cc-flag--off" title="无 README.md">README.md</span>
         <span v-if="project.hasClaudeMd" class="cc-flag cc-flag--on" title="有 CLAUDE.md">CLAUDE.md</span>
         <span v-else class="cc-flag cc-flag--off" title="无 CLAUDE.md">CLAUDE.md</span>
         <span v-if="project.hasSettings" class="cc-flag cc-flag--on" title="有 settings.json">settings</span>
