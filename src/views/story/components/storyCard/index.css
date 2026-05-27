@@ -1,0 +1,123 @@
+/* ==============================================
+   StoryCard — 故事任务卡片
+   ============================================== */
+
+.sc-card {
+    background: var(--yi-surface);
+    border-radius: 8px;
+    padding: 12px 14px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    box-shadow: var(--yi-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sc-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(var(--yi-primary-rgb), 0.08), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.sc-card--planning     { border-left-color: var(--sc-accent, var(--yi-text-muted)); }
+.sc-card--design       { border-left-color: var(--sc-accent, var(--yi-warning)); }
+.sc-card--develop      { border-left-color: var(--sc-accent, var(--yi-info)); }
+.sc-card--testing      { border-left-color: var(--sc-accent, var(--yi-primary)); }
+.sc-card--operations   { border-left-color: var(--sc-accent, var(--yi-success)); }
+
+
+.sc-card--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0;
+    color: var(--yi-text-muted);
+    font-size: 16px;
+    cursor: default;
+    border-left-color: transparent;
+    box-shadow: var(--yi-shadow-sm);
+}
+.sc-card--empty:hover {
+    transform: none;
+    box-shadow: var(--yi-shadow-sm);
+}
+
+.sc-card-tags {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.sc-card-tags-left {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.sc-card-date {
+    font-size: 10px;
+    color: var(--yi-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.sc-card-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--sc-accent, var(--yi-primary));
+    background: var(--sc-accent-bg, rgba(var(--yi-primary-rgb), 0.10));
+    padding: 1px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+}
+
+.sc-card-name {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--yi-text);
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-word;
+    line-height: 1.35;
+}
+
+.sc-card-stages {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--yi-border);
+}
+
+.sc-stage-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: var(--yi-text-muted);
+    min-width: 24px;
+    justify-content: center;
+}
+
+.sc-stage-num {
+    font-weight: 600;
+    font-size: 10px;
+    color: var(--yi-text-secondary);
+}
+
+.sc-card-file-count {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--yi-text-muted);
+    font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
+}

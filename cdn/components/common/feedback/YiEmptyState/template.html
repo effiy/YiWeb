@@ -5,7 +5,7 @@
             <slot name="icon"></slot>
         </template>
         <div v-else-if="iconClass" :class="iconWrapperClass" aria-hidden="true">
-            <i :class="iconClass"></i>
+            <i :class="resolvedIconClass"></i>
         </div>
         <h2 v-if="title" :class="titleClass">{{ title }}</h2>
         <p v-if="subtitle" :class="subtitleClass">{{ subtitle }}</p>
@@ -17,7 +17,7 @@
             <slot name="icon"></slot>
         </template>
         <div v-else-if="iconClass" :class="iconWrapperClass" aria-hidden="true">
-            <i :class="iconClass"></i>
+            <i :class="resolvedIconClass"></i>
         </div>
         <h2 v-if="title" :class="titleClass">{{ title }}</h2>
         <p v-if="subtitle" :class="subtitleClass">{{ subtitle }}</p>

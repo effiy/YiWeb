@@ -1,0 +1,55 @@
+<div class="sp-table-wrapper">
+    <div v-if="loading" class="sp-table-loading">
+        <yi-icon name="loading" spin></yi-icon> 加载中...
+    </div>
+    <div v-else-if="error" class="sp-table-error">
+        <yi-icon name="error"></yi-icon> {{ error }}
+    </div>
+    <div v-else-if="stories.length === 0" class="sp-table-empty">
+        <yi-icon name="inbox"></yi-icon> 暂无故事任务
+    </div>
+    <table v-else class="sp-table">
+        <thead>
+            <tr>
+                <th
+                    v-for="col in sortableColumns"
+                    :key="col.label"
+                    :class="['sp-th', thClass(col.field)]"
+                    @click="col.sortable ? onSort(col.field) : null"
+                >
+                    <span class="sp-th-label">{{ col.label }}</span>
+                    <span v-if="col.sortable && sortField === col.field" class="sp-sort-arrow">
+                        {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="story in stories" :key="story.name" class="sp-tr" @click="onSelect(story)">
+                <td class="sp-td sp-td--name">
+                    <span class="sp-story-name">{{ story.name }}</span>
+                </td>
+                <td class="sp-td sp-td--status">
+                    <story-status-badge :status="story.status" size="sm"></story-status-badge>
+                </td>
+                <td class="sp-td sp-td--tags">
+                    <span v-if="story.projectTags && story.projectTags.length > 0" class="sp-td-tags">
+                        <span v-for="tag in story.projectTags" :key="tag" class="sp-td-tag">{{ tag }}</span>
+                    </span>
+                    <span v-else class="sp-td-empty">—</span>
+                </td>
+                <td class="sp-td sp-td--stages">
+                    <span class="sp-stage-items">
+                        <span class="sp-stage-item">规<span class="sp-stage-num">{{ stageCounts(story).plan }}</span></span>
+                        <span class="sp-stage-item">设<span class="sp-stage-num">{{ stageCounts(story).design }}</span></span>
+                        <span class="sp-stage-item">开<span class="sp-stage-num">{{ stageCounts(story).dev }}</span></span>
+                        <span class="sp-stage-item">测<span class="sp-stage-num">{{ stageCounts(story).test }}</span></span>
+                        <span class="sp-stage-item">运<span class="sp-stage-num">{{ stageCounts(story).ops }}</span></span>
+                    </span>
+                </td>
+                <td class="sp-td sp-td--files">{{ story.fileCount }}</td>
+                <td class="sp-td sp-td--modified">{{ formatDate(story.lastModified) }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

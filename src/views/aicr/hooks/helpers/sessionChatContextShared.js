@@ -282,7 +282,7 @@ export const createSessionChatContextShared = ({
             if (!__aicrImagePreviewRoot) {
                 const root = document.createElement('div');
                 root.id = 'aicr-image-preview';
-                root.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(var(--yi-dark-surface-rgb), 0.72);backdrop-filter:blur(2px)';
+                root.style.cssText = 'position:fixed;inset:0;z-index:var(--z-overlay);display:none;align-items:center;justify-content:center;background:rgba(var(--yi-dark-surface-rgb), 0.72);backdrop-filter:blur(2px)';
                 root.innerHTML = `
                     <div style="position:relative;max-width:min(92vw,1200px);max-height:92vh;">
                         <img class="aicr-image-preview-img" style="max-width:92vw;max-height:92vh;border-radius:12px;box-shadow:0 20px 80px rgba(var(--yi-dark-surface-rgb), 0.55);background:rgba(var(--yi-dark-text-secondary-rgb), 0.06);" />

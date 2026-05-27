@@ -2,9 +2,9 @@
 
 .tooltip {
     position: absolute;
-    z-index: 10000;
+    z-index: var(--z-tooltip);
     padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--yi-tooltip-bg);
     color: white;
     font-size: 13px;
     line-height: 1.4;
@@ -32,20 +32,20 @@
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-top: 5px solid rgba(0, 0, 0, 0.9);
+    border-top: 5px solid var(--yi-tooltip-bg);
 }
 
 .tooltip.tooltip-top::before {
     bottom: -4px;
     top: auto;
-    border-top: 5px solid rgba(0, 0, 0, 0.9);
+    border-top: 5px solid var(--yi-tooltip-bg);
     border-bottom: none;
 }
 
 .tooltip.tooltip-bottom::before {
     top: -4px;
     bottom: auto;
-    border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+    border-bottom: 5px solid var(--yi-tooltip-bg);
     border-top: none;
 }
 
@@ -54,7 +54,7 @@
     left: auto;
     top: 50%;
     transform: translateY(-50%);
-    border-left: 5px solid rgba(0, 0, 0, 0.9);
+    border-left: 5px solid var(--yi-tooltip-bg);
     border-right: none;
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
@@ -65,7 +65,7 @@
     right: auto;
     top: 50%;
     transform: translateY(-50%);
-    border-right: 5px solid rgba(0, 0, 0, 0.9);
+    border-right: 5px solid var(--yi-tooltip-bg);
     border-left: none;
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
@@ -105,14 +105,14 @@
 /* 首次使用提示 */
 .first-time-hint {
     position: absolute;
-    z-index: 9999;
+    z-index: var(--z-tooltip);
     padding: 12px 16px;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.95), rgba(99, 102, 241, 0.95));
+    background: linear-gradient(135deg, rgba(var(--yi-primary-rgb), 0.95), var(--yi-tooltip-bg));
     color: white;
     font-size: 14px;
     line-height: 1.5;
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 8px 24px rgba(var(--yi-primary-rgb), 0.3);
     pointer-events: auto;
     max-width: 280px;
     animation: hintBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -137,7 +137,7 @@
     position: absolute;
     width: 12px;
     height: 12px;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.95), rgba(99, 102, 241, 0.95));
+    background: linear-gradient(135deg, rgba(var(--yi-primary-rgb), 0.95), var(--yi-tooltip-bg));
     transform: rotate(45deg);
 }
 
@@ -167,7 +167,7 @@
 
 .hint-content {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-local-1);
 }
 
 .hint-title {
@@ -205,12 +205,12 @@
 }
 
 .hint-btn-primary {
-    background: white;
-    color: rgba(79, 70, 229, 1);
+    background: var(--yi-primary);
+    color: white;
 }
 
 .hint-btn-primary:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--yi-primary-hover);
     transform: translateY(-1px);
 }
 
@@ -228,23 +228,23 @@
     position: absolute;
     width: 10px;
     height: 10px;
-    background: rgba(79, 70, 229, 0.8);
-    border: 2px solid white;
+    background: rgba(var(--yi-primary-rgb), 0.8);
+    border: 2px solid rgba(var(--yi-primary-rgb), 0.6);
     border-radius: 50%;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 0 0 4px rgba(var(--yi-primary-rgb), 0.3);
     animation: hintDotPulse 2s ease-in-out infinite;
-    z-index: 9998;
+    z-index: var(--z-tooltip);
     pointer-events: none;
 }
 
 @keyframes hintDotPulse {
     0%, 100% {
         transform: scale(1);
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+        box-shadow: 0 0 0 4px rgba(var(--yi-primary-rgb), 0.3);
     }
     50% {
         transform: scale(1.2);
-        box-shadow: 0 0 0 8px rgba(79, 70, 229, 0.1);
+        box-shadow: 0 0 0 8px rgba(var(--yi-primary-rgb), 0.1);
     }
 }
 
@@ -255,8 +255,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 9997;
+    background: var(--yi-overlay-bg);
+    z-index: var(--z-modal-backdrop);
     pointer-events: auto;
     animation: overlayFadeIn 0.3s ease;
 }
@@ -264,11 +264,11 @@
 .hint-spotlight {
     position: absolute;
     background: transparent;
-    border: 2px solid rgba(79, 70, 229, 0.8);
+    border: 2px solid rgba(var(--yi-primary-rgb), 0.8);
     border-radius: 8px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(79, 70, 229, 0.6);
+    box-shadow: 0 0 0 9999px var(--yi-overlay-bg), 0 0 20px rgba(var(--yi-primary-rgb), 0.4);
     pointer-events: none;
-    z-index: 9998;
+    z-index: var(--z-popover);
     transition: all 0.3s ease;
 }
 

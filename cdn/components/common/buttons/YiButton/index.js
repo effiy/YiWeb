@@ -1,4 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
+import { getIconClass } from '/cdn/icons/iconMap.js';
 
 registerGlobalComponent({
     name: 'YiButton',
@@ -116,6 +117,11 @@ registerGlobalComponent({
         },
         isDisabled() {
             return this.disabled || this.loading;
+        },
+        resolvedIconClass() {
+            if (!this.icon) return '';
+            if (this.icon.includes(' ')) return getIconClass(this.icon.split(' ').pop());
+            return getIconClass(this.icon);
         }
     },
     methods: {

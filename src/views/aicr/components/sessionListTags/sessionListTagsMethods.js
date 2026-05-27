@@ -1,7 +1,4 @@
 const sessionListTagsMethods = {
-    updateTagSearch(keyword) {
-        this.$emit('tag-filter-search', keyword);
-    },
     toggleTag(tag) {
         const currentTags = this.selectedTags || [];
         const newTags = [...currentTags];
@@ -13,14 +10,8 @@ const sessionListTagsMethods = {
         }
         this.$emit('tag-select', newTags);
     },
-    toggleReverse() {
-        this.$emit('tag-filter-reverse', !this.tagFilterReverse);
-    },
     toggleNoTags() {
         this.$emit('tag-filter-no-tags', !this.tagFilterNoTags);
-    },
-    toggleExpand() {
-        this.$emit('tag-filter-expand', !this.tagFilterExpanded);
     },
     clearAllFilters() {
         this.$emit('tag-clear');

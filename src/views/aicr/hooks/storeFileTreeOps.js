@@ -1,3 +1,5 @@
+import { extractStoryNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
+
 export function createAicrStoreFileTreeOps(deps, state, internals, extra) {
     const {
         safeExecute,
@@ -38,6 +40,11 @@ export function createAicrStoreFileTreeOps(deps, state, internals, extra) {
 
             state.fileTree.value = treeRoots;
             state.fileTreeDocKey.value = '';
+
+            // 从文件树提取故事名和文档类型（替代单独 API 调用）
+            state.storyNames.value = extractStoryNames(treeRoots);
+            state.storyDocTypes.value = extractDocTypes(treeRoots);
+            console.log(`[loadFileTree] 从文件树提取 ${state.storyNames.value.length} 个故事名, ${state.storyDocTypes.value.length} 种文档类型`);
 
             console.log(`[loadFileTree] 成功构建文件树, 包含 ${allSessions.length} 个文件`);
 

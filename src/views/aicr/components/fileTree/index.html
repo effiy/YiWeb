@@ -5,75 +5,6 @@
     role="navigation"
     aria-label="文件目录树"
 >
-    <!-- 文件树吸顶头部（搜索框 + 标签） -->
-    <div class="file-tree-sticky-header">
-        <!-- 文件树搜索框 -->
-        <div class="file-tree-search-wrapper">
-        <i class="fas fa-search file-tree-search-icon" aria-hidden="true"></i>
-        <input
-            type="text"
-            class="file-tree-search-input"
-            :value="searchQuery"
-            @input="handleSearchInput"
-            placeholder="搜索文件..."
-            aria-label="搜索文件"
-        >
-        <button
-            v-if="searchQuery"
-            type="button"
-            class="file-tree-search-clear"
-            @click="handleSearchClear"
-            aria-label="清除搜索">
-            <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-    </div>
-
-    <!-- 标签筛选列表 -->
-    <div v-if="!loading && !error && tree.length > 0 && allTags.length > 0" class="session-list-tags">
-        <div class="tags-list">
-            <button
-                type="button"
-                v-if="tagCounts && tagCounts.noTagsCount > 0"
-                class="tag-item tag-no-tags"
-                :class="{ active: tagFilterNoTags }"
-                :draggable="false"
-                @click="toggleNoTags"
-                :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'">
-                没有标签 ({{ tagCounts.noTagsCount }})
-            </button>
-
-            <button
-                type="button"
-                v-for="tag in visibleTags"
-                :key="tag"
-                class="tag-item"
-                :class="{ active: selectedTags && selectedTags.includes(tag) }"
-                :draggable="true"
-                :data-tag-name="tag"
-                @click="toggleTag(tag)"
-                @dragstart="handleDragStart($event, tag)"
-                @dragend="handleDragEnd($event)"
-                @dragover="handleDragOver($event)"
-                @dragleave="handleDragLeave($event)"
-                @drop="handleDrop($event, tag)"
-                :title="selectedTags && selectedTags.includes(tag) ? '取消选择 | 拖拽调整顺序' : '选择标签 | 拖拽调整顺序'">
-                {{ tag }} ({{ tagCounts && tagCounts.counts ? (tagCounts.counts[tag] || 0) : 0 }})
-            </button>
-
-            <button
-                type="button"
-                v-if="hasMoreTags && !tagFilterSearchKeyword"
-                class="tag-item tag-expand-btn"
-                :draggable="false"
-                @click="toggleExpand"
-                :title="tagFilterExpanded ? '收起标签' : '展开标签'">
-                <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
-                {{ tagFilterExpanded ? '收起' : '展开 (' + (filteredTags.length - visibleTags.length) + ')' }}
-            </button>
-        </div>
-    </div>
-    </div>
-
     <!-- 加载状态 - 使用骨架屏 -->
     <skeleton-loader v-if="loading" variant="file-tree" :item-count="10"></skeleton-loader>
 
@@ -81,13 +12,13 @@
     <yi-error-state
         v-else-if="error"
         :message="error"
-        icon-class="fas fa-exclamation-triangle"
+        icon-class="warning"
         :show-retry="true"
         retry-text="重新加载"
         @retry="$emit('reload')"
     >
         <template #retryIcon>
-            <i class="fas fa-redo" aria-hidden="true"></i>
+            <yi-icon name="redo"></yi-icon>
         </template>
     </yi-error-state>
 
@@ -119,26 +50,31 @@
             </template>
         </ul>
 
-        <!-- 标签视图 -->
-        <div v-else-if="viewMode === 'tags'" class="file-tags-view">
-            <div class="tags-container">
-                <button
-                    type="button"
-                    v-for="file in flattenedFiles"
-                    :key="file.key"
-                    :class="['file-tag', {
-                        'selected': !batchMode && isFileSelected(file.key),
-                        'batch-selected': batchMode && isFileSelected(file.key)
-                    }]"
-                    @click="handleTagClick(file.key)"
-                    :title="`文件: ${file.name}`"
-                    :aria-label="`打开文件: ${file.name}`"
-                >
-                    <span class="tag-icon">{{ getFileIcon(file) }}</span>
-                    <span class="tag-name">{{ file.name }}</span>
-                </button>
+        <!-- 卡片视图（按故事名分组） -->
+        <div v-else-if="viewMode === 'cards'" class="file-cards-view">
+            <div v-for="group in groupedFiles" :key="group.name" class="cards-group">
+                <h3 class="cards-group-title">{{ group.name }}</h3>
+                <div class="cards-grid">
+                    <button
+                        type="button"
+                        v-for="file in group.files"
+                        :key="file.key"
+                        :class="['file-card', {
+                            'selected': !batchMode && isFileSelected(file.key),
+                            'batch-selected': batchMode && isFileSelected(file.key)
+                        }]"
+                        @click="handleTagClick(file.key)"
+                        :title="`文件: ${file.name}`"
+                        :aria-label="`打开文件: ${file.name}`"
+                    >
+                        <span class="file-card-icon">{{ getFileIcon(file) }}</span>
+                        <span class="file-card-name">{{ file.name }}</span>
+                        <span v-if="file.size" class="file-card-size">{{ getFileSizeDisplay(file) }}</span>
+                    </button>
+                </div>
             </div>
         </div>
+
     </div>
 
     <!-- 空状态 -->
@@ -151,17 +87,17 @@
     >
         <template #icon>
             <div class="empty-icon" aria-hidden="true">
-                <i class="fas fa-folder-open" aria-hidden="true"></i>
+                <yi-icon name="folder-open"></yi-icon>
             </div>
         </template>
         <template #actions>
             <div class="empty-actions">
                 <yi-button variant="primary" size="small" @click="$emit('create-session')" aria-label="新建会话">
-                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    <yi-icon name="add"></yi-icon>
                     <span>新建会话</span>
                 </yi-button>
                 <yi-button variant="secondary" size="small" @click="triggerUpload" aria-label="上传项目">
-                    <i class="fas fa-upload" aria-hidden="true"></i>
+                    <yi-icon name="upload"></yi-icon>
                     <span>上传项目</span>
                 </yi-button>
             </div>

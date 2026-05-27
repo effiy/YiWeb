@@ -159,7 +159,7 @@ function ensureTagManagerUi() {
             width: 100%;
             height: 100%;
             background: rgba(var(--yi-dark-surface-rgb), 0.72);
-            z-index: 9999;
+            z-index: var(--z-overlay);
             display: flex;
             align-items: center;
             justify-content: center;

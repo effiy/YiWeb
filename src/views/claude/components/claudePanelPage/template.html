@@ -1,0 +1,282 @@
+<div class="cp-page">
+    <header class="cp-header quantum-panel-header">
+        <div class="cp-header-left">
+            <h1 class="cp-header-title quantum-header-title">Claude 管理面板</h1>
+            <span v-if="totalProjects > 0" class="cp-header-count">{{ totalProjects }} 个项目</span>
+        </div>
+        <header-actions @clear-cache="clearCache">
+            <div class="cp-search">
+                <yi-icon name="search" class-name="cp-search-icon"></yi-icon>
+                <input
+                    type="text"
+                    class="cp-search-input"
+                    placeholder="搜索项目..."
+                    v-model="localSearchQuery"
+                />
+                <button
+                    v-if="localSearchQuery"
+                    type="button"
+                    class="cp-search-clear"
+                    @click="localSearchQuery = ''"
+                    aria-label="清除搜索"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </div>
+        </header-actions>
+    </header>
+
+    <div v-if="totalProjects > 0 && !loading" class="cp-meta-row">
+        <div class="cp-header-tags-wrapper">
+            <div class="cp-header-tags-row" @scroll="handleTagsScroll">
+                <div class="cp-meta-filter-actions">
+                    <button
+                        type="button"
+                        class="cp-meta-filter-toggle"
+                        @click="toggleFilterBar"
+                        :title="filterBarCollapsed ? '展开筛选栏' : '折叠筛选栏'"
+                    >
+                        <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
+                        <span class="cp-meta-filter-toggle-label">筛选</span>
+                    </button>
+                </div>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': !hasActiveHealthFilters }"
+                    @click="clearAllFilters"
+                >全部</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasReadmeMd }"
+                    @click="toggleHealthFilter('hasReadmeMd')"
+                >README.md</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasClaudeMd }"
+                    @click="toggleHealthFilter('hasClaudeMd')"
+                >CLAUDE.md</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasSettings }"
+                    @click="toggleHealthFilter('hasSettings')"
+                >settings</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasSkills }"
+                    @click="toggleHealthFilter('hasSkills')"
+                >Skills</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasAgents }"
+                    @click="toggleHealthFilter('hasAgents')"
+                >Agents</button>
+                <button
+                    type="button"
+                    class="cp-project-tag"
+                    :class="{ 'cp-project-tag--active': healthFilters.hasMemory }"
+                    @click="toggleHealthFilter('hasMemory')"
+                >Memory</button>
+            </div>
+            <div class="cp-tags-fade cp-tags-fade--left" :class="{ 'is-visible': tagsScrollLeft > 0 }"></div>
+            <div class="cp-tags-fade cp-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
+        </div>
+        <div class="cp-stats-bar">
+            <div class="cp-stat-item">
+                <yi-icon name="folder" class-name="cp-stat-icon quantum-stat-icon"></yi-icon>
+                <span class="cp-stat-value">{{ totalProjects }}</span>
+                <span class="cp-stat-label">项目</span>
+            </div>
+            <button
+                type="button"
+                class="cp-stat-item cp-stat-btn"
+                :class="{ 'cp-stat-btn--active': healthFilters.hasSkills }"
+                @click="toggleHealthFilter('hasSkills')"
+            >
+                <yi-icon name="puzzle-piece" class-name="cp-stat-icon quantum-stat-icon"></yi-icon>
+                <span class="cp-stat-value">{{ totalSkills }}</span>
+                <span class="cp-stat-label">Skills</span>
+            </button>
+            <button
+                type="button"
+                class="cp-stat-item cp-stat-btn"
+                :class="{ 'cp-stat-btn--active': healthFilters.hasAgents }"
+                @click="toggleHealthFilter('hasAgents')"
+            >
+                <yi-icon name="robot" class-name="cp-stat-icon quantum-stat-icon"></yi-icon>
+                <span class="cp-stat-value">{{ totalAgents }}</span>
+                <span class="cp-stat-label">Agents</span>
+            </button>
+            <button
+                type="button"
+                class="cp-stat-item cp-stat-btn"
+                :class="{ 'cp-stat-btn--active': healthFilters.hasReadmeMd }"
+                @click="toggleHealthFilter('hasReadmeMd')"
+            >
+                <span class="cp-stat-value">{{ healthSummary.withReadmeMd || 0 }}/{{ totalProjects }}</span>
+                <span class="cp-stat-label">含 README.md</span>
+            </button>
+            <button
+                type="button"
+                class="cp-stat-item cp-stat-btn"
+                :class="{ 'cp-stat-btn--active': healthFilters.hasClaudeMd }"
+                @click="toggleHealthFilter('hasClaudeMd')"
+            >
+                <span class="cp-stat-value">{{ healthSummary.withClaudeMd || 0 }}/{{ totalProjects }}</span>
+                <span class="cp-stat-label">含 CLAUDE.md</span>
+            </button>
+            <button
+                type="button"
+                class="cp-stat-item cp-stat-btn"
+                :class="{ 'cp-stat-btn--active': healthFilters.hasSettings }"
+                @click="toggleHealthFilter('hasSettings')"
+            >
+                <span class="cp-stat-value">{{ healthSummary.withSettings || 0 }}/{{ totalProjects }}</span>
+                <span class="cp-stat-label">含 settings</span>
+            </button>
+        </div>
+    </div>
+
+    <div v-if="totalProjects > 0 && !loading" class="cp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
+        <div class="cp-filter-group">
+            <span class="cp-filter-label">配置筛选</span>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasReadmeMd }"
+                @click="toggleHealthFilter('hasReadmeMd')"
+            >README.md</button>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasClaudeMd }"
+                @click="toggleHealthFilter('hasClaudeMd')"
+            >CLAUDE.md</button>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasSettings }"
+                @click="toggleHealthFilter('hasSettings')"
+            >settings</button>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasSkills }"
+                @click="toggleHealthFilter('hasSkills')"
+            >Skills</button>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasAgents }"
+                @click="toggleHealthFilter('hasAgents')"
+            >Agents</button>
+            <button
+                type="button"
+                class="cp-filter-tag"
+                :class="{ active: healthFilters.hasMemory }"
+                @click="toggleHealthFilter('hasMemory')"
+            >Memory</button>
+            <button
+                v-if="hasActiveHealthFilters"
+                type="button"
+                class="cp-filter-clear--inline"
+                @click="clearAllFilters"
+                title="清除配置筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
+        <div class="cp-filter-collapsed-row">
+            <div class="cp-filter-collapsed-scroll">
+                <span v-if="!hasActiveHealthFilters && !localSearchQuery" class="cp-filter-collapsed-empty">未选择筛选</span>
+                <span v-if="localSearchQuery" class="cp-filter-collapsed-pill">
+                    搜索: {{ localSearchQuery }}
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="localSearchQuery = ''" title="移除搜索">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasReadmeMd" class="cp-filter-collapsed-pill">
+                    README.md
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasReadmeMd')" title="移除筛选">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasClaudeMd" class="cp-filter-collapsed-pill">
+                    CLAUDE.md
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasClaudeMd')" title="移除筛选">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasSettings" class="cp-filter-collapsed-pill">
+                    settings
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasSettings')" title="移除筛选">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasSkills" class="cp-filter-collapsed-pill">
+                    Skills
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasSkills')" title="移除筛选">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasAgents" class="cp-filter-collapsed-pill">
+                    Agents
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasAgents')" title="移除筛选">&times;</button>
+                </span>
+                <span v-if="healthFilters.hasMemory" class="cp-filter-collapsed-pill">
+                    Memory
+                    <button type="button" class="cp-filter-collapsed-pill-close" @click.stop="toggleHealthFilter('hasMemory')" title="移除筛选">&times;</button>
+                </span>
+            </div>
+            <button
+                v-if="localSearchQuery || hasActiveHealthFilters"
+                type="button"
+                class="cp-filter-collapsed-clear"
+                @click="clearAllFilters"
+                title="清除所有筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
+    </div>
+
+    <div v-if="loading" class="cp-loading">
+        <yi-icon name="loading" spin></yi-icon> 加载中...
+    </div>
+    <div v-else-if="error" class="cp-error">
+        <yi-icon name="error"></yi-icon> {{ error }}
+    </div>
+
+    <div v-else class="cp-card-grid">
+        <claude-project-card
+            v-for="project in filteredProjects"
+            :key="project.name"
+            :project="project"
+            @select="openDetail"
+        ></claude-project-card>
+        <div v-if="filteredProjects.length === 0 && !loading" class="cp-card-grid-empty">
+            <yi-icon name="folder-open" class-name="cp-empty-icon"></yi-icon>
+            <span>{{ localSearchQuery || hasActiveHealthFilters ? '没有匹配的项目' : '暂无 .claude 配置项目' }}</span>
+            <button
+                v-if="localSearchQuery || hasActiveHealthFilters"
+                type="button"
+                class="cp-empty-clear-btn"
+                @click="clearAllFilters"
+            >清除筛选条件</button>
+        </div>
+    </div>
+
+    <!-- Side Panel -->
+    <div v-if="panelVisible" class="cp-panel-backdrop" @click="onBackdropClick">
+        <div class="cp-panel" role="dialog" aria-modal="true" aria-label="项目详情">
+            <div class="cp-panel-header">
+                <h2 class="cp-panel-title">{{ panelProject.name }}</h2>
+                <button class="cp-panel-close" @click="closePanel" aria-label="关闭面板">
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </div>
+            <div class="cp-panel-body">
+                <claude-detail-card
+                    :project="panelProject"
+                    :panel="true"
+                    @close="closePanel"
+                ></claude-detail-card>
+            </div>
+        </div>
+    </div>
+</div>

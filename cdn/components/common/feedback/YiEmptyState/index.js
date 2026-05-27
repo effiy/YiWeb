@@ -1,4 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
+import { getIconClass } from '/cdn/icons/iconMap.js';
 
 registerGlobalComponent({
     name: 'YiEmptyState',
@@ -52,6 +53,13 @@ registerGlobalComponent({
         hintClass: {
             type: String,
             default: ''
+        }
+    },
+    computed: {
+        resolvedIconClass() {
+            if (!this.iconClass) return '';
+            if (this.iconClass.includes(' ')) return getIconClass(this.iconClass.split(' ').pop());
+            return getIconClass(this.iconClass);
         }
     }
 });

@@ -49,38 +49,29 @@ const componentOptions = {
         viewMode: {
             type: String,
             default: 'tree',
-            validator: (value) => ['tree', 'tags'].includes(value)
+            validator: (value) => ['tree', 'cards'].includes(value)
         },
         selectedTags: {
             type: Array,
             default: () => []
         },
-        tagFilterReverse: {
-            type: Boolean,
-            default: false
-        },
         tagFilterNoTags: {
             type: Boolean,
             default: false
         },
-        tagFilterExpanded: {
-            type: Boolean,
-            default: false
-        },
-        tagFilterSearchKeyword: {
+        sessionSearchQuery: {
             type: String,
             default: ''
         },
-        tagFilterVisibleCount: {
-            type: Number,
-            default: 8
+        selectedTypeTags: {
+            type: Array,
+            default: () => []
         }
     },
     computed: fileTreeComputed,
-    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'folder-import', 'folder-export'],
+    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change'],
     data() {
         return {
-            searchDebounceTimer: null,
             tagOrderVersion: 0
         };
     },

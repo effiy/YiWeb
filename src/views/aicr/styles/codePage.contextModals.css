@@ -1,7 +1,7 @@
 .aicr-session-context-modal {
     position: absolute;
     inset: 0;
-    z-index: 50;
+    z-index: var(--z-local-50);
 }
 
 .aicr-session-context-modal-mask {
@@ -27,7 +27,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 14px;
+    padding: 8px 12px;
     border-bottom: 1px solid rgba(var(--gray-700-rgb), 0.85);
 }
 
@@ -105,7 +105,7 @@
 .aicr-image-preview-overlay {
     position: fixed;
     inset: 0;
-    z-index: 90;
+    z-index: var(--z-overlay);
     display: none;
 }
 
@@ -869,7 +869,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 14px;
+    padding: 8px 12px;
     border-bottom: 1px solid rgba(var(--gray-700-rgb), 0.85);
     width: 100%;
 }

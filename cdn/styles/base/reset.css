@@ -27,9 +27,14 @@ body {
   font-size: var(--font-size-base, 1rem);
   font-weight: var(--font-weight-normal, 400);
   line-height: var(--line-height-normal, 1.5);
-  color: var(--text-primary, #222);
-  background: var(--bg-gradient, #fff);
-  background-size: 400% 400%;
+  color: var(--text-primary, #ffffff);
+  background:
+    var(--yi-body-bg-gradient-1),
+    var(--yi-body-bg-gradient-2),
+    var(--yi-body-bg-gradient-3),
+    var(--quantum-body-shimmer),
+    var(--bg-gradient, #2a2a2e);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 300% 300%, 400% 400%;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -38,31 +43,40 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* 3. 背景动画与装饰 */
+body.bg-animation-enabled {
+  background-size: 100% 100%, 100% 100%, 100% 100%, 300% 300%, 400% 400%;
+  animation: quantumBaseShift 30s ease infinite, quantumShimmer 12s ease-in-out infinite;
+}
+
+/* 3. 背景动画与装饰 — Aurora Flow 层 */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
-  background: var(--bg-gradient, #fff);
-  background-size: 400% 400%;
-  animation: quantumFlow 30s ease infinite;
+  background: var(--quantum-body-aurora);
+  background-size: 800% 800%;
   pointer-events: none;
-  z-index: -2;
-  opacity: 0.8;
+  z-index: var(--z-below);
+  opacity: 0.9;
 }
 
+body.bg-animation-enabled::after {
+  animation: quantumAurora 20s ease infinite, quantumBreath 8s ease-in-out infinite;
+}
+
+/* 3b. 背景动画与装饰 — Nebula 粒子层 */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(circle at 20% 80%, rgba(6,182,212,0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(79,70,229,0.1) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(168,85,247,0.1) 0%, transparent 50%);
-  background-size: 200% 200%;
-  animation: quantumParticles 20s ease infinite;
+  background: var(--quantum-body-nebula);
+  background-size: 400% 400%;
   pointer-events: none;
-  z-index: -1;
+  z-index: var(--z-below);
+}
+
+body.bg-animation-enabled::before {
+  animation: quantumNebula 15s ease infinite, quantumBreath 6s ease-in-out infinite reverse;
 }
 
 /* 4. 标题、文本、结构元素重置 */
@@ -216,7 +230,7 @@ pre {
 hr {
   border: none;
   height: 1px;
-  background: var(--border-primary, #eee);
+  background: var(--border-primary, rgba(255,255,255,0.10));
   margin: 0;
   padding: 0;
 }
@@ -230,7 +244,7 @@ hr {
 }
 .focus-visible,
 *:focus-visible {
-  outline: 2px solid var(--primary, #06b6d4);
+  outline: 2px solid var(--primary, #0ea5b8);
   outline-offset: 2px;
 }
 .gpu-accelerated {
@@ -245,7 +259,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--primary, #06b6d4);
+  outline: 2px solid var(--primary, #0ea5b8);
   outline-offset: 2px;
 }
 
@@ -254,7 +268,7 @@ a:focus-visible {
   position: absolute;
   top: -40px;
   left: 6px;
-  background: var(--primary, #06b6d4);
+  background: var(--primary, #0ea5b8);
   color: #fff;
   padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem);
   text-decoration: none;
@@ -302,7 +316,9 @@ a:focus-visible {
     scroll-behavior: auto !important;
   }
   body::before,
-  body::after {
+  body::after,
+  body.bg-animation-enabled::before,
+  body.bg-animation-enabled::after {
     animation: none !important;
   }
 }
@@ -341,14 +357,12 @@ a:focus-visible {
   }
 }
 
-/* 22. 动画定义 */
-@keyframes quantumFlow {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-@keyframes quantumParticles {
-  0%, 100% { background-position: 0% 0%; }
-  25% { background-position: 100% 0%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
+/* 22. 动画定义 — 关键帧已统一迁移至 animations.css，此处仅保留全局开关 */
+
+/* 23. 动画全局开关 — 关闭背景动画时冻结所有 CSS animation */
+body:not(.bg-animation-enabled),
+body:not(.bg-animation-enabled) *,
+body:not(.bg-animation-enabled) ::before,
+body:not(.bg-animation-enabled) ::after {
+  animation-play-state: paused !important;
 }

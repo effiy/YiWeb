@@ -7,7 +7,7 @@
       :title="homeButtonTitle"
       :aria-label="homeButtonTitle"
     >
-      <i :class="homeIconClass" aria-hidden="true"></i>
+      <i :class="resolvedHomeIconClass" aria-hidden="true"></i>
     </button>
   </div>
 
@@ -39,7 +39,7 @@
         @click="clearSearch"
         aria-label="清除搜索"
       >
-        <i class="fas fa-times" aria-hidden="true"></i>
+        <yi-icon name="close"></yi-icon>
       </button>
       <div
         id="search-panel"
@@ -69,7 +69,7 @@
               :aria-label="'删除 ' + item"
               title="删除"
             >
-              <i class="fas fa-times" aria-hidden="true"></i>
+              <yi-icon name="close"></yi-icon>
             </button>
           </li>
         </ul>
@@ -90,7 +90,12 @@
     <slot></slot>
   </div>
 
-  <div class="header-actions">
+  <header-actions
+    :show-clear-cache="showClearCacheButton"
+    :show-auth-button="showAuthButton"
+    @clear-cache="$emit('clear-cache')"
+    @open-auth="$emit('open-auth', $event)"
+  >
     <button
       v-if="showNewsButton"
       type="button"
@@ -99,18 +104,7 @@
       title="新闻"
       aria-label="新闻"
     >
-      <i class="fas fa-newspaper" aria-hidden="true"></i>
-    </button>
-
-    <button
-      v-if="showAuthButton"
-      type="button"
-      class="header-icon-btn"
-      @click="openAuth"
-      title="API 鉴权"
-      aria-label="API 鉴权"
-    >
-      <i class="fas fa-key" aria-hidden="true"></i>
+      <yi-icon name="newspaper"></yi-icon>
     </button>
 
     <button
@@ -121,22 +115,7 @@
       :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
       :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
     >
-      <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
+      <yi-icon :name="sidebarCollapsed ? 'chevron-right' : 'chevron-left'"></yi-icon>
     </button>
-
-    <button
-      v-if="showClearCacheButton"
-      type="button"
-      class="header-icon-btn"
-      @click="clearCache"
-      title="清缓存并刷新"
-      aria-label="清缓存并刷新"
-    >
-      <i class="fas fa-rotate-right" aria-hidden="true"></i>
-    </button>
-
-    <span class="env-badge" :class="envType">
-      {{ envLabel }}
-    </span>
-  </div>
+  </header-actions>
 </header>

@@ -1,15 +1,567 @@
 /**
  * AicrPage 组件样式
  * author: YiWeb
- * 说明：AICR 主页面组件样式
+ * 说明：AICR 主页面组件样式 — 对齐 story 页面 header 规格
  */
+
+/* Page wrapper — 对齐 story .sp-page */
+.aicr-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Header — 对齐 story header 规格: 紧凑垂直间距 + 底边分割线 */
+.aicr-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.aicr-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.aicr-header-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+.aicr-header-count {
+    font-size: 12px;
+    color: var(--yi-text-secondary);
+}
+
+/* Meta Row — tags + stats side by side */
+.aicr-meta-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--yi-border);
+    flex-shrink: 0;
+}
+/* Tags wrapper — fills remaining space in meta row, positions fade overlays */
+.aicr-header-tags-wrapper {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+.aicr-header-tags-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.aicr-header-tags-row::-webkit-scrollbar {
+    display: none;
+}
+/* Fade overlays — absolutely positioned against the wrapper, outside scroll flow */
+.aicr-tags-fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 64px;
+    pointer-events: none;
+    z-index: var(--z-local-2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.aicr-tags-fade--left {
+    left: 0;
+    background: linear-gradient(to right, var(--yi-bg) 30%, transparent 100%);
+}
+.aicr-tags-fade--right {
+    right: 0;
+    background: linear-gradient(to left, var(--yi-bg) 30%, transparent 100%);
+}
+.aicr-tags-fade.is-visible {
+    opacity: 1;
+}
+
+/* Filter toggle actions — sticky left inside scrollable tags row */
+.aicr-meta-filter-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    position: sticky;
+    left: 0;
+    z-index: var(--z-local-3);
+    background: var(--yi-bg);
+    padding-right: 8px;
+    margin-right: 2px;
+}
+.aicr-meta-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+}
+.aicr-meta-filter-toggle:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+    background: var(--yi-surface-hover);
+}
+.aicr-meta-filter-toggle-label {
+    font-size: 12px;
+}
+.aicr-meta-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--yi-border);
+    border-left: none;
+    border-radius: 0 5px 5px 0;
+    font-size: 13px;
+    background: transparent;
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+}
+.aicr-meta-filter-clear:hover {
+    color: var(--yi-danger);
+}
+
+/* Project tag filter — pill-shaped, matching story */
+.aicr-project-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 9999px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.aicr-project-tag:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+    background: var(--yi-surface-hover);
+}
+.aicr-project-tag--active {
+    background: var(--yi-primary);
+    border-color: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+}
+.aicr-project-tag--active:hover {
+    background: var(--yi-primary-hover);
+    border-color: var(--yi-primary-hover);
+    color: var(--yi-text-on-primary);
+}
+
+/* Stats Bar */
+.aicr-stats-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 24px;
+    padding: 6px 16px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+.aicr-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--yi-text-secondary);
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+}
+.aicr-stat-icon {
+    font-size: 14px;
+    color: var(--yi-primary);
+}
+.aicr-stat-value {
+    font-weight: 600;
+    color: var(--yi-text);
+}
+.aicr-stat-label {
+    color: var(--yi-text-muted);
+}
+/* Stats button — clickable to toggle type filter */
+.aicr-stat-btn {
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+}
+.aicr-stat-btn:hover {
+    border-color: var(--yi-primary);
+    background: var(--yi-surface-hover);
+}
+.aicr-stat-btn--active {
+    border-color: var(--yi-primary);
+    background: var(--yi-primary);
+}
+.aicr-stat-btn--active .aicr-stat-icon,
+.aicr-stat-btn--active .aicr-stat-value,
+.aicr-stat-btn--active .aicr-stat-label {
+    color: var(--yi-text-on-primary);
+}
+/* Filter Bar — matching story */
+.aicr-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4px 16px;
+    border-bottom: 1px solid transparent;
+    border-image: var(--quantum-filter-border) 1;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+/* Unified Search — inside header-actions, matching story .sp-search */
+.aicr-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.aicr-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--yi-text-secondary);
+    font-size: 13px;
+    pointer-events: none;
+}
+.aicr-search-input {
+    padding: 8px 12px 8px 36px;
+    border: 1px solid var(--yi-border);
+    border-radius: 8px;
+    font-size: 14px;
+    width: 240px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: var(--yi-surface);
+    color: var(--yi-text);
+}
+.aicr-search-input:focus {
+    border-color: var(--yi-primary);
+    box-shadow: var(--yi-shadow-focus);
+}
+.aicr-search-input::placeholder {
+    color: var(--yi-text-secondary);
+}
+.aicr-search-clear {
+    position: absolute;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background: var(--yi-text-muted);
+    color: var(--yi-bg);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 0;
+}
+.aicr-search-clear:hover {
+    background: var(--yi-text-secondary);
+}
+
+/* View Segmented — 对齐 story .sp-view-segmented */
+.aicr-view-segmented {
+    display: inline-flex;
+    border: 1px solid var(--yi-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--yi-surface);
+}
+.aicr-view-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: none;
+    border-right: 1px solid var(--yi-border);
+    background: transparent;
+    color: var(--yi-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+}
+.aicr-view-seg:last-child {
+    border-right: none;
+}
+.aicr-view-seg:hover {
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
+}
+.aicr-view-seg--active {
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+}
+.aicr-view-seg--active:hover {
+    background: var(--yi-primary-hover);
+    color: var(--yi-text-on-primary);
+}
+.aicr-view-seg-label {
+    font-size: 12px;
+    font-weight: 500;
+}
+.aicr-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.aicr-filter-label {
+    font-size: 12px;
+    color: var(--yi-text-muted);
+    margin-right: 4px;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    z-index: var(--z-local-2);
+    background: var(--yi-bg);
+    padding-right: 6px;
+}
+.aicr-filter-empty {
+    font-size: 12px;
+    color: var(--yi-text-tertiary);
+    white-space: nowrap;
+}
+.aicr-filter-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+}
+.aicr-filter-tag:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+}
+.aicr-filter-tag.active {
+    background: var(--yi-primary);
+    border-color: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+}
+/* Type filter tag — dotted border to distinguish from directory tags */
+.aicr-filter-tag--type {
+    border-style: dashed;
+}
+/* 标签组内清除按钮 */
+.aicr-filter-clear--inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--yi-text-tertiary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+.aicr-filter-clear--inline:hover {
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
+}
+/* Filter actions — collapse toggle + clear button grouped at right */
+.aicr-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.aicr-filter-collapse {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+}
+.aicr-filter-collapse:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-primary);
+    background: var(--yi-surface-hover);
+}
+.aicr-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    background: transparent;
+    color: var(--yi-danger);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+}
+.aicr-filter-clear:hover {
+    background: rgba(var(--yi-danger-rgb), 0.1);
+}
+
+/* Collapsed: hide full tag buttons, show summary line */
+.aicr-filter-bar.is-collapsed .aicr-filter-group {
+    display: none;
+}
+.aicr-filter-bar.is-collapsed {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+/* Collapsed row — single scrollable row for active filter pills */
+.aicr-filter-collapsed-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    flex-basis: 100%;
+}
+.aicr-filter-bar.is-collapsed .aicr-filter-collapsed-row {
+    display: flex;
+}
+.aicr-filter-collapsed-scroll {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.aicr-filter-collapsed-scroll::-webkit-scrollbar {
+    display: none;
+}
+.aicr-filter-collapsed-empty {
+    font-size: 12px;
+    color: var(--yi-text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.aicr-filter-collapsed-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--yi-border);
+    border-radius: 9999px;
+    font-size: 12px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.aicr-filter-collapsed-pill-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    font-size: 11px;
+    line-height: 1;
+    background: transparent;
+    color: var(--yi-text-tertiary);
+    cursor: pointer;
+}
+.aicr-filter-collapsed-pill-close:hover {
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
+}
+.aicr-filter-collapsed-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    background: transparent;
+    color: var(--yi-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--yi-duration-fast) var(--yi-easing-default);
+}
+.aicr-filter-collapsed-clear:hover {
+    color: var(--yi-danger);
+}
 
 .aicr-main {
     display: flex;
     flex-direction: row;
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    min-width: 320px;
+    overflow: hidden;
+    background: var(--yi-dark-surface);
+    position: relative;
+}
+
+/* 卡片视图 — 铺满 aicr-main */
+.aicr-main.is-cards .aicr-code-area,
+.aicr-main.is-cards .aicr-code {
+    display: none;
+}
+.aicr-main.is-cards .aicr-sidebar {
+    flex: 1;
+    width: 100% !important;
+    border-right: none;
+    box-shadow: none;
 }
 
 /* 响应式调整 */

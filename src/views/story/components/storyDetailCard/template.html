@@ -1,0 +1,56 @@
+<div v-if="story" :class="['sp-detail', { 'sp-detail--panel': panel }]">
+    <div class="sp-detail-header">
+        <button v-if="!panel" class="sp-detail-back" @click="onBack">
+            <yi-icon name="arrow-left"></yi-icon> 返回列表
+        </button>
+        <story-status-badge :status="story.status" size="lg"></story-status-badge>
+    </div>
+
+    <div class="sp-detail-summary">
+        <div v-if="story.description" class="sp-summary-item">
+            <span class="sp-summary-label">📝 描述</span>
+            <span class="sp-summary-text">{{ story.description }}</span>
+        </div>
+        <div class="sp-summary-item">
+            <span class="sp-summary-label">👉 下一步</span>
+            <span class="sp-summary-text sp-summary-text--action">{{ story.nextStep }}</span>
+        </div>
+        <div class="sp-summary-item">
+            <span class="sp-summary-label">📨 消息通知</span>
+            <span v-if="story.hasNotify" class="sp-summary-text">有通知 · 最后: {{ formatDate(story.notifyUpdatedAt) }}</span>
+            <span v-else class="sp-summary-text sp-summary-text--muted">无</span>
+        </div>
+        <div class="sp-summary-item">
+            <span class="sp-summary-label">📜 交互日志</span>
+            <span v-if="story.hasLog" class="sp-summary-text">有记录 · 最后: {{ formatDate(story.logUpdatedAt) }}</span>
+            <span v-else class="sp-summary-text sp-summary-text--muted">无</span>
+        </div>
+    </div>
+
+    <div class="sp-detail-meta">
+        <div class="sp-meta-item">
+            <span class="sp-meta-label">远端路径</span>
+            <span class="sp-meta-value sp-meta-value--path">故事任务面板/{{ story.name }}/</span>
+        </div>
+        <div class="sp-meta-item">
+            <span class="sp-meta-label">文件数</span>
+            <span class="sp-meta-value">{{ story.fileCount }}</span>
+        </div>
+    </div>
+
+    <div class="sp-detail-section">
+        <h3 class="sp-section-title">文件清单</h3>
+        <div v-for="group in fileGroups" :key="group.prefix" class="sp-file-group">
+            <h4 class="sp-file-group-title">{{ group.prefix }} <span class="sp-file-group-count">{{ group.files.length }}</span></h4>
+            <ul class="sp-file-list">
+                <li v-for="file in group.files" :key="file.filePath" class="sp-file-item" @click="onFileClick(file)" :title="'在代码审查中打开: ' + file.filePath">
+                    <yi-icon name="file-alt" class-name="sp-file-icon"></yi-icon>
+                    <span class="sp-file-name">{{ file.fileName }}</span>
+                    <span class="sp-file-date">{{ formatDate(file.updatedAt) }}</span>
+                    <yi-icon name="external-link" class-name="sp-file-action-icon"></yi-icon>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</div>

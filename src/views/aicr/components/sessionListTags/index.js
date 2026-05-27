@@ -15,32 +15,16 @@ const componentOptions = {
             type: Array,
             default: () => []
         },
-        tagFilterReverse: {
-            type: Boolean,
-            default: false
-        },
         tagFilterNoTags: {
             type: Boolean,
             default: false
         },
-        tagFilterExpanded: {
-            type: Boolean,
-            default: false
-        },
-        tagFilterSearchKeyword: {
-            type: String,
-            default: ''
-        },
         tagCounts: {
             type: Object,
             default: () => ({ counts: {}, noTagsCount: 0 })
-        },
-        tagFilterVisibleCount: {
-            type: Number,
-            default: 8
         }
     },
-    emits: ['tag-select', 'tag-clear', 'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search'],
+    emits: ['tag-select', 'tag-clear', 'tag-filter-no-tags'],
     data() {
         return {
             tagOrderVersion: 0

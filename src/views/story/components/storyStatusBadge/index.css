@@ -1,0 +1,40 @@
+.sp-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    white-space: nowrap;
+}
+.sp-status-badge--sm {
+    font-size: 11px;
+    padding: 1px 8px;
+    line-height: 18px;
+}
+.sp-status-badge--lg {
+    font-size: 13px;
+    padding: 3px 12px;
+    line-height: 22px;
+}
+.sp-status-badge--planning {
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+}
+.sp-status-badge--design {
+    background: var(--yi-warning-subtle);
+    color: var(--yi-warning-hover);
+}
+.sp-status-badge--develop {
+    background: var(--yi-info-subtle);
+    color: var(--yi-info-hover);
+}
+.sp-status-badge--testing {
+    background: var(--yi-primary-subtle);
+    color: var(--yi-primary-hover);
+}
+.sp-status-badge--operations {
+    background: var(--yi-success-subtle);
+    color: var(--yi-success-hover);
+}

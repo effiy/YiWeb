@@ -2,14 +2,14 @@
     aria-label="代码区">
     <button type="button" class="chat-expand-handle" v-show="chatPanelCollapsed"
         @click="toggleChatPanel" aria-label="展开聊天面板" title="展开聊天面板">
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        <yi-icon name="chevron-left"></yi-icon>
         <span class="label">聊天</span>
     </button>
 
     <button type="button" class="chat-panel-toggle" v-show="!chatPanelCollapsed"
         @click="toggleChatPanel" title="收起聊天面板" aria-label="收起聊天面板"
         :style="{ right: ((chatPanelWidth || 420) - 14) + 'px', left: 'auto' }">
-        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        <yi-icon name="chevron-right"></yi-icon>
     </button>
 
     <div class="aicr-code-layout is-tree">
@@ -45,7 +45,7 @@
                     >
                         <template #icon>
                             <div class="pet-chat-empty-icon" aria-hidden="true">
-                                <i class="fas fa-inbox"></i>
+                                <yi-icon name="inbox"></yi-icon>
                             </div>
                         </template>
                     </yi-empty-state>

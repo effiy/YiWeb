@@ -1,55 +1,132 @@
-:root {
-    /* 量子过渡动画 */
-    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    
-    /* 动画缓动函数 */
-    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    
-    /* 动画持续时间 */
-    --duration-fast: 0.15s;
-    --duration-normal: 0.25s;
-    --duration-slow: 0.4s;
-    --duration-hover: 0.6s;
-    --duration-long: 1.2s;
-    
-    /* 性能优化变量 */
-    --gpu-accelerated: translate3d(0, 0, 0);
-    --will-change-transform: will-change: transform;
-    --will-change-opacity: will-change: opacity;
-    --backface-hidden: backface-visibility: hidden;
-    --perspective: perspective: 1000px;
-    
-    /* 动画性能优化 */
-    --animation-performance: 
-        will-change: transform, opacity;
-        transform: translate3d(0, 0, 0);
-        backface-visibility: hidden;
-        perspective: 1000px;
-}
-
-/* ========== 减少动画支持 ========== */
-@media (prefers-reduced-motion: reduce) {
-    :root {
-        --transition-fast: 0.01s;
-        --transition-normal: 0.01s;
-        --transition-slow: 0.01s;
-        --duration-fast: 0.01s;
-        --duration-normal: 0.01s;
-        --duration-slow: 0.01s;
-        --duration-hover: 0.01s;
-        --duration-long: 0.01s;
-    }
-}
-
 /**
  * 动画效果样式
- * 包含各种动画关键帧和过渡效果
+ * author: liangliang
+ * 说明：所有过渡/缓动变量定义已迁移至 theme.css（--yi-duration-* / --yi-easing-*），本文件仅保留关键帧动画和动画工具类。
  */
+
+/* ============================================
+   Body Background Animation Keyframes — 页面背景动画
+   由 reset.css 中 body / body::before / body::after 引用
+   ============================================ */
+
+/* 基础渐变位移 — body 层缓慢扫过 */
+@keyframes quantumBaseShift {
+  0%, 100% { background-position: 0% 50%, 0% 50%, 0% 50%, 0% 50%; }
+  25% { background-position: 100% 0%, 50% 100%, 0% 50%, 50% 50%; }
+  50% { background-position: 50% 100%, 100% 50%, 100% 0%, 100% 50%; }
+  75% { background-position: 0% 50%, 0% 0%, 50% 100%, 50% 0%; }
+}
+
+/* 极光流动 — 多层渐变交错扫过 + 色相旋转 */
+@keyframes quantumAurora {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  15% {
+    background-position: 100% 0%;
+  }
+  30% {
+    background-position: 50% 100%;
+    filter: hue-rotate(25deg) brightness(1.05);
+  }
+  45% {
+    background-position: 0% 25%;
+  }
+  60% {
+    background-position: 100% 100%;
+    filter: hue-rotate(-20deg) brightness(1.02);
+  }
+  75% {
+    background-position: 50% 0%;
+    filter: hue-rotate(10deg) brightness(1.04);
+  }
+  90% {
+    background-position: 0% 75%;
+    filter: hue-rotate(-5deg) brightness(1);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) brightness(1);
+  }
+}
+
+/* 星云粒子 — 多彩光球旋转漂移 */
+@keyframes quantumNebula {
+  0% {
+    background-position: 0% 0%;
+    transform: scale(1) rotate(0deg);
+  }
+  12% {
+    background-position: 100% 0%;
+    transform: scale(1.08) rotate(1deg);
+  }
+  25% {
+    background-position: 100% 100%;
+    transform: scale(1) rotate(2deg);
+  }
+  37% {
+    background-position: 25% 75%;
+    transform: scale(1.12) rotate(1deg);
+  }
+  50% {
+    background-position: 50% 50%;
+    transform: scale(1.04) rotate(0deg);
+  }
+  62% {
+    background-position: 75% 25%;
+    transform: scale(1.15) rotate(-1deg);
+  }
+  75% {
+    background-position: 100% 50%;
+    transform: scale(1.06) rotate(-2deg);
+  }
+  87% {
+    background-position: 50% 0%;
+    transform: scale(1) rotate(-1deg);
+  }
+  100% {
+    background-position: 0% 0%;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* 呼吸感 — 透明度缓慢脉动 */
+@keyframes quantumBreath {
+  0%, 100% { opacity: 0.65; }
+  25% { opacity: 0.9; }
+  50% { opacity: 1; }
+  75% { opacity: 0.8; }
+}
+
+/* 微光扫过 — 对角线光带周期掠过 */
+@keyframes quantumShimmer {
+  0%, 100% {
+    background-position: -200% -200%, 200% 200%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.12;
+  }
+  20% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 0.1;
+  }
+  65% {
+    opacity: 0;
+  }
+  80% {
+    opacity: 0;
+  }
+  90% {
+    opacity: 0.08;
+  }
+}
 
 /* 基础量子动画定义 */
 @keyframes quantumParticles {
@@ -84,10 +161,10 @@
 
 @keyframes quantumGlow {
     0%, 100% {
-        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        box-shadow: 0 0 20px rgba(var(--yi-primary-rgb), 0.15);
     }
     50% {
-        box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
+        box-shadow: 0 0 40px rgba(var(--yi-primary-rgb), 0.30), 0 0 80px rgba(var(--yi-primary-rgb), 0.15);
     }
 }
 
@@ -383,27 +460,29 @@
 
 /* 过渡效果 */
 .transition-all {
-    transition: all 0.3s ease;
+    transition: all var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .transition-colors {
-    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+    transition: color var(--yi-duration-normal) var(--yi-easing-default),
+                background-color var(--yi-duration-normal) var(--yi-easing-default),
+                border-color var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .transition-opacity {
-    transition: opacity 0.3s ease;
+    transition: opacity var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .transition-transform {
-    transition: transform 0.3s ease;
+    transition: transform var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .transition-fast {
-    transition-duration: 0.15s;
+    transition-duration: var(--yi-duration-fast);
 }
 
 .transition-slow {
-    transition-duration: 0.5s;
+    transition-duration: var(--yi-duration-slow);
 }
 
 /* 动画延迟 */
@@ -446,7 +525,8 @@
 
 /* 悬停效果 */
 .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform var(--yi-duration-normal) var(--yi-easing-default),
+                box-shadow var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .hover-lift:hover {
@@ -455,7 +535,7 @@
 }
 
 .hover-scale {
-    transition: transform 0.3s ease;
+    transition: transform var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .hover-scale:hover {
@@ -463,7 +543,7 @@
 }
 
 .hover-rotate {
-    transition: transform 0.3s ease;
+    transition: transform var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .hover-rotate:hover {
@@ -472,7 +552,7 @@
 
 /* Vue过渡动画 */
 .fade-enter-active, .fade-leave-active {
-    transition: opacity 0.3s ease;
+    transition: opacity var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .fade-enter-from, .fade-leave-to {
@@ -480,7 +560,7 @@
 }
 
 .slide-enter-active, .slide-leave-active {
-    transition: all 0.3s ease;
+    transition: all var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .slide-enter-from {
@@ -652,19 +732,6 @@
     100% {
         transform: scale(3) rotate(360deg);
         opacity: 0;
-    }
-}
-
-/* 快捷键模块特定动画 */
-@keyframes smoothRotate {
-    0%, 100% {
-        transform: rotate(0deg) translate3d(0, 0, 0);
-    }
-    25% {
-        transform: rotate(5deg);
-    }
-    75% {
-        transform: rotate(-5deg);
     }
 }
 

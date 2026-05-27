@@ -10,7 +10,7 @@ function createToolbarStyle() {
       position: absolute;
       top: 8px;
       right: 8px;
-      z-index: 10;
+      z-index: var(--z-local-10);
       display: flex;
       gap: 4px;
       opacity: 0;

@@ -1,0 +1,108 @@
+<div v-if="project" :class="['cd-detail', { 'cd-detail--panel': panel }]">
+    <!-- Health summary -->
+    <div class="cd-summary">
+        <div class="cd-summary-item">
+            <span class="cd-summary-label">健康度</span>
+            <yi-tag :variant="project.hasClaudeMd && project.hasSettings ? 'success' : 'warning'" size="sm">
+                {{ project.hasClaudeMd && project.hasSettings ? '配置完整' : '待完善' }}
+            </yi-tag>
+        </div>
+        <div class="cd-summary-item">
+            <span class="cd-summary-label">Skills</span>
+            <span class="cd-summary-value">{{ project.skillCount }}</span>
+        </div>
+        <div class="cd-summary-item">
+            <span class="cd-summary-label">Agents</span>
+            <span class="cd-summary-value">{{ project.agentCount }}</span>
+        </div>
+        <div class="cd-summary-item">
+            <span class="cd-summary-label">MCP</span>
+            <span class="cd-summary-value">{{ project.mcpCount || 0 }}</span>
+        </div>
+        <div class="cd-summary-item">
+            <span class="cd-summary-label">Rules</span>
+            <span class="cd-summary-value">{{ project.ruleCount || 0 }}</span>
+        </div>
+        <div class="cd-summary-item">
+            <span class="cd-summary-label">Templates</span>
+            <span class="cd-summary-value">{{ project.templateCount || 0 }}</span>
+        </div>
+    </div>
+
+    <div class="cd-flags">
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasReadmeMd ? 'check-circle' : 'circle'"
+                :class-name="project.hasReadmeMd ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasReadmeMd ? 'cd-flag-text--on' : 'cd-flag-text--off'">README.md</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasClaudeMd ? 'check-circle' : 'circle'"
+                :class-name="project.hasClaudeMd ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasClaudeMd ? 'cd-flag-text--on' : 'cd-flag-text--off'">CLAUDE.md</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasSettings ? 'check-circle' : 'circle'"
+                :class-name="project.hasSettings ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasSettings ? 'cd-flag-text--on' : 'cd-flag-text--off'">settings.json</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasMemory ? 'check-circle' : 'circle'"
+                :class-name="project.hasMemory ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasMemory ? 'cd-flag-text--on' : 'cd-flag-text--off'">Memory ({{ project.memoryFileCount }} 文件)</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasHooks ? 'check-circle' : 'circle'"
+                :class-name="project.hasHooks ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasHooks ? 'cd-flag-text--on' : 'cd-flag-text--off'">Hooks</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasRules ? 'check-circle' : 'circle'"
+                :class-name="project.hasRules ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasRules ? 'cd-flag-text--on' : 'cd-flag-text--off'">Rules ({{ project.ruleCount || 0 }})</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasTemplates ? 'check-circle' : 'circle'"
+                :class-name="project.hasTemplates ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasTemplates ? 'cd-flag-text--on' : 'cd-flag-text--off'">Templates ({{ project.templateCount || 0 }})</span>
+        </div>
+        <div class="cd-flag-row">
+            <yi-icon :name="project.hasScheduledTasks ? 'check-circle' : 'circle'"
+                :class-name="project.hasScheduledTasks ? 'cd-flag-icon--on' : 'cd-flag-icon--off'"></yi-icon>
+            <span :class="project.hasScheduledTasks ? 'cd-flag-text--on' : 'cd-flag-text--off'">定时任务</span>
+        </div>
+    </div>
+
+    <div class="cd-meta">
+        <div class="cd-meta-item">
+            <span class="cd-meta-label">远端路径</span>
+            <span class="cd-meta-value cd-meta-value--path">{{ project.name }}/.claude/</span>
+        </div>
+        <div class="cd-meta-item">
+            <span class="cd-meta-label">文件总数</span>
+            <span class="cd-meta-value">{{ project.fileCount }}</span>
+        </div>
+        <div class="cd-meta-item">
+            <span class="cd-meta-label">最近更新</span>
+            <span class="cd-meta-value">{{ formatDate(project.lastModified) }}</span>
+        </div>
+    </div>
+
+    <!-- File list -->
+    <div class="cd-section">
+        <h3 class="cd-section-title">文件清单</h3>
+        <div v-for="group in fileGroups" :key="group.prefix" class="cd-file-group">
+            <h4 class="cd-file-group-title">
+                {{ groupLabel(group.prefix) }}
+                <span class="cd-file-group-count">{{ group.files.length }}</span>
+            </h4>
+            <ul class="cd-file-list">
+                <li v-for="file in group.files" :key="file.filePath" class="cd-file-item" @click="onFileClick(file)" :title="'在代码审查中打开: ' + file.filePath">
+                    <yi-icon name="file-alt" class-name="cd-file-icon"></yi-icon>
+                    <span class="cd-file-name">{{ file.fileName }}</span>
+                    <span class="cd-file-date">{{ formatDate(file.updatedAt) }}</span>
+                    <yi-icon name="external-link" class-name="cd-file-action-icon"></yi-icon>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

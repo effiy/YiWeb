@@ -20,7 +20,7 @@
     gap: var(--spacing-xs);
     position: sticky;
     top: 0;
-    z-index: 5;
+    z-index: var(--z-local-5);
 }
 
 .file-tree-header::before {

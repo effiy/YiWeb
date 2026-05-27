@@ -1,7 +1,7 @@
 <!-- 侧边栏展开把手 (收起时显示) -->
 <button type="button" class="sidebar-expand-handle" v-show="sidebarCollapsed" @click="toggleSidebar"
     aria-label="展开侧边栏" title="展开侧边栏">
-    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    <yi-icon name="chevron-right"></yi-icon>
     <span class="label">展开</span>
 </button>
 
@@ -9,7 +9,7 @@
 <button type="button" class="file-tree-toggle" v-show="!sidebarCollapsed" @click="toggleSidebar" title="收起侧边栏"
     aria-label="收起侧边栏"
     :style="{ left: (sidebarWidth - 14) + 'px', right: 'auto' }">
-    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+    <yi-icon name="chevron-left"></yi-icon>
 </button>
 
 <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed"
@@ -18,11 +18,11 @@
         <file-tree :tree="fileTree" :selected-key="selectedKey"
             :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage"
             :collapsed="sidebarCollapsed" :search-query="searchQuery"
-            :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="'tree'"
+            :session-search-query="sessionSearchQuery || ''"
+            :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="viewMode || 'tree'"
             :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
-            :tag-filter-reverse="tagFilterReverse || false" :tag-filter-no-tags="tagFilterNoTags || false"
-            :tag-filter-expanded="tagFilterExpanded || false"
-            :tag-filter-search-keyword="tagFilterSearchKeyword || ''" @file-select="handleFileSelect"
+            :tag-filter-no-tags="tagFilterNoTags || false"
+            :selected-type-tags="selectedTypeTags || []" @file-select="handleFileSelect"
             @folder-toggle="handleFolderToggle" @create-folder="handleCreateFolder"
             @create-file="handleCreateFile" @rename-item="handleRenameItem" @delete-item="handleDeleteItem"
             @create-session="handleCreateSession" @toggle-collapse="toggleSidebar"
@@ -33,9 +33,8 @@
             @file-import="handleFileImport"
             @folder-export="handleFolderExport"
             @tag-select="handleTagSelect" @tag-clear="handleTagClear"
-            @tag-filter-reverse="handleTagFilterReverse" @tag-filter-no-tags="handleTagFilterNoTags"
-            @tag-filter-expand="handleTagFilterExpand"
-            @tag-filter-search="handleTagFilterSearch"></file-tree>
+            @tag-filter-no-tags="handleTagFilterNoTags"
+            @session-search-change="handleSessionSearchChange"></file-tree>
     </div>
 </aside>
 

@@ -2,6 +2,20 @@ import { safeExecute, createError, ErrorTypes } from '/cdn/utils/core/error.js';
 import { normalizeFilePath } from '../../utils/fileFieldNormalizer.js';
 import { formatFileSizeCompact, sortFileTreeItems } from './fileTreeUtils.js';
 
+const escapeHtml = (str) => {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+};
+
+const highlightText = (text, query) => {
+    if (!query || !text) return escapeHtml(text);
+    const escapedQuery = escapeHtml(query);
+    const escapedText = escapeHtml(text);
+    const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return escapedText.replace(regex, '<mark class="search-highlight">$1</mark>');
+};
+
 const fileTreeMethods = {
     filterTree(items, query) {
         if (!query) return items;
@@ -26,29 +40,6 @@ const fileTreeMethods = {
         }
         return filtered;
     },
-    handleSearchInput(event) {
-        const value = event.target.value;
-
-        if (this.searchDebounceTimer) {
-            clearTimeout(this.searchDebounceTimer);
-        }
-
-        this.searchDebounceTimer = setTimeout(() => {
-            this.$emit('search-change', value);
-        }, 200);
-    },
-    handleSearchClear() {
-        const input = this.$refs.searchInput;
-        if (input) {
-            input.value = '';
-        }
-        this.$emit('search-change', '');
-        this.$nextTick(() => {
-            if (input) {
-                input.focus();
-            }
-        });
-    },
     toggleBatchMode() {
         this.$emit('toggle-batch-mode');
     },
@@ -72,13 +63,29 @@ const fileTreeMethods = {
     },
     handleViewModeChange(mode) {
         return safeExecute(() => {
-            if (mode === 'tree' || mode === 'tags') {
+            if (mode === 'tree' || mode === 'cards') {
                 this.$emit('view-mode-change', mode);
             }
         }, '视图模式切换处理');
     },
     sortFileTreeItems(items) {
         return sortFileTreeItems(items);
+    },
+    handleSessionSearchInput(event) {
+        const value = event.target.value;
+        if (this.sessionSearchDebounceTimer) {
+            clearTimeout(this.sessionSearchDebounceTimer);
+        }
+        this.sessionSearchDebounceTimer = setTimeout(() => {
+            this.$emit('session-search-change', value);
+        }, 300);
+    },
+    handleSessionSearchClear() {
+        const input = this.$refs.sessionSearchInput;
+        if (input) {
+            input.value = '';
+        }
+        this.$emit('session-search-change', '');
     },
     toggleCollapse() {
         return safeExecute(() => {
@@ -199,17 +206,8 @@ const fileTreeMethods = {
             this.$emit('tag-select', newTags);
         }, '切换标签选择');
     },
-    toggleReverse() {
-        this.$emit('tag-filter-reverse', !this.tagFilterReverse);
-    },
     toggleNoTags() {
         this.$emit('tag-filter-no-tags', !this.tagFilterNoTags);
-    },
-    toggleExpand() {
-        this.$emit('tag-filter-expand', !this.tagFilterExpanded);
-    },
-    updateTagSearch(keyword) {
-        this.$emit('tag-filter-search', keyword);
     },
     clearAllFilters() {
         this.$emit('tag-clear');
@@ -296,7 +294,7 @@ const fileTreeMethods = {
             return;
         }
 
-        const currentOrder = this.allTags;
+        const currentOrder = this.sidebarStoryTags;
         const draggedIndex = currentOrder.indexOf(draggedTag);
         const targetIndex = currentOrder.indexOf(targetTag);
 

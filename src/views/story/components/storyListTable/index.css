@@ -1,0 +1,116 @@
+.sp-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+.sp-table-loading,
+.sp-table-error,
+.sp-table-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--yi-text-secondary);
+    font-size: 14px;
+}
+.sp-table-loading i,
+.sp-table-error i,
+.sp-table-empty i {
+    margin-right: 8px;
+    font-size: 16px;
+}
+.sp-table-error {
+    color: var(--yi-danger);
+}
+.sp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.sp-th {
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--yi-text-secondary);
+    border-bottom: 2px solid var(--yi-border, rgba(255,255,255,0.1));
+    white-space: nowrap;
+    user-select: none;
+}
+.sp-th--sortable {
+    cursor: pointer;
+    transition: color 0.15s;
+}
+.sp-th--sortable:hover {
+    color: var(--yi-text);
+}
+.sp-th--sorted {
+    color: var(--yi-primary);
+}
+.sp-sort-arrow {
+    margin-left: 4px;
+    font-size: 11px;
+}
+.sp-th-label {
+    display: inline;
+}
+.sp-td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    vertical-align: middle;
+}
+.sp-tr {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.sp-tr:hover {
+    background: var(--yi-surface-hover);
+}
+.sp-story-name {
+    font-weight: 500;
+    color: var(--yi-text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+}
+.sp-td-empty {
+    color: var(--yi-text-muted);
+}
+.sp-td-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.sp-td-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--yi-surface-hover);
+    color: var(--yi-text-secondary);
+    white-space: nowrap;
+}
+.sp-stage-items {
+    display: flex;
+    gap: 6px;
+}
+.sp-stage-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--yi-text-secondary);
+}
+.sp-stage-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--yi-surface-hover);
+    color: var(--yi-text-muted);
+}

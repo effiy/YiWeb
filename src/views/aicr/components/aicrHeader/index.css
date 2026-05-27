@@ -7,7 +7,7 @@
 /* 优化头部区域为 flex 单行布局：
    SearchHeader（标签列表 + 标签控制合并到同一行） */
 .aicr-header {
-    padding: 6px var(--spacing-md);
+    padding: 4px var(--spacing-md);
     display: flex;
     flex-direction: column;
     align-items: stretch;

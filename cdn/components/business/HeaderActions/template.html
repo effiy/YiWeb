@@ -1,0 +1,35 @@
+<div class="header-actions">
+  <slot></slot>
+  <button
+    v-if="showBgAnimationToggle"
+    type="button"
+    class="header-icon-btn"
+    :class="{ active: bgAnimationEnabled }"
+    @click="toggleBgAnimation"
+    :title="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
+    :aria-label="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
+  >
+    <yi-icon name="palette"></yi-icon>
+  </button>
+  <button
+    v-if="showAuthButton"
+    type="button"
+    class="header-icon-btn"
+    @click="openAuth"
+    title="API 鉴权"
+    aria-label="API 鉴权"
+  >
+    <yi-icon name="key"></yi-icon>
+  </button>
+  <button
+    v-if="showClearCache"
+    type="button"
+    class="header-icon-btn"
+    @click="$emit('clear-cache')"
+    title="清缓存并刷新"
+    aria-label="清缓存并刷新"
+  >
+    <yi-icon name="rotate-right"></yi-icon>
+  </button>
+  <span v-if="showEnvBadge" class="env-badge" :class="envType">{{ envLabel }}</span>
+</div>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Claude 管理面板 — 管理远端项目 .claude 配置">
+    <meta name="keywords" content="Claude, 配置管理, YiWeb">
+    <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
+    <title>YiWeb | Claude 管理面板</title>
+    <link rel="stylesheet" href="../../views/claude/styles/index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <main id="main-content">
+        <div id="app">
+            <claude-panel-page
+                :loading="loading"
+                :error="error"
+                :projects="projects"
+                :total-projects="totalProjects"
+                :total-skills="totalSkills"
+                :total-agents="totalAgents"
+                :health-summary="healthSummary"
+                :selected-project="selectedProject"
+                @select-project="viewProject"
+                @back="goBack"
+            ></claude-panel-page>
+        </div>
+    </main>
+
+    <section id="global-loading-indicator" class="loading-indicator" role="status" aria-live="polite" aria-label="页面加载中">
+        <div class="loading-content">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p class="loading-text">正在加载...</p>
+        </div>
+    </section>
+
+    <noscript>
+        <div style="text-align:center;padding:48px 24px;color:var(--yi-text-secondary,#6b7280);font-family:var(--yi-font-ui,sans-serif);">
+            请启用 JavaScript 以使用 Claude 管理面板
+        </div>
+    </noscript>
+
+    <script type="module" src="../../core/config.js"></script>
+    <script type="module" src="../../views/claude/index.js"></script>
+    <script type="module" src="/cdn/utils/core/performance.js"></script>
+</body>
+
+</html>

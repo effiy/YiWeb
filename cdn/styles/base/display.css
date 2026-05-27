@@ -4,18 +4,6 @@
  * 统一管理 display、position、overflow、z-index、宽高、响应式等常用工具类
  */
 
-/* Z-index 变量 */
-:root {
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
-  --z-toast: 1080;
-}
-
 /* Display 工具类 */
 .hidden { display: none; }
 .block { display: block; }
@@ -75,20 +63,29 @@
   transform: translateY(-50%);
 }
 
-/* Z-index 工具类 */
+/* Z-index 工具类 — canonical source: theme.css */
 .z-0        { z-index: 0; }
-.z-10       { z-index: 10; }
-.z-20       { z-index: 20; }
-.z-30       { z-index: 30; }
-.z-40       { z-index: 40; }
-.z-50       { z-index: 50; }
 .z-auto     { z-index: auto; }
+.z-below    { z-index: var(--z-below); }
+.z-local-1  { z-index: var(--z-local-1); }
+.z-local-2  { z-index: var(--z-local-2); }
+.z-local-3  { z-index: var(--z-local-3); }
+.z-local-5  { z-index: var(--z-local-5); }
+.z-local-10 { z-index: var(--z-local-10); }
+.z-local-20 { z-index: var(--z-local-20); }
+.z-local-30 { z-index: var(--z-local-30); }
+.z-local-50 { z-index: var(--z-local-50); }
+.z-local-100{ z-index: var(--z-local-100); }
 .z-dropdown { z-index: var(--z-dropdown); }
 .z-sticky   { z-index: var(--z-sticky); }
 .z-fixed    { z-index: var(--z-fixed); }
 .z-modal    { z-index: var(--z-modal); }
 .z-popover  { z-index: var(--z-popover); }
 .z-tooltip  { z-index: var(--z-tooltip); }
+.z-toast    { z-index: var(--z-toast); }
+.z-overlay  { z-index: var(--z-overlay); }
+.z-loading  { z-index: var(--z-loading); }
+.z-debug    { z-index: var(--z-debug); }
 
 /* Overflow 工具类 */
 .overflow-auto    { overflow: auto; }

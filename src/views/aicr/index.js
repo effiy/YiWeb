@@ -11,6 +11,7 @@ import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
 import { createSidebarResizers } from '/src/views/aicr/utils/resizer.js';
 import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.js';
+import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
 
 // 创建代码审查页面应用
 (async function initAicrApp() {
@@ -24,7 +25,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             useMethods,
             components: [
                 'AicrPage',
-                'AicrHeader',
                 'AicrSidebar',
                 'AicrCodeArea',
                 'AicrModals',
@@ -32,13 +32,14 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 'YiLoading',
                 'YiEmptyState',
                 'YiErrorState',
+                'YiIcon',
                 'YiIconButton',
                 'YiButton',
                 'YiTag',
                 'YiSelect',
                 'YiInput',
                 'YiTextarea',
-                'SearchHeader',
+                'HeaderActions',
                 'FileTree',
                 'CodeView',
                 'MarkdownView',
@@ -48,7 +49,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             ],
             componentModules: [
                 '/src/views/aicr/components/aicrPage/index.js',
-                '/src/views/aicr/components/aicrHeader/index.js',
                 '/src/views/aicr/components/aicrSidebar/index.js',
                 '/src/views/aicr/components/aicrCodeArea/index.js',
                 '/src/views/aicr/components/aicrModals/index.js',
@@ -56,13 +56,14 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 '/cdn/components/common/loaders/YiLoading/index.js',
                 '/cdn/components/common/feedback/YiEmptyState/index.js',
                 '/cdn/components/common/feedback/YiErrorState/index.js',
+                '/cdn/icons/YiIcon/index.js',
                 '/cdn/components/common/buttons/YiIconButton/index.js',
                 '/cdn/components/common/buttons/YiButton/index.js',
                 '/cdn/components/common/tags/YiTag/index.js',
                 '/cdn/components/common/forms/YiSelect/index.js',
                 '/cdn/components/common/forms/YiInput/index.js',
                 '/cdn/components/common/forms/YiTextarea/index.js',
-                '/cdn/components/business/SearchHeader/index.js',
+                '/cdn/components/business/HeaderActions/index.js',
                 '/src/views/aicr/components/fileTree/index.js',
                 '/src/views/aicr/components/codeView/index.js',
                 '/cdn/components/business/MarkdownView/index.js',
@@ -108,12 +109,11 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 sessionMessageEditorDraft: store.sessionMessageEditorDraft,
                 sessionMessageEditorMode: store.sessionMessageEditorMode,
                 sessionMessageEditorIndex: store.sessionMessageEditorIndex,
+                // 文件树数据
+                fileTree: store.fileTree,
                 // 标签过滤相关状态
-                tagFilterReverse: store.tagFilterReverse,
                 tagFilterNoTags: store.tagFilterNoTags,
-                tagFilterExpanded: store.tagFilterExpanded,
-                tagFilterVisibleCount: store.tagFilterVisibleCount,
-                tagFilterSearchKeyword: store.tagFilterSearchKeyword,
+                selectedTypeTags: store.selectedTypeTags,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
@@ -217,10 +217,17 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                                 window.__aicrPendingHighlightRangeInfo = pendingHighlightRange;
                             }
                             if (fileParam) {
+                                // URL 带有 key 参数时默认收缩两侧侧边栏
+                                store.sidebarCollapsed.value = true;
+                                store.chatPanelCollapsed.value = true;
+
                                 const norm = typeof store.normalizeKey === 'function'
                                     ? store.normalizeKey(fileParam)
                                     : String(fileParam || '');
                                 store.setSelectedKey(norm);
+                                if (typeof store.expandPathToFile === 'function') {
+                                    store.expandPathToFile(norm);
+                                }
                                 if (typeof store.loadFileByKey === 'function') {
                                     store.loadFileByKey(norm).then(() => {
                                         try {
@@ -312,18 +319,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             // 传递props给子组件
             props: {
                 'code-view': {},
-                'aicr-header': {
-                    allTags: function () { return this.allTags; },
-                    selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
-                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
-                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
-                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
-                    tagCounts: function () { return this.tagCounts; },
-                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; },
-                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
-                    sidebarCollapsed: function () { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; }
-                },
                 'file-tree': {
                     tree: function () { return store.fileTree; },
                     selectedKey: function () { return store.selectedKey.value; },
@@ -335,12 +330,10 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     selectedKeys: function () { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
                     viewMode: function () { return store.viewMode ? store.viewMode.value : 'tree'; },
                     searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
+                    sessionSearchQuery: function () { return store.sessionSearchQuery ? store.sessionSearchQuery.value : ''; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
-                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
                     tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
-                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
-                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
+                    selectedTypeTags: function () { return store.selectedTypeTags ? store.selectedTypeTags.value : []; }
                 }
             },
             methods: createMainPageMethods(store),
@@ -359,68 +352,284 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
                 },
-                // 所有标签列表
-                allTags: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+                // 文档类型图标/标签映射（用于 stats-bar 动态渲染）
+                // 未知类型使用默认图标
+                _TYPE_META: {
+                    '故事任务': { icon: 'tag', label: '故事' },
+                    '使用场景': { icon: 'layout', label: '场景' },
+                    '技术评审': { icon: 'edit', label: '设计' },
+                    '自改进复盘': { icon: 'refresh', label: '自改进' }
+                },
 
-                    // 只收集一级目录作为标签
-                    const tags = new Set();
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'folder') {
-                            tags.add(item.name);
+                // 项目标签：顶层文件夹名 + 文件数 [{ name, count }]
+                projectTags: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return [];
+
+                    const selectedTypes = store.selectedTypeTags?.value || [];
+                    const hasType = selectedTypes.length > 0;
+
+                    // 递归检查子树是否包含任一选中类型文件
+                    const hasMatchingType = (items) => {
+                        if (!Array.isArray(items)) return false;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) return true;
+                            } else if (item.type === 'folder' && item.children && hasMatchingType(item.children)) {
+                                return true;
+                            }
                         }
+                        return false;
+                    };
+
+                    // 递归计数：仅统计选中类型文件
+                    const countInScope = (items) => {
+                        if (!Array.isArray(items)) return 0;
+                        let count = 0;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (!hasType) { count++; continue; }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) count++;
+                            } else if (item.type === 'folder' && item.children) {
+                                count += countInScope(item.children);
+                            }
+                        }
+                        return count;
+                    };
+
+                    const result = [];
+                    for (const item of tree) {
+                        if (item.type !== 'folder' || !item.children) continue;
+                        if (hasType && !hasMatchingType(item.children)) continue;
+                        result.push({ name: item.name, count: countInScope(item.children) });
                     }
 
-                    const allTagsArray = Array.from(tags).sort();
-
+                    // 按 localStorage 拖拽排序
                     try {
                         const saved = localStorage.getItem('aicr_file_tag_order');
                         const savedOrder = saved ? JSON.parse(saved) : null;
-
                         if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
-                            const orderedTags = savedOrder.filter(tag => tags.has(tag));
-                            const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
-                            return [...orderedTags, ...newTags];
+                            const nameSet = new Set(result.map(r => r.name));
+                            const ordered = savedOrder.filter(n => nameSet.has(n)).map(n => result.find(r => r.name === n));
+                            const remaining = result.filter(r => !savedOrder.includes(r.name));
+                            return [...ordered, ...remaining];
                         }
-                    } catch (e) {
-                        console.warn('[index.js] 加载标签顺序失败:', e);
-                    }
+                    } catch (e) { /* ignore */ }
 
-                    return allTagsArray;
+                    return result.sort((a, b) => a.name.localeCompare(b.name));
                 },
-                // 标签计数
-                tagCounts: function () {
-                    const counts = {};
-                    let noTagsCount = 0;
 
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
-                        return { counts, noTagsCount };
+                // 根级文件数（用于"没有故事"按钮徽标）
+                rootFileCount: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return 0;
+                    let count = 0;
+                    for (const item of tree) {
+                        if (item.type === 'file') count++;
                     }
+                    return count;
+                },
 
-                    // 统计一级目录下所有文件数量（包括子文件夹中的文件）
-                    const countFilesInFolder = (items) => {
-                        let fileCount = 0;
-                        if (!Array.isArray(items)) return fileCount;
+                // 故事标签：从树中提取的故事名 + 文件数 [{ name, count }]
+                storyTags: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return [];
+
+                    const firstLevelNames = getFirstLevelNames(tree);
+                    const selectedTypes = store.selectedTypeTags?.value || [];
+                    const hasType = selectedTypes.length > 0;
+
+                    const countInScope = (items) => {
+                        if (!Array.isArray(items)) return 0;
+                        let count = 0;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                fileCount++;
+                                if (!hasType) { count++; continue; }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) count++;
                             } else if (item.type === 'folder' && item.children) {
-                                fileCount += countFilesInFolder(item.children);
+                                count += countInScope(item.children);
                             }
                         }
-                        return fileCount;
+                        return count;
                     };
 
-                    // 遍历根目录
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'file') {
-                            noTagsCount++;
-                        } else if (item.type === 'folder') {
-                            counts[item.name] = countFilesInFolder(item.children || []);
+                    const resultMap = new Map();
+                    const walk = (items, parentName = '') => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'folder') {
+                                if (parentName === '故事任务面板') {
+                                    const count = countInScope(item.children || []);
+                                    const existing = resultMap.get(item.name);
+                                    resultMap.set(item.name, existing !== undefined ? existing + count : count);
+                                }
+                                if (item.children) walk(item.children, item.name);
+                            }
                         }
+                    };
+                    // 项目级联动：确定遍历起始范围
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+                    const hasProject = projectSel.length > 0;
+
+                    if (hasProject) {
+                        for (const item of tree) {
+                            if (item.type === 'folder' && projectSel.includes(item.name)) {
+                                walk(item.children || []);
+                            }
+                        }
+                    } else {
+                        walk(tree);
                     }
 
-                    return { counts, noTagsCount };
+                    const result = [];
+                    for (const [name, count] of resultMap) {
+                        if (count > 0) result.push({ name, count });
+                    }
+                    return result.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
+                },
+
+                // 类型标签：文档类型名 + 文件数 [{ type, count }]
+                // 级联：项目选中 → 仅统计该项目下的类型；故事选中 → 进一步限定
+                typeTags: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return [];
+
+                    const apiTypes = store.storyDocTypes?.value || [];
+                    const treeTypes = extractDocTypes(tree);
+                    const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : apiTypes);
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const firstLevelNames = getFirstLevelNames(tree);
+                    const storyNameSet = new Set(extractStoryNames(tree));
+
+                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+                    const storySel = selectedTags.filter(t => storyNameSet.has(t));
+                    const hasProject = projectSel.length > 0;
+                    const hasStory = storySel.length > 0;
+
+                    const typeCounts = {};
+                    const walk = (items, depth, projectOk, storyOk, parentName = '') => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (projectOk && storyOk) {
+                                    const fileName = (item.name || '').replace(/\.md$/i, '');
+                                    if (docTypeSet.has(fileName)) {
+                                        typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
+                                    }
+                                }
+                                continue;
+                            }
+                            if (item.type !== 'folder') continue;
+
+                            // 项目级范围：depth 0 判断是否在选中项目中
+                            const nextProjectOk = depth === 0
+                                ? (!hasProject || projectSel.includes(item.name))
+                                : projectOk;
+
+                            // 故事级范围：只有直接父目录为「故事任务面板」的才是故事
+                            const isStory = (parentName === '故事任务面板');
+                            const nextStoryOk = isStory
+                                ? (!hasStory || storySel.includes(item.name))
+                                : storyOk;
+
+                            if (item.children) walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
+                        }
+                    };
+                    walk(tree, 0, !hasProject, !hasStory);
+
+                    return Object.entries(typeCounts)
+                        .map(([type, count]) => ({ type, count }))
+                        .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+                },
+
+                // Stats bar 类型统计：[{ type, count, icon, label }] — 替代硬编码4项
+                typeStats: function () {
+                    return this.typeTags.map(tt => {
+                        const meta = this._TYPE_META[tt.type] || { icon: 'file', label: tt.type };
+                        return { type: tt.type, count: tt.count, icon: meta.icon, label: meta.label };
+                    });
+                },
+
+                // 筛选后文件总数（项目/故事/类型三级级联 + 会话搜索）
+                filteredFileCount: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return 0;
+
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const selectedTypes = store.selectedTypeTags?.value || [];
+                    const hasType = selectedTypes.length > 0;
+                    const noTags = store.tagFilterNoTags?.value || false;
+                    const sessionQuery = (store.sessionSearchQuery?.value || '').trim().toLowerCase();
+
+                    const firstLevelNames = getFirstLevelNames(tree);
+                    const storyNameSet = new Set(extractStoryNames(tree));
+                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+                    const storySel = selectedTags.filter(t => storyNameSet.has(t));
+                    const hasProject = projectSel.length > 0;
+                    const hasStory = storySel.length > 0;
+                    let workingTree = tree;
+                    if (sessionQuery) {
+                        workingTree = workingTree.filter(item => {
+                            if (item.type === 'folder') {
+                                if ((item.name || '').toLowerCase().includes(sessionQuery)) return true;
+                                if (Array.isArray(item.children)) {
+                                    return item.children.some(c => (c.name || '').toLowerCase().includes(sessionQuery));
+                                }
+                                return false;
+                            }
+                            return (item.name || '').toLowerCase().includes(sessionQuery);
+                        });
+                    }
+
+                    // "没有故事"：仅统计根级文件
+                    if (noTags && !hasProject && !hasStory && !hasType) {
+                        let count = 0;
+                        for (const item of workingTree) {
+                            if (item.type === 'file') count++;
+                        }
+                        return count;
+                    }
+
+                    let total = 0;
+                    const walk = (items, depth, projectOk, storyOk, parentName = '') => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (hasStory && !storyOk) continue;
+                                if (!hasType) { total++; continue; }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) total++;
+                            } else if (item.type === 'folder' && item.children) {
+                                // 项目级范围
+                                const nextProjectOk = depth === 0
+                                    ? (!hasProject || projectSel.includes(item.name))
+                                    : projectOk;
+
+                                if (!nextProjectOk) continue;
+
+                                // 故事级范围：只有直接父目录为「故事任务面板」的才是故事
+                                const isStory = (parentName === '故事任务面板');
+
+                                // 跳过未选中的故事文件夹
+                                if (isStory && hasStory && !storySel.includes(item.name)) {
+                                    continue;
+                                }
+
+                                const nextStoryOk = isStory
+                                    ? (!hasStory || storySel.includes(item.name))
+                                    : storyOk;
+
+                                walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
+                            }
+                        }
+                    };
+
+                    walk(workingTree, 0, !hasProject, !hasStory);
+                    return total;
                 }
             }
         });
