@@ -17,7 +17,6 @@ export function createStoryStoreState(vueRef) {
     // 筛选状态
     const selectedSessionTags = vueRef([]);
     const selectedTypeTags = vueRef([]);
-    const selectedMissingFilter = vueRef(null);
     const tagFilterNoTags = vueRef(false);
     const localSearchQuery = vueRef('');
 
@@ -39,7 +38,6 @@ export function createStoryStoreState(vueRef) {
             allProjectTags,
             selectedSessionTags,
             selectedTypeTags,
-            selectedMissingFilter,
             tagFilterNoTags,
             localSearchQuery,
             viewMode,

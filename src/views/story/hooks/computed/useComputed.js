@@ -7,42 +7,7 @@
  * 与 AICR 页面使用完全相同的逻辑。
  */
 
-import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
-
-const STAGE_SUFFIXES = [
-    { key: 'operations',   suffix: '-自改进复盘.md' },
-    { key: 'testing',      suffix: '-测试报告.md' },
-    { key: 'testing',      suffix: '-测试设计.md' },
-    { key: 'develop',      suffix: '-实施报告.md' },
-    { key: 'design',       suffix: '-使用场景.md' },
-    { key: 'planning',     suffix: '-故事任务.md' },
-];
-
-const DOC_SUFFIX_MAP = {
-    story_task:     '-故事任务.md',
-    scenario:       '-使用场景.md',
-    implementation: '-实施报告.md',
-    test_report:    '-测试报告.md',
-    retrospective:  '-自改进复盘.md',
-};
-
-const MISSING_SUFFIX_MAP = {
-    design:     '-使用场景.md',
-    develop:    '-实施报告.md',
-    testing:    '-测试报告.md',
-    operations: '-自改进复盘.md',
-};
-
-const DOC_LABEL_MAP = {
-    story_task: '规划', scenario: '设计', implementation: '开发',
-    test_report: '测试', retrospective: '运营',
-};
-
-const MISSING_LABEL_MAP = {
-    design: '缺设计', develop: '缺开发', testing: '缺测试', operations: '缺运营',
-};
-
-const MISSING_STAGE_KEYS = ['design', 'develop', 'testing', 'operations'];
+import { getFirstLevelNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
 
 const _TYPE_META = {
     '故事任务':   { icon: 'circle',      label: '故事' },
@@ -53,11 +18,6 @@ const _TYPE_META = {
     '测试报告':   { icon: 'check-circle', label: '测试' },
     '自改进复盘': { icon: 'lightbulb',   label: '运营' },
 };
-
-function hasStoryFile(story, suffix) {
-    if (!story || !Array.isArray(story.files)) return false;
-    return story.files.some(f => (f.fileName || '').endsWith(suffix));
-}
 
 function getSelectedProjectTags(state) {
     const tree = state.fileTree.value;
@@ -88,7 +48,6 @@ function _applyFilters(state, stories, exclude) {
     const selProjectTags = getSelectedProjectTags(state);
     const selStoryTags = getSelectedStoryTags(state);
     const selTypeTags = state.selectedTypeTags.value;
-    const missingFilter = state.selectedMissingFilter.value;
     const noTags = state.tagFilterNoTags.value;
     const searchQuery = (state.localSearchQuery.value || '').trim().toLowerCase();
 
@@ -116,12 +75,6 @@ function _applyFilters(state, stories, exclude) {
                 })
             );
         });
-    }
-    if (exclude !== 'missingFilter' && missingFilter) {
-        const suffix = MISSING_SUFFIX_MAP[missingFilter];
-        if (suffix) {
-            result = result.filter(s => !hasStoryFile(s, suffix));
-        }
     }
     if (exclude !== 'search' && searchQuery) {
         result = result.filter(s => _matchSearch(s, searchQuery));
@@ -189,7 +142,6 @@ export function useComputed(store) {
             store.localSearchQuery.value ||
             store.selectedSessionTags.value.length > 0 ||
             store.selectedTypeTags.value.length > 0 ||
-            store.selectedMissingFilter.value ||
             store.tagFilterNoTags.value
         );
     });
@@ -221,16 +173,8 @@ export function useComputed(store) {
         if (!Array.isArray(filtered)) return groups;
         for (const story of filtered) {
             if (!story) continue;
-            const names = Array.isArray(story.files) ? story.files.map(f => f.fileName || '') : [];
-            let placed = false;
-            for (const { key, suffix } of STAGE_SUFFIXES) {
-                if (names.some(n => typeof n === 'string' && n.endsWith(suffix))) {
-                    groups[key].push(story);
-                    placed = true;
-                    break;
-                }
-            }
-            if (!placed) groups.planning.push(story);
+            const status = groups[story.status] ? story.status : 'planning';
+            groups[status].push(story);
         }
         return groups;
     });
@@ -478,22 +422,6 @@ export function useComputed(store) {
         return map;
     });
 
-    const missingCounts = computed(() => {
-        const base = _applyFilters(store, store.stories.value, 'missingFilter');
-        const counts = {};
-        if (!Array.isArray(base)) {
-            for (const key of MISSING_STAGE_KEYS) counts[key] = 0;
-            return counts;
-        }
-        for (const key of MISSING_STAGE_KEYS) {
-            const suffix = MISSING_SUFFIX_MAP[key];
-            counts[key] = suffix
-                ? base.filter(s => s && !hasStoryFile(s, suffix)).length
-                : 0;
-        }
-        return counts;
-    });
-
     const storyOptions = computed(() => {
         return storyTags.value.map(st => ({ value: st.name, label: st.name, count: st.count }));
     });
@@ -544,13 +472,6 @@ export function useComputed(store) {
                 },
             });
         }
-        if (store.selectedMissingFilter.value) {
-            const mf = store.selectedMissingFilter.value;
-            pills.push({
-                type: 'missing', label: MISSING_LABEL_MAP[mf] || mf,
-                clear: () => { store.selectedMissingFilter.value = null; },
-            });
-        }
         return pills;
     });
 
@@ -584,7 +505,6 @@ export function useComputed(store) {
         typeStats,
         storyTags,
         tagColorMap,
-        missingCounts,
         storyOptions,
         selectedProjectTags,
         selectedStoryTags,

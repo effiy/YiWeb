@@ -5,23 +5,8 @@
  * 使用 selectedSessionTags 单数组实现双向级联（选中故事→自动选父项目，去项目→自动去子故事）。
  */
 
-import { validateTag, validateDocType, validateMissingFilter, sanitizeSearchQuery } from '../validators.js';
+import { validateTag, validateDocType, sanitizeSearchQuery } from '../validators.js';
 import { getFirstLevelNames } from '/src/views/aicr/utils/filterHelpers.js';
-
-const DOC_SUFFIX_MAP = {
-    story_task:    '-故事任务.md',
-    scenario:      '-使用场景.md',
-    implementation:'-实施报告.md',
-    test_report:   '-测试报告.md',
-    retrospective: '-自改进复盘.md',
-};
-
-const MISSING_SUFFIX_MAP = {
-    design:     '-使用场景.md',
-    develop:    '-实施报告.md',
-    testing:    '-测试报告.md',
-    operations: '-自改进复盘.md',
-};
 
 export function createFilterMethods(state) {
     /* ---- project / story tag cascade ---- */
@@ -97,14 +82,6 @@ export function createFilterMethods(state) {
         state.selectedTypeTags.value = [];
     }
 
-    /* ---- missing document filter ---- */
-
-    function toggleMissingFilter(filter) {
-        if (!validateMissingFilter(filter)) return;
-        state.selectedMissingFilter.value =
-            state.selectedMissingFilter.value === filter ? null : filter;
-    }
-
     /* ---- search ---- */
 
     function setSearchQuery(query) {
@@ -121,7 +98,6 @@ export function createFilterMethods(state) {
         state.localSearchQuery.value = '';
         state.selectedSessionTags.value = [];
         state.selectedTypeTags.value = [];
-        state.selectedMissingFilter.value = null;
         state.tagFilterNoTags.value = false;
         state.sortField.value = 'lastModified';
         state.sortDirection.value = 'desc';
@@ -145,13 +121,10 @@ export function createFilterMethods(state) {
         toggleUntagged,
         toggleTypeTag,
         clearTypeTags,
-        toggleMissingFilter,
         setSearchQuery,
         clearSearchQuery,
         clearAllFilters,
         getSelectedProjectTags,
         getSelectedStoryTags,
-        DOC_SUFFIX_MAP,
-        MISSING_SUFFIX_MAP,
     };
 }

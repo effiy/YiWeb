@@ -63,7 +63,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 // 筛选状态
                 selectedSessionTags: store.selectedSessionTags,
                 selectedTypeTags: store.selectedTypeTags,
-                selectedMissingFilter: store.selectedMissingFilter,
                 tagFilterNoTags: store.tagFilterNoTags,
                 localSearchQuery: store.localSearchQuery,
 
@@ -94,7 +93,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 storyTags: computedRefs.storyTags,
                 selectedTypeTagLabels: computedRefs.selectedTypeTagLabels,
                 tagColorMap: computedRefs.tagColorMap,
-                missingCounts: computedRefs.missingCounts,
                 storyOptions: computedRefs.storyOptions,
                 selectedProjectTags: computedRefs.selectedProjectTags,
                 selectedStoryTags: computedRefs.selectedStoryTags,
@@ -118,7 +116,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 toggleUntagged: () => store.toggleUntagged(),
                 toggleTypeTag: (docType) => store.toggleTypeTag(docType),
                 clearTypeTags: () => store.clearTypeTags(),
-                toggleMissingFilter: (filter) => store.toggleMissingFilter(filter),
                 setSearchQuery: (q) => store.setSearchQuery(q),
                 clearSearchQuery: () => store.clearSearchQuery(),
                 clearAllFilters: () => store.clearAllFilters(),

@@ -27,7 +27,6 @@ registerGlobalComponent({
         storyTags:             { type: Array, default: () => [] },
         selectedTypeTagLabels: { type: Array, default: () => [] },
         tagColorMap:           { type: Object, default: () => ({}) },
-        missingCounts:         { type: Object, default: () => ({}) },
         storyOptions:          { type: Array, default: () => [] },
         selectedProjectTags:   { type: Array, default: () => [] },
         selectedStoryTags:     { type: Array, default: () => [] },
@@ -36,7 +35,6 @@ registerGlobalComponent({
         viewModes:             { type: Array, default: () => [] },
         selectedSessionTags:   { type: Array, default: () => [] },
         selectedTypeTags:      { type: Array, default: () => [] },
-        selectedMissingFilter: { type: String, default: null },
         tagFilterNoTags:       { type: Boolean, default: false },
         localSearchQuery:      { type: String, default: '' },
         viewMode:              { type: String, default: 'board' },
@@ -47,7 +45,7 @@ registerGlobalComponent({
     emits: [
         'select-story', 'back',
         'toggle-session-tag', 'clear-session-tags', 'toggle-untagged',
-        'toggle-type-tag', 'clear-type-tags', 'toggle-missing-filter',
+        'toggle-type-tag', 'clear-type-tags',
         'set-search-query', 'clear-search-query', 'clear-all-filters',
         'set-view', 'toggle-sort', 'open-detail', 'close-panel',
         'handle-tags-scroll', 'clear-cache',
@@ -76,9 +74,6 @@ registerGlobalComponent({
         },
         onClearTypeTags() {
             this.$emit('clear-type-tags');
-        },
-        onSelectMissingFilter(filter) {
-            this.$emit('toggle-missing-filter', filter);
         },
         onStorySelect(event) {
             const value = event.target.value;

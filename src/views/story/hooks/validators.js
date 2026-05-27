@@ -13,8 +13,6 @@ export const VALID_STATUSES = ['planning', 'design', 'develop', 'testing', 'oper
 
 export const VALID_DOC_TYPES = ['story_task', 'scenario', 'implementation', 'test_report', 'retrospective'];
 
-export const VALID_MISSING_STAGES = ['design', 'develop', 'testing', 'operations'];
-
 export const VALID_SORT_FIELDS = ['lastModified', 'createdAt', 'name', 'status', 'healthScore', 'fileCount'];
 
 export const VALID_VIEW_MODES = ['board', 'cards', 'list'];
@@ -118,11 +116,6 @@ export function validateTag(tag) {
 export function validateDocType(docType) {
     if (typeof docType !== 'string' || docType.length === 0) return false;
     return true;
-}
-
-export function validateMissingFilter(filter) {
-    if (filter === null || filter === undefined) return true;
-    return VALID_MISSING_STAGES.includes(filter);
 }
 
 export function sanitizeSearchQuery(query) {
