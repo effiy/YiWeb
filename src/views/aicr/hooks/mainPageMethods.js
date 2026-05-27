@@ -430,15 +430,6 @@ export const createMainPageMethods = (store) => {
                 logError('[主页面] 无标签筛选切换处理失败:', error);
             }
         },
-        handleStoryLevelNoTags: function (noTags) {
-            logInfo('[主页面] 收到无故事筛选切换事件:', noTags);
-            try {
-                const methods = useMethods(store);
-                methods.handleStoryLevelNoTags(noTags);
-            } catch (error) {
-                logError('[主页面] 无故事筛选切换处理失败:', error);
-            }
-        },
         handleSessionSearchChange: function (query) {
             logInfo('[主页面] 收到会话搜索变化事件:', query);
             try {
@@ -529,6 +520,24 @@ export const createMainPageMethods = (store) => {
                 }
             } catch (error) {
                 logError('[主页面] 切换会话选择状态失败:', error);
+            }
+        },
+        handleTypeTagToggle: function (type) {
+            logInfo('[主页面] 收到类型标签切换事件:', type);
+            try {
+                const methods = useMethods(store);
+                methods.handleTypeTagToggle(type);
+            } catch (error) {
+                logError('[主页面] 类型标签切换处理失败:', error);
+            }
+        },
+        handleTypeTagClear: function () {
+            logInfo('[主页面] 收到清除类型标签事件');
+            try {
+                const methods = useMethods(store);
+                methods.handleTypeTagClear();
+            } catch (error) {
+                logError('[主页面] 清除类型标签处理失败:', error);
             }
         },
         handleToggleSelectAllSessions: function (payload) {

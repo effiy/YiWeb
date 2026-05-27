@@ -294,7 +294,7 @@ const fileTreeMethods = {
             return;
         }
 
-        const currentOrder = this.allTags;
+        const currentOrder = this.sidebarStoryTags;
         const draggedIndex = currentOrder.indexOf(draggedTag);
         const targetIndex = currentOrder.indexOf(targetTag);
 

@@ -98,17 +98,6 @@ export const createTagFilterMethods = ({ store }) => {
     };
 
     /**
-     * 切换无故事筛选（故事级别：项目下不在任何故事子目录中的文件）
-     */
-    const handleStoryLevelNoTags = (noTags) => {
-        return safeExecute(() => {
-            if (store.storyLevelNoTags) {
-                store.storyLevelNoTags.value = noTags;
-            }
-        }, '切换无故事筛选');
-    };
-
-    /**
      * 会话搜索变化
      */
     const handleSessionSearchChange = (query) => {
@@ -151,7 +140,6 @@ export const createTagFilterMethods = ({ store }) => {
         handleTagSelect,
         handleTagClear,
         handleTagFilterNoTags,
-        handleStoryLevelNoTags,
         handleSessionSearchChange,
         handleTypeTagToggle,
         handleTypeTagClear

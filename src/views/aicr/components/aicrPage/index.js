@@ -29,26 +29,24 @@ registerGlobalComponent({
         filterSummaryText() {
             const parts = [];
             if (this.tagFilterNoTags) {
-                const count = this.subTagCounts?.noTagsCount;
-                parts.push(`没有故事${count != null ? ` (${count})` : ''}`);
+                parts.push(`没有故事 (${this.rootFileCount || 0})`);
             }
             if (this.selectedSessionTags && this.selectedSessionTags.length > 0) {
                 for (const tag of this.selectedSessionTags) {
-                    const count = this.subTagCounts?.counts?.[tag];
-                    parts.push(`${tag}${count != null ? ` (${count})` : ''}`);
+                    const found = (this.storyTags || []).find(st => st.name === tag);
+                    parts.push(`${tag} (${found ? found.count : 0})`);
                 }
             }
             if (parts.length > 0) {
                 return parts.join(', ');
             }
             const all = [];
-            if (this.subTagCounts?.noTagsCount > 0) {
-                all.push(`没有故事(${this.subTagCounts.noTagsCount})`);
+            if (this.rootFileCount > 0) {
+                all.push(`没有故事(${this.rootFileCount})`);
             }
-            if (this.subTags) {
-                for (const tag of this.subTags) {
-                    const count = this.subTagCounts?.counts?.[tag];
-                    all.push(`${tag}${count != null ? `(${count})` : ''}`);
+            if (this.storyTags) {
+                for (const st of this.storyTags) {
+                    all.push(`${st.name}(${st.count})`);
                 }
             }
             return all.length > 0 ? `全部故事 · ${all.join(', ')}` : '没有故事';
@@ -64,15 +62,13 @@ registerGlobalComponent({
                 const hasSearch = this.searchQuery && this.searchQuery.length > 0;
                 const hasTags = this.selectedSessionTags && this.selectedSessionTags.length > 0;
                 const hasNoTags = this.tagFilterNoTags;
-                const hasStoryNoTags = this.storyLevelNoTags;
                 const hasSessionSearch = this.sessionSearchQuery && this.sessionSearchQuery.length > 0;
                 const hasTypeTags = this.selectedTypeTags && this.selectedTypeTags.length > 0;
-                if (hasSearch || hasTags || hasNoTags || hasStoryNoTags || hasSessionSearch || hasTypeTags) {
+                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasTypeTags) {
                     e.preventDefault();
                     if (typeof this.clearSearch === 'function') this.clearSearch();
                     if (typeof this.handleTagClear === 'function') this.handleTagClear();
                     if (typeof this.clearSessionSearch === 'function') this.clearSessionSearch();
-                    if (typeof this.handleStoryLevelNoTags === 'function') this.handleStoryLevelNoTags(false);
                     if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
                 }
             }
@@ -175,13 +171,11 @@ registerGlobalComponent({
             this.clearSessionSearch();
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
-            if (typeof this.handleStoryLevelNoTags === 'function') this.handleStoryLevelNoTags(false);
             if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
         },
         clearAllTags() {
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
             if (typeof this.handleTagFilterNoTags === 'function') this.handleTagFilterNoTags(false);
-            if (typeof this.handleStoryLevelNoTags === 'function') this.handleStoryLevelNoTags(false);
         },
         clearTypeTags() {
             if (typeof this.handleTypeTagClear === 'function') {
@@ -191,11 +185,6 @@ registerGlobalComponent({
         toggleTagFilterNoTags() {
             if (typeof this.handleTagFilterNoTags === 'function') {
                 this.handleTagFilterNoTags(!this.tagFilterNoTags);
-            }
-        },
-        toggleStoryLevelNoTags() {
-            if (typeof this.handleStoryLevelNoTags === 'function') {
-                this.handleStoryLevelNoTags(!this.storyLevelNoTags);
             }
         },
         handleTagsScroll(event) {

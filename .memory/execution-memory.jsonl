@@ -1,5 +1,0 @@
-{"timestamp":"2026-05-16T12:45:00+08:00","story":"YiWeb-shared-components-redesign","stage":"delivery","event":"delivery-complete","files_changed":8,"docs_sync":{"created":15,"overwritten":3,"failed":0},"notification":"sent"}
-{"timestamp":"2026-05-16T13:25:00+08:00","story":"YiWeb-aicr-layout-ux","stage":"delivery","event":"delivery-complete","files_changed":5,"docs_sync":{"created":7,"overwritten":18,"failed":0},"notification":"sent"}
-{"t":"2026-05-16T21:20:00+08:00","cmd":"init","story":"init","stage":"delivered","notes":"regenerated after deletion"}
-{"timestamp":"2026-05-17T00:00:00+08:00","story":"YiWeb-unify-basic-components","stage":"delivery","event":"delivery-complete","files_changed":14,"docs_sync":{"created":8,"overwritten":12,"failed":0},"notification":"not-sent"}
-{"timestamp":"2026-05-17T00:00:00+08:00","story":"YiWeb-unify-theme-colors","stage":"delivery","event":"update-complete","notes":"T3 full cascade refresh: merged YiWeb-unify-basic-components into YiWeb-unify-theme-colors docs","files_changed":8,"docs_updated":["01","02","03","04","06","07","08","00"]}

@@ -11,109 +11,13 @@ import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
 import { createSidebarResizers } from '/src/views/aicr/utils/resizer.js';
 import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.js';
-import { getSuffix, getFirstLevelNames, folderHasMatchingFile, countFilesInFolder, fileMatchesType, folderHasMatchingType, countFilesByType } from '/src/views/aicr/utils/filterHelpers.js';
+import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
 
 // 创建代码审查页面应用
 (async function initAicrApp() {
     try {
         // 在外部创建 store，以便在 onMounted 中访问
         const store = createStore();
-
-        // 共享过滤上下文 — 供 computed 中所有计数函数复用
-        const buildFilterContext = () => {
-            const selectedTags = store.selectedSessionTags?.value || [];
-            const selectedTypes = store.selectedTypeTags?.value || [];
-            const hasType = selectedTypes.length > 0;
-            const noTags = store.tagFilterNoTags?.value || false;
-            const storyNoTags = store.storyLevelNoTags?.value || false;
-            const anyTagFilter = selectedTags.length > 0 || noTags || storyNoTags || hasType;
-            const sessionQuery = store.sessionSearchQuery?.value?.trim().toLowerCase() || '';
-
-            const firstLevelNames = getFirstLevelNames(store.fileTree?.value);
-            const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
-            const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
-
-            const matchesTagFilter = (itemName, depth) => {
-                if (depth === 0 && firstLevelTags.length > 0 && !firstLevelTags.includes(itemName)) return false;
-                if (depth === 1 && secondLevelTags.length > 0 && !secondLevelTags.includes(itemName)) return false;
-                return true;
-            };
-
-            const filterBySearch = (items) => {
-                if (!sessionQuery) return items;
-                return items.filter(item => {
-                    if (item.type === 'folder') {
-                        const nameMatch = (item.name || '').toLowerCase().includes(sessionQuery);
-                        if (nameMatch) return true;
-                        if (Array.isArray(item.children)) {
-                            return item.children.some(child =>
-                                (child.name || '').toLowerCase().includes(sessionQuery)
-                            );
-                        }
-                        return false;
-                    }
-                    return (item.name || '').toLowerCase().includes(sessionQuery);
-                });
-            };
-
-            return {
-                firstLevelTags, secondLevelTags, anyTagFilter, sessionQuery, noTags, storyNoTags,
-                getSuffix, matchesTagFilter, filterBySearch,
-                hasType, selectedTypes
-            };
-        };
-
-        // 按后缀统计筛选后的文件数 — 供 stats-bar 联动计数复用
-        const _countBySuffix = (targetSuffix) => {
-            if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
-            const ctx = buildFilterContext();
-
-            // 仅检查类型筛选（跳过后缀筛选自身），让各分类独立计数
-            const typeOnly = (name) => fileMatchesType(name, ctx.selectedTypes);
-
-            let count = 0;
-            const walk = (items, depth) => {
-                if (!Array.isArray(items)) return;
-                for (const item of items) {
-                    if (item.type === 'file') {
-                        if (ctx.storyNoTags && depth !== 1) continue;
-                        const name = item.name || '';
-                        if (!typeOnly(name)) continue;
-                        const suffix = ctx.getSuffix(name);
-                        if (suffix === targetSuffix) count++;
-                    } else if (item.type === 'folder' && item.children) {
-                        if (!ctx.matchesTagFilter(item.name, depth)) continue;
-                        walk(item.children, depth + 1);
-                    }
-                }
-            };
-
-            const effectiveFilter = (ctx.firstLevelTags.length > 0 || ctx.secondLevelTags.length > 0 ||
-                                      ctx.noTags || ctx.storyNoTags || ctx.hasType || ctx.sessionQuery);
-
-            if (!effectiveFilter) {
-                walk(store.fileTree.value, 0);
-                return count;
-            }
-
-            let filteredItems = store.fileTree.value;
-            if (ctx.sessionQuery) {
-                filteredItems = ctx.filterBySearch(filteredItems);
-            }
-
-            if (ctx.noTags && ctx.firstLevelTags.length === 0 && ctx.secondLevelTags.length === 0 && !ctx.hasType && !ctx.storyNoTags) {
-                for (const item of filteredItems) {
-                    if (item.type === 'file') {
-                        const name = item.name || '';
-                        if (typeOnly(name) && ctx.getSuffix(name) === targetSuffix) count++;
-                    }
-                }
-                return count;
-            }
-
-            walk(filteredItems, 0);
-            return count;
-        };
 
         const app = await createBaseView({
             createStore: () => store,
@@ -209,7 +113,6 @@ import { getSuffix, getFirstLevelNames, folderHasMatchingFile, countFilesInFolde
                 fileTree: store.fileTree,
                 // 标签过滤相关状态
                 tagFilterNoTags: store.tagFilterNoTags,
-                storyLevelNoTags: store.storyLevelNoTags,
                 selectedTypeTags: store.selectedTypeTags,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
@@ -449,242 +352,232 @@ import { getSuffix, getFirstLevelNames, folderHasMatchingFile, countFilesInFolde
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
                 },
-                // 所有标签列表（三级联动：受类型标签选中过滤）
-                allTags: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+                // 文档类型图标/标签映射（用于 stats-bar 动态渲染）
+                // 未知类型使用默认图标
+                _TYPE_META: {
+                    '故事任务': { icon: 'tag', label: '故事' },
+                    '使用场景': { icon: 'layout', label: '场景' },
+                    '技术评审': { icon: 'edit', label: '设计' },
+                    '自改进复盘': { icon: 'refresh', label: '自改进' }
+                },
+
+                // 项目标签：顶层文件夹名 + 文件数 [{ name, count }]
+                projectTags: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return [];
 
                     const selectedTypes = store.selectedTypeTags?.value || [];
                     const hasType = selectedTypes.length > 0;
 
-                    const tags = new Set();
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'folder') {
-                            if (hasType && !folderHasMatchingType(item.children || [], selectedTypes)) continue;
-                            tags.add(item.name);
-                        }
-                    }
-
-                    const allTagsArray = Array.from(tags).sort();
-
-                    try {
-                        const saved = localStorage.getItem('aicr_file_tag_order');
-                        const savedOrder = saved ? JSON.parse(saved) : null;
-
-                        if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
-                            const orderedTags = savedOrder.filter(tag => tags.has(tag));
-                            const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
-                            return [...orderedTags, ...newTags];
-                        }
-                    } catch (e) {
-                        console.warn('[index.js] 加载标签顺序失败:', e);
-                    }
-
-                    return allTagsArray;
-                },
-                // 标签计数（三级联动：受类型标签选中过滤）
-                tagCounts: function () {
-                    const counts = {};
-                    let noTagsCount = 0;
-
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
-                        return { counts, noTagsCount };
-                    }
-
-                    const selectedTypes = store.selectedTypeTags?.value || [];
-
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'file') {
-                            if (fileMatchesType(item.name || '', selectedTypes)) noTagsCount++;
-                        } else if (item.type === 'folder') {
-                            counts[item.name] = countFilesByType(item.children || [], selectedTypes);
-                        }
-                    }
-
-                    return { counts, noTagsCount };
-                },
-                // 二级标签（受一级标签和类型标签选中过滤）
-                subTags: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
-
-                    const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
-                    const hasType = selectedTypes.length > 0;
-
-                    const firstLevelNames = getFirstLevelNames(store.fileTree.value);
-                    const firstLevelTags = Array.isArray(selectedTags)
-                        ? selectedTags.filter(t => firstLevelNames.has(t))
-                        : [];
-
-                    const tags = new Set();
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'folder' && Array.isArray(item.children)) {
-                            if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
-                            for (const child of item.children) {
-                                if (child.type === 'folder') {
-                                    if (hasType && !folderHasMatchingType(child.children || [], selectedTypes)) continue;
-                                    tags.add(child.name);
-                                }
-                            }
-                        }
-                    }
-
-                    if (tags.size === 0) return [];
-
-                    const allTagsArray = Array.from(tags).sort();
-
-                    try {
-                        const saved = localStorage.getItem('aicr_file_tag_order');
-                        const savedOrder = saved ? JSON.parse(saved) : null;
-                        if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
-                            const orderedTags = savedOrder.filter(tag => tags.has(tag));
-                            const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
-                            return [...orderedTags, ...newTags];
-                        }
-                    } catch (e) {
-                        console.warn('[index.js] 加载标签顺序失败:', e);
-                    }
-
-                    return allTagsArray;
-                },
-                // 类型标签（文档类型，受一级/二级标签选中过滤）
-                typeTags: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
-
-                    const selectedTags = store.selectedSessionTags?.value || [];
-
-                    const firstLevelNames = getFirstLevelNames(store.fileTree.value);
-                    const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
-                    const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
-
-                    const typeCounts = {};
-                    const collectTypes = (items, depth) => {
-                        if (!Array.isArray(items)) return;
+                    // 递归检查子树是否包含任一选中类型文件
+                    const hasMatchingType = (items) => {
+                        if (!Array.isArray(items)) return false;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                const name = item.name || '';
-                                const suffix = getSuffix(name);
-                                if (suffix) {
-                                    typeCounts[suffix] = (typeCounts[suffix] || 0) + 1;
-                                }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) return true;
+                            } else if (item.type === 'folder' && item.children && hasMatchingType(item.children)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+
+                    // 递归计数：仅统计选中类型文件
+                    const countInScope = (items) => {
+                        if (!Array.isArray(items)) return 0;
+                        let count = 0;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (!hasType) { count++; continue; }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) count++;
                             } else if (item.type === 'folder' && item.children) {
-                                if (depth === 0 && firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) {
-                                    continue;
+                                count += countInScope(item.children);
+                            }
+                        }
+                        return count;
+                    };
+
+                    const result = [];
+                    for (const item of tree) {
+                        if (item.type !== 'folder' || !item.children) continue;
+                        if (hasType && !hasMatchingType(item.children)) continue;
+                        result.push({ name: item.name, count: countInScope(item.children) });
+                    }
+
+                    // 按 localStorage 拖拽排序
+                    try {
+                        const saved = localStorage.getItem('aicr_file_tag_order');
+                        const savedOrder = saved ? JSON.parse(saved) : null;
+                        if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                            const nameSet = new Set(result.map(r => r.name));
+                            const ordered = savedOrder.filter(n => nameSet.has(n)).map(n => result.find(r => r.name === n));
+                            const remaining = result.filter(r => !savedOrder.includes(r.name));
+                            return [...ordered, ...remaining];
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    return result.sort((a, b) => a.name.localeCompare(b.name));
+                },
+
+                // 根级文件数（用于"没有故事"按钮徽标）
+                rootFileCount: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return 0;
+                    let count = 0;
+                    for (const item of tree) {
+                        if (item.type === 'file') count++;
+                    }
+                    return count;
+                },
+
+                // 故事标签：从树中提取的故事名 + 文件数 [{ name, count }]
+                storyTags: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return [];
+
+                    const firstLevelNames = getFirstLevelNames(tree);
+                    const selectedTypes = store.selectedTypeTags?.value || [];
+                    const hasType = selectedTypes.length > 0;
+
+                    const countInScope = (items) => {
+                        if (!Array.isArray(items)) return 0;
+                        let count = 0;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (!hasType) { count++; continue; }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) count++;
+                            } else if (item.type === 'folder' && item.children) {
+                                count += countInScope(item.children);
+                            }
+                        }
+                        return count;
+                    };
+
+                    const resultMap = new Map();
+                    const walk = (items, parentName = '') => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'folder') {
+                                if (parentName === '故事任务面板') {
+                                    const count = countInScope(item.children || []);
+                                    const existing = resultMap.get(item.name);
+                                    resultMap.set(item.name, existing !== undefined ? existing + count : count);
                                 }
-                                if (depth === 1 && secondLevelTags.length > 0 && !secondLevelTags.includes(item.name)) {
-                                    continue;
-                                }
-                                collectTypes(item.children, depth + 1);
+                                if (item.children) walk(item.children, item.name);
                             }
                         }
                     };
-                    collectTypes(store.fileTree.value, 0);
+                    // 项目级联动：确定遍历起始范围
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+                    const hasProject = projectSel.length > 0;
+
+                    if (hasProject) {
+                        for (const item of tree) {
+                            if (item.type === 'folder' && projectSel.includes(item.name)) {
+                                walk(item.children || []);
+                            }
+                        }
+                    } else {
+                        walk(tree);
+                    }
+
+                    const result = [];
+                    for (const [name, count] of resultMap) {
+                        if (count > 0) result.push({ name, count });
+                    }
+                    return result.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
+                },
+
+                // 类型标签：文档类型名 + 文件数 [{ type, count }]
+                // 级联：项目选中 → 仅统计该项目下的类型；故事选中 → 进一步限定
+                typeTags: function () {
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return [];
+
+                    const apiTypes = store.storyDocTypes?.value || [];
+                    const treeTypes = extractDocTypes(tree);
+                    const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : apiTypes);
+                    const selectedTags = store.selectedSessionTags?.value || [];
+                    const firstLevelNames = getFirstLevelNames(tree);
+                    const storyNameSet = new Set(extractStoryNames(tree));
+
+                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+                    const storySel = selectedTags.filter(t => storyNameSet.has(t));
+                    const hasProject = projectSel.length > 0;
+                    const hasStory = storySel.length > 0;
+
+                    const typeCounts = {};
+                    const walk = (items, depth, projectOk, storyOk, parentName = '') => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (projectOk && storyOk) {
+                                    const fileName = (item.name || '').replace(/\.md$/i, '');
+                                    if (docTypeSet.has(fileName)) {
+                                        typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
+                                    }
+                                }
+                                continue;
+                            }
+                            if (item.type !== 'folder') continue;
+
+                            // 项目级范围：depth 0 判断是否在选中项目中
+                            const nextProjectOk = depth === 0
+                                ? (!hasProject || projectSel.includes(item.name))
+                                : projectOk;
+
+                            // 故事级范围：只有直接父目录为「故事任务面板」的才是故事
+                            const isStory = (parentName === '故事任务面板');
+                            const nextStoryOk = isStory
+                                ? (!hasStory || storySel.includes(item.name))
+                                : storyOk;
+
+                            if (item.children) walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
+                        }
+                    };
+                    walk(tree, 0, !hasProject, !hasStory);
 
                     return Object.entries(typeCounts)
                         .map(([type, count]) => ({ type, count }))
                         .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
                 },
-                // 特定后缀文档计数（供 stats-bar 使用，与筛选操作联动）
-                storyTaskCount: function () {
-                    return _countBySuffix('故事任务');
+
+                // Stats bar 类型统计：[{ type, count, icon, label }] — 替代硬编码4项
+                typeStats: function () {
+                    return this.typeTags.map(tt => {
+                        const meta = this._TYPE_META[tt.type] || { icon: 'file', label: tt.type };
+                        return { type: tt.type, count: tt.count, icon: meta.icon, label: meta.label };
+                    });
                 },
-                scenarioCount: function () {
-                    return _countBySuffix('使用场景');
-                },
-                designReviewCount: function () {
-                    return _countBySuffix('技术评审');
-                },
-                retrospectiveCount: function () {
-                    return _countBySuffix('自改进复盘');
-                },
-                // 二级标签计数（受一级标签和类型标签选中过滤）
-                subTagCounts: function () {
-                    const counts = {};
-                    let noTagsCount = 0;
 
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
-                        return { counts, noTagsCount };
-                    }
-
-                    const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
-
-                    const firstLevelNames = getFirstLevelNames(store.fileTree.value);
-                    const firstLevelTags = Array.isArray(selectedTags)
-                        ? selectedTags.filter(t => firstLevelNames.has(t))
-                        : [];
-
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'folder' && Array.isArray(item.children)) {
-                            if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
-                            for (const child of item.children) {
-                                if (child.type === 'folder') {
-                                    counts[child.name] = (counts[child.name] || 0) + countFilesByType(child.children || [], selectedTypes);
-                                }
-                            }
-                        }
-                    }
-
-                    for (const item of store.fileTree.value) {
-                        if (item.type === 'file') {
-                            if (fileMatchesType(item.name || '', selectedTypes)) noTagsCount++;
-                        }
-                    }
-
-                    return { counts, noTagsCount };
-                },
-                // 筛选感知的文件总数（项目/故事/类型筛选 + 会话搜索）
+                // 筛选后文件总数（项目/故事/类型三级级联 + 会话搜索）
                 filteredFileCount: function () {
-                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return 0;
+                    const tree = store.fileTree?.value;
+                    if (!tree || !Array.isArray(tree)) return 0;
 
                     const selectedTags = store.selectedSessionTags?.value || [];
                     const selectedTypes = store.selectedTypeTags?.value || [];
                     const hasType = selectedTypes.length > 0;
                     const noTags = store.tagFilterNoTags?.value || false;
-                    const storyNoTags = store.storyLevelNoTags?.value || false;
-                    const anyTagFilter = selectedTags.length > 0 || noTags || storyNoTags || hasType;
+                    const sessionQuery = (store.sessionSearchQuery?.value || '').trim().toLowerCase();
 
-                    const sessionQuery = store.sessionSearchQuery?.value?.trim().toLowerCase() || '';
-
-                    const firstLevelNames = getFirstLevelNames(store.fileTree.value);
-                    const firstLevelTags = selectedTags.filter(t => firstLevelNames.has(t));
-                    const secondLevelTags = selectedTags.filter(t => !firstLevelNames.has(t));
-
-                    const fileMatches = (name) => fileMatchesType(name, selectedTypes);
-
-                    let total = 0;
-
-                    const countFiles = (items, depth) => {
-                        if (!Array.isArray(items)) return;
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                if (storyNoTags && depth !== 1) return;
-                                if (fileMatches(item.name || '')) total++;
-                            } else if (item.type === 'folder' && item.children) {
-                                if (depth === 0) {
-                                    if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
-                                } else if (depth === 1) {
-                                    if (secondLevelTags.length > 0 && !secondLevelTags.includes(item.name)) continue;
-                                }
-                                countFiles(item.children, depth + 1);
-                            }
-                        }
-                    };
-
-                    if (!anyTagFilter && !sessionQuery) {
-                        countFiles(store.fileTree.value, 0);
-                        return total;
-                    }
-
-                    let filteredItems = store.fileTree.value;
+                    const firstLevelNames = getFirstLevelNames(tree);
+                    const storyNameSet = new Set(extractStoryNames(tree));
+                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+                    const storySel = selectedTags.filter(t => storyNameSet.has(t));
+                    const hasProject = projectSel.length > 0;
+                    const hasStory = storySel.length > 0;
+                    let workingTree = tree;
                     if (sessionQuery) {
-                        filteredItems = filteredItems.filter(item => {
+                        workingTree = workingTree.filter(item => {
                             if (item.type === 'folder') {
-                                const nameMatch = (item.name || '').toLowerCase().includes(sessionQuery);
-                                if (nameMatch) return true;
+                                if ((item.name || '').toLowerCase().includes(sessionQuery)) return true;
                                 if (Array.isArray(item.children)) {
-                                    return item.children.some(child =>
-                                        (child.name || '').toLowerCase().includes(sessionQuery)
-                                    );
+                                    return item.children.some(c => (c.name || '').toLowerCase().includes(sessionQuery));
                                 }
                                 return false;
                             }
@@ -692,14 +585,50 @@ import { getSuffix, getFirstLevelNames, folderHasMatchingFile, countFilesInFolde
                         });
                     }
 
-                    if (noTags && firstLevelTags.length === 0 && secondLevelTags.length === 0 && !hasType && !storyNoTags) {
-                        for (const item of filteredItems) {
-                            if (item.type === 'file') total++;
+                    // "没有故事"：仅统计根级文件
+                    if (noTags && !hasProject && !hasStory && !hasType) {
+                        let count = 0;
+                        for (const item of workingTree) {
+                            if (item.type === 'file') count++;
                         }
-                        return total;
+                        return count;
                     }
 
-                    countFiles(filteredItems, 0);
+                    let total = 0;
+                    const walk = (items, depth, projectOk, storyOk, parentName = '') => {
+                        if (!Array.isArray(items)) return;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                if (hasStory && !storyOk) continue;
+                                if (!hasType) { total++; continue; }
+                                const fileName = (item.name || '').replace(/\.md$/i, '');
+                                if (selectedTypes.includes(fileName)) total++;
+                            } else if (item.type === 'folder' && item.children) {
+                                // 项目级范围
+                                const nextProjectOk = depth === 0
+                                    ? (!hasProject || projectSel.includes(item.name))
+                                    : projectOk;
+
+                                if (!nextProjectOk) continue;
+
+                                // 故事级范围：只有直接父目录为「故事任务面板」的才是故事
+                                const isStory = (parentName === '故事任务面板');
+
+                                // 跳过未选中的故事文件夹
+                                if (isStory && hasStory && !storySel.includes(item.name)) {
+                                    continue;
+                                }
+
+                                const nextStoryOk = isStory
+                                    ? (!hasStory || storySel.includes(item.name))
+                                    : storyOk;
+
+                                walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
+                            }
+                        }
+                    };
+
+                    walk(workingTree, 0, !hasProject, !hasStory);
                     return total;
                 }
             }

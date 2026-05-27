@@ -108,7 +108,8 @@ export function createAicrStoreState(vueRef) {
     const modelsError = vueRef(null);
 
     const tagFilterNoTags = vueRef(false);
-    const storyLevelNoTags = vueRef(false);
+    const storyNames = vueRef([]);
+    const storyDocTypes = vueRef([]);
     const tagOrder = vueRef(null);
     const selectedTypeTags = vueRef([]);
 
@@ -213,7 +214,8 @@ export function createAicrStoreState(vueRef) {
             sessionEditGenerating,
             sessionEditData,
             tagFilterNoTags,
-            storyLevelNoTags,
+            storyNames,
+            storyDocTypes,
             tagOrder,
             selectedTypeTags,
             availableModels,
