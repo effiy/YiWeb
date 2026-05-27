@@ -91,7 +91,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 typeTags: computedRefs.typeTags,
                 typeStats: computedRefs.typeStats,
                 storyTags: computedRefs.storyTags,
-                selectedTypeTagLabels: computedRefs.selectedTypeTagLabels,
                 tagColorMap: computedRefs.tagColorMap,
                 storyOptions: computedRefs.storyOptions,
                 selectedProjectTags: computedRefs.selectedProjectTags,

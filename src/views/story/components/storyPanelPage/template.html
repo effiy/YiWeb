@@ -3,21 +3,6 @@
         <div class="sp-header-left">
             <h1 class="sp-header-title quantum-header-title">故事任务面板</h1>
             <span v-if="filteredStories.length > 0" class="sp-header-count">{{ filteredStories.length }} 个故事</span>
-            <div v-if="totalStories > 0 && !loading" class="sp-stats-bar">
-                <button
-                    v-for="stat in typeStats"
-                    :key="stat.type"
-                    type="button"
-                    class="sp-stat-btn"
-                    :class="{ 'sp-stat-btn--active': selectedTypeTags.includes(stat.type) }"
-                    @click="onSelectDocFilter(stat.type)"
-                    :title="stat.count + ' ' + stat.label"
-                >
-                    <yi-icon :name="stat.icon" class-name="sp-stat-icon"></yi-icon>
-                    <span class="sp-stat-value">{{ stat.count }}</span>
-                    <span class="sp-stat-label">{{ stat.label }}</span>
-                </button>
-            </div>
         </div>
         <header-actions @clear-cache="onClearCache">
             <div class="sp-search">
@@ -125,18 +110,18 @@
                     class="sp-filter-tag sp-filter-tag--type"
                     :class="{ active: selectedTypeTags.includes(tt.type) }"
                     @click="onSelectDocFilter(tt.type)"
-                >{{ tt.label }} <span class="sp-filter-tag-count">{{ tt.count }}</span></button>
+                >{{ tt.type }} ({{ tt.count }})</button>
                 <button
                     v-if="selectedTypeTags.length > 0"
                     type="button"
                     class="sp-filter-clear-inline"
                     @click="onClearTypeTags"
-                    title="清除类型筛选"
+                    title="清除故事状态筛选"
                 >
                     <yi-icon name="close"></yi-icon>
                 </button>
             </template>
-            <span v-else class="sp-filter-empty">没有文档类型</span>
+            <span v-else class="sp-filter-empty">没有故事状态</span>
         </div>
         <div class="sp-filter-collapsed-row">
             <div class="sp-filter-collapsed-scroll">
@@ -157,9 +142,9 @@
                     {{ tag }}
                     <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleSessionTag(tag)" title="移除筛选">×</button>
                 </span>
-                <span v-for="stl in selectedTypeTagLabels" :key="'t-' + stl.type" class="sp-filter-collapsed-pill sp-filter-collapsed-pill--type">
-                    {{ stl.label }}
-                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onSelectDocFilter(stl.type)" title="移除筛选">×</button>
+                <span v-for="type in selectedTypeTags" :key="'t-' + type" class="sp-filter-collapsed-pill sp-filter-collapsed-pill--type">
+                    {{ type }}
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onSelectDocFilter(type)" title="移除筛选">×</button>
                 </span>
             </div>
             <button

@@ -25,7 +25,6 @@ registerGlobalComponent({
         typeTags:              { type: Array, default: () => [] },
         typeStats:             { type: Array, default: () => [] },
         storyTags:             { type: Array, default: () => [] },
-        selectedTypeTagLabels: { type: Array, default: () => [] },
         tagColorMap:           { type: Object, default: () => ({}) },
         storyOptions:          { type: Array, default: () => [] },
         selectedProjectTags:   { type: Array, default: () => [] },

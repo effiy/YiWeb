@@ -7,16 +7,19 @@
  * 与 AICR 页面使用完全相同的逻辑。
  */
 
-import { getFirstLevelNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
+import {
+    getFirstLevelNames,
+    extractStoryNames,
+    extractDocTypes,
+    getDocTypeFallback,
+} from '/src/views/aicr/utils/filterHelpers.js';
 
+// 与 aicr/index.js _TYPE_META 保持一致（用于 stats-bar 等）
 const _TYPE_META = {
-    '故事任务':   { icon: 'circle',      label: '故事' },
-    '使用场景':   { icon: 'file-alt',    label: '场景' },
-    '技术评审':   { icon: 'edit',        label: '设计' },
-    '实施报告':   { icon: 'code',        label: '开发' },
-    '测试设计':   { icon: 'check-circle', label: '测试设计' },
-    '测试报告':   { icon: 'check-circle', label: '测试' },
-    '自改进复盘': { icon: 'lightbulb',   label: '运营' },
+    '故事任务': { icon: 'tag', label: '故事' },
+    '使用场景': { icon: 'layout', label: '场景' },
+    '技术评审': { icon: 'edit', label: '设计' },
+    '自改进复盘': { icon: 'refresh', label: '自改进' },
 };
 
 function getSelectedProjectTags(state) {
@@ -366,33 +369,49 @@ export function useComputed(store) {
 
     /* ---- 文档类型标签（对标 AICR typeTags computed — 从文件树提取） ---- */
 
-    const _treeDocTypes = computed(() => {
-        const tree = store.fileTree?.value;
-        if (!tree || !Array.isArray(tree)) return [];
-        return extractDocTypes(tree);
-    });
-
     const typeTags = computed(() => {
         const tree = store.fileTree?.value;
         if (!tree || !Array.isArray(tree)) return [];
 
-        const docTypeSet = new Set(_treeDocTypes.value);
+        const treeTypes = extractDocTypes(tree);
+        const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : getDocTypeFallback());
+        const selectedTags = store.selectedSessionTags?.value || [];
+        const firstLevelNames = getFirstLevelNames(tree);
+        const storyNameSet = new Set(extractStoryNames(tree));
+
+        const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
+        const storySel = selectedTags.filter(t => storyNameSet.has(t));
+        const hasProject = projectSel.length > 0;
+        const hasStory = storySel.length > 0;
 
         const typeCounts = {};
-        const walk = (items) => {
+        const walk = (items, depth, projectOk, storyOk, parentName = '') => {
             if (!Array.isArray(items)) return;
             for (const item of items) {
                 if (item.type === 'file') {
-                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                    if (docTypeSet.has(fileName)) {
-                        typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
+                    if (projectOk && storyOk) {
+                        const fileName = (item.name || '').replace(/\.md$/i, '');
+                        if (docTypeSet.has(fileName)) {
+                            typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
+                        }
                     }
-                } else if (item.type === 'folder' && item.children) {
-                    walk(item.children);
+                    continue;
                 }
+                if (item.type !== 'folder') continue;
+
+                const nextProjectOk = depth === 0
+                    ? (!hasProject || projectSel.includes(item.name))
+                    : projectOk;
+
+                const isStory = (parentName === '故事任务面板');
+                const nextStoryOk = isStory
+                    ? (!hasStory || storySel.includes(item.name))
+                    : storyOk;
+
+                if (item.children) walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
             }
         };
-        walk(tree);
+        walk(tree, 0, !hasProject, !hasStory);
 
         return Object.entries(typeCounts)
             .map(([type, count]) => ({ type, count }))
@@ -429,13 +448,6 @@ export function useComputed(store) {
     const selectedProjectTags = computed(() => getSelectedProjectTags(store));
     const selectedStoryTags = computed(() => getSelectedStoryTags(store));
 
-    const selectedTypeTagLabels = computed(() => {
-        return store.selectedTypeTags.value.map(type => {
-            const meta = _TYPE_META[type] || { label: type };
-            return { type, label: meta.label };
-        });
-    });
-
     /* ---- 筛选摘要 pills ---- */
 
     const filterSummaryPills = computed(() => {
@@ -464,9 +476,8 @@ export function useComputed(store) {
             });
         }
         for (const docType of store.selectedTypeTags.value) {
-            const meta = _TYPE_META[docType] || { label: docType };
             pills.push({
-                type: 'doc', label: meta.label,
+                type: 'doc', label: docType,
                 clear: () => {
                     store.selectedTypeTags.value = store.selectedTypeTags.value.filter(t => t !== docType);
                 },
@@ -508,7 +519,6 @@ export function useComputed(store) {
         storyOptions,
         selectedProjectTags,
         selectedStoryTags,
-        selectedTypeTagLabels,
         filterSummaryPills,
         panelVisible,
         viewModes,
