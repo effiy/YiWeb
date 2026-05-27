@@ -3,21 +3,37 @@
         <div class="sp-header-left">
             <h1 class="sp-header-title quantum-header-title">故事任务面板</h1>
             <span v-if="filteredStories.length > 0" class="sp-header-count">{{ filteredStories.length }} 个故事</span>
+            <div v-if="totalStories > 0 && !loading" class="sp-stats-bar">
+                <button
+                    v-for="stat in typeStats"
+                    :key="stat.type"
+                    type="button"
+                    class="sp-stat-btn"
+                    :class="{ 'sp-stat-btn--active': selectedTypeTags.includes(stat.type) }"
+                    @click="onSelectDocFilter(stat.type)"
+                    :title="stat.count + ' ' + stat.label"
+                >
+                    <yi-icon :name="stat.icon" class-name="sp-stat-icon"></yi-icon>
+                    <span class="sp-stat-value">{{ stat.count }}</span>
+                    <span class="sp-stat-label">{{ stat.label }}</span>
+                </button>
+            </div>
         </div>
-        <header-actions @clear-cache="clearCache">
+        <header-actions @clear-cache="onClearCache">
             <div class="sp-search">
                 <yi-icon name="search" class-name="sp-search-icon"></yi-icon>
                 <input
                     type="text"
                     class="sp-search-input"
                     placeholder="搜索故事..."
-                    v-model="localSearchQuery"
+                    :value="localSearchQuery"
+                    @input="onSearchInput"
                 />
                 <button
                     v-if="localSearchQuery"
                     type="button"
                     class="sp-search-clear"
-                    @click="localSearchQuery = ''"
+                    @click="onClearSearch"
                     aria-label="清除搜索"
                 >
                     <yi-icon name="close"></yi-icon>
@@ -29,7 +45,7 @@
                     :key="mode.value"
                     class="sp-view-seg"
                     :class="{ 'sp-view-seg--active': viewMode === mode.value }"
-                    @click="setView(mode.value)"
+                    @click="onSetView(mode.value)"
                     :title="mode.label"
                 >
                     <yi-icon :name="mode.icon"></yi-icon>
@@ -40,102 +56,58 @@
     </header>
 
     <div v-if="totalStories > 0 && !loading" class="sp-meta-row">
-        <div v-if="allProjectTags.length > 0" class="sp-header-tags-wrapper">
-            <div class="sp-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="handleTagsScroll">
-                <div class="sp-meta-filter-actions">
-                    <button
-                        type="button"
-                        class="sp-meta-filter-toggle"
-                        @click="toggleFilterBar"
-                        :title="filterBarCollapsed ? '展开筛选栏' : '折叠筛选栏'"
-                    >
-                        <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
-                        <span class="sp-meta-filter-toggle-label">筛选</span>
-                    </button>
-                </div>
+        <div v-if="projectTags.length > 0 || untaggedCount > 0" class="sp-filter-bar-tags">
+            <div class="sp-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="onTagsScroll">
                 <button
-                    class="sp-project-tag"
-                    :class="{ 'sp-project-tag--active': selectedProjectTags.length === 0 }"
-                    @click="clearProjectTags"
-                >全部<span class="sp-project-tag-count">{{ totalStories }}</span></button>
+                    type="button"
+                    class="sp-filter-toggle"
+                    @click="onToggleFilterBar"
+                    :title="filterBarCollapsed ? '展开筛选' : '收起筛选'"
+                >
+                    <yi-icon :name="filterBarCollapsed ? 'chevron-down' : 'chevron-up'"></yi-icon>
+                    <span class="sp-filter-toggle-label">筛选</span>
+                </button>
                 <button
-                    v-for="tag in allProjectTags"
-                    :key="tag"
+                    class="sp-project-tag sp-project-tag--all"
+                    :class="{ 'sp-project-tag--active': !tagFilterNoTags && selectedProjectTags.length === 0 }"
+                    @click="onClearProjectTags"
+                >全部</button>
+                <button
+                    v-if="untaggedCount > 0"
                     class="sp-project-tag"
-                    :class="{ 'sp-project-tag--active': selectedProjectTags.includes(tag) }"
-                    :style="tagColorStyle(tag)"
-                    @click="toggleProjectTag(tag)"
-                >{{ tag }}<span class="sp-project-tag-count">{{ projectTagCounts[tag] || 0 }}</span></button>
+                    :class="{ 'sp-project-tag--active': tagFilterNoTags }"
+                    @click="onToggleUntagged"
+                >没有故事 ({{ untaggedCount }})</button>
+                <button
+                    v-for="pt in projectTags"
+                    :key="pt.name"
+                    class="sp-project-tag"
+                    :class="{ 'sp-project-tag--active': selectedProjectTags.includes(pt.name) }"
+                    @click="onToggleSessionTag(pt.name)"
+                >{{ pt.name }} ({{ pt.count }})</button>
             </div>
             <div class="sp-tags-fade sp-tags-fade--left" :class="{ 'is-visible': tagsScrollLeft > 0 }"></div>
             <div class="sp-tags-fade sp-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
-        </div>
-        <div class="sp-stats-bar">
-            <button type="button"
-                class="sp-stat-item sp-stat-btn"
-                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'story_task' }"
-                @click="selectDocFilter('story_task')"
-            >
-                <yi-icon name="circle" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.story_task || 0 }}</span>
-                <span class="sp-stat-label">规划</span>
-            </button>
-            <button type="button"
-                class="sp-stat-item sp-stat-btn"
-                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'scenario' }"
-                @click="selectDocFilter('scenario')"
-            >
-                <yi-icon name="file-alt" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.scenario || 0 }}</span>
-                <span class="sp-stat-label">设计</span>
-            </button>
-            <button type="button"
-                class="sp-stat-item sp-stat-btn"
-                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'implementation' }"
-                @click="selectDocFilter('implementation')"
-            >
-                <yi-icon name="code" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.implementation || 0 }}</span>
-                <span class="sp-stat-label">开发</span>
-            </button>
-            <button type="button"
-                class="sp-stat-item sp-stat-btn"
-                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'test_report' }"
-                @click="selectDocFilter('test_report')"
-            >
-                <yi-icon name="check-circle" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.test_report || 0 }}</span>
-                <span class="sp-stat-label">测试</span>
-            </button>
-            <button type="button"
-                class="sp-stat-item sp-stat-btn"
-                :class="{ 'sp-stat-btn--active': selectedDocFilter === 'retrospective' }"
-                @click="selectDocFilter('retrospective')"
-            >
-                <yi-icon name="lightbulb" class-name="sp-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="sp-stat-value">{{ documentCounts.retrospective || 0 }}</span>
-                <span class="sp-stat-label">运营</span>
-            </button>
         </div>
     </div>
 
     <div v-if="totalStories > 0 && !loading" class="sp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
         <div class="sp-filter-group">
-            <span class="sp-filter-label">故事</span>
-            <template v-if="storyOptions.length > 0">
+            <span class="sp-filter-label">故事 ({{ storyTags.length }})</span>
+            <template v-if="storyTags.length > 0">
                 <button
-                    v-for="opt in storyOptions"
-                    :key="'story-' + opt.value"
+                    v-for="st in storyTags"
+                    :key="st.name"
                     type="button"
                     class="sp-filter-tag"
-                    :class="{ active: selectedStoryTags.includes(opt.value) }"
-                    @click="toggleStoryTag(opt.value)"
-                >{{ opt.label }} <span class="sp-filter-count">{{ opt.count }}</span></button>
+                    :class="{ active: selectedStoryTags.includes(st.name) }"
+                    @click="onToggleSessionTag(st.name)"
+                >{{ st.name }} ({{ st.count }})</button>
                 <button
-                    v-if="selectedStoryTags.length > 0"
+                    v-if="selectedStoryTags.length > 0 || tagFilterNoTags"
                     type="button"
-                    class="sp-filter-clear--inline"
-                    @click="clearStoryTags"
+                    class="sp-filter-clear-inline"
+                    @click="onClearProjectTags"
                     title="清除故事筛选"
                 >
                     <yi-icon name="close"></yi-icon>
@@ -143,101 +115,58 @@
             </template>
             <span v-else class="sp-filter-empty">没有故事</span>
         </div>
-        <div class="sp-filter-group sp-filter-group--doc">
-            <span class="sp-filter-label">状态</span>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedDocFilter === 'story_task' }"
-                @click="selectDocFilter('story_task')"
-            >规划 <span class="sp-filter-count">{{ documentCounts.story_task || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedDocFilter === 'scenario' }"
-                @click="selectDocFilter('scenario')"
-            >设计 <span class="sp-filter-count">{{ documentCounts.scenario || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedDocFilter === 'implementation' }"
-                @click="selectDocFilter('implementation')"
-            >开发 <span class="sp-filter-count">{{ documentCounts.implementation || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedDocFilter === 'test_report' }"
-                @click="selectDocFilter('test_report')"
-            >测试 <span class="sp-filter-count">{{ documentCounts.test_report || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedDocFilter === 'retrospective' }"
-                @click="selectDocFilter('retrospective')"
-            >运营 <span class="sp-filter-count">{{ documentCounts.retrospective || 0 }}</span></button>
-            <button
-                v-if="selectedDocFilter"
-                type="button"
-                class="sp-filter-clear--inline"
-                @click="selectDocFilter(selectedDocFilter)"
-                title="清除文档类型筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
-        </div>
-        <div class="sp-filter-group sp-filter-group--missing">
-            <span class="sp-filter-label">缺失</span>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedMissingFilter === 'design' }"
-                @click="selectMissingFilter('design')"
-            >缺设计 <span class="sp-filter-count">{{ missingCounts.design || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedMissingFilter === 'develop' }"
-                @click="selectMissingFilter('develop')"
-            >缺开发 <span class="sp-filter-count">{{ missingCounts.develop || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedMissingFilter === 'testing' }"
-                @click="selectMissingFilter('testing')"
-            >缺测试 <span class="sp-filter-count">{{ missingCounts.testing || 0 }}</span></button>
-            <button
-                type="button"
-                class="sp-filter-tag"
-                :class="{ active: selectedMissingFilter === 'operations' }"
-                @click="selectMissingFilter('operations')"
-            >缺运营 <span class="sp-filter-count">{{ missingCounts.operations || 0 }}</span></button>
-            <button
-                v-if="selectedMissingFilter"
-                type="button"
-                class="sp-filter-clear--inline"
-                @click="selectMissingFilter(selectedMissingFilter)"
-                title="清除缺失筛选"
-            >
-                <yi-icon name="close"></yi-icon>
-            </button>
+        <div class="sp-filter-group sp-filter-group--type">
+            <span class="sp-filter-label">故事状态 ({{ typeTags.length }})</span>
+            <template v-if="typeTags.length > 0">
+                <button
+                    v-for="tt in typeTags"
+                    :key="tt.type"
+                    type="button"
+                    class="sp-filter-tag sp-filter-tag--type"
+                    :class="{ active: selectedTypeTags.includes(tt.type) }"
+                    @click="onSelectDocFilter(tt.type)"
+                >{{ tt.label }} <span class="sp-filter-tag-count">{{ tt.count }}</span></button>
+                <button
+                    v-if="selectedTypeTags.length > 0"
+                    type="button"
+                    class="sp-filter-clear-inline"
+                    @click="onClearTypeTags"
+                    title="清除类型筛选"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </template>
+            <span v-else class="sp-filter-empty">没有文档类型</span>
         </div>
         <div class="sp-filter-collapsed-row">
             <div class="sp-filter-collapsed-scroll">
-                <span v-if="filterSummaryPills.length === 0 && !localSearchQuery" class="sp-filter-collapsed-empty">未选择筛选</span>
+                <span v-if="!hasActiveFilters" class="sp-filter-collapsed-empty">未选择筛选</span>
                 <span v-if="localSearchQuery" class="sp-filter-collapsed-pill">
                     搜索: {{ localSearchQuery }}
-                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="localSearchQuery = ''" title="移除搜索">×</button>
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onClearSearch" title="移除搜索">×</button>
                 </span>
-                <span v-for="pill in filterSummaryPills" :key="pill.type + '-' + pill.label" class="sp-filter-collapsed-pill" :style="pill.type === 'tag' ? tagColorStyle(pill.label) : {}">
-                    {{ pill.label }}
-                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="pill.clear()" title="移除筛选">×</button>
+                <span v-if="tagFilterNoTags" class="sp-filter-collapsed-pill">
+                    没有故事
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleUntagged" title="移除筛选">×</button>
+                </span>
+                <span v-for="tag in selectedProjectTags" :key="'p-' + tag" class="sp-filter-collapsed-pill">
+                    {{ tag }}
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleSessionTag(tag)" title="移除筛选">×</button>
+                </span>
+                <span v-for="tag in selectedStoryTags" :key="'s-' + tag" class="sp-filter-collapsed-pill">
+                    {{ tag }}
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleSessionTag(tag)" title="移除筛选">×</button>
+                </span>
+                <span v-for="stl in selectedTypeTagLabels" :key="'t-' + stl.type" class="sp-filter-collapsed-pill sp-filter-collapsed-pill--type">
+                    {{ stl.label }}
+                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onSelectDocFilter(stl.type)" title="移除筛选">×</button>
                 </span>
             </div>
             <button
                 v-if="hasActiveFilters"
                 type="button"
                 class="sp-filter-collapsed-clear"
-                @click="clearAllFilters"
+                @click="onClearAllFilters"
                 title="清除所有筛选"
             >
                 <yi-icon name="close"></yi-icon>
@@ -265,7 +194,7 @@
                         v-for="story in col.stories"
                         :key="story.name"
                         :story="story"
-                        @select="openDetail"
+                        @select="onOpenDetail"
                     ></story-card>
                     <div v-if="col.stories.length === 0" class="sp-column-empty">—</div>
                 </div>
@@ -283,7 +212,7 @@
                     v-for="story in group.stories"
                     :key="group.label + '-' + story.name"
                     :story="story"
-                    @select="openDetail"
+                    @select="onOpenDetail"
                 ></story-card>
             </template>
             <div v-if="filteredStories.length === 0" class="sp-card-grid-empty">
@@ -292,7 +221,7 @@
                     v-if="hasActiveFilters"
                     type="button"
                     class="sp-empty-clear-btn"
-                    @click="clearAllFilters"
+                    @click="onClearAllFilters"
                 >清除筛选条件</button>
             </div>
         </div>
@@ -310,19 +239,19 @@
                     :error="null"
                     :sort-field="sortField"
                     :sort-direction="sortDirection"
-                    @select="openDetail"
-                    @sort="toggleSort"
+                    @select="onOpenDetail"
+                    @sort="onToggleSort"
                 ></story-list-table>
             </template>
         </div>
     </template>
 
     <!-- Side Panel -->
-    <div v-if="panelVisible" class="sp-panel-backdrop" @click="onBackdropClick" @keydown.escape="closePanel">
+    <div v-if="panelVisible" class="sp-panel-backdrop" @click="onBackdropClick" @keydown.escape="onClosePanel">
         <div class="sp-panel" role="dialog" aria-modal="true" aria-label="故事详情">
             <div class="sp-panel-header">
                 <h2 class="sp-panel-title">{{ panelStory.name }}</h2>
-                <button class="sp-panel-close" @click="closePanel" aria-label="关闭面板">
+                <button class="sp-panel-close" @click="onClosePanel" aria-label="关闭面板">
                     <yi-icon name="close"></yi-icon>
                 </button>
             </div>
@@ -330,7 +259,7 @@
                 <story-detail-card
                     :story="panelStory"
                     :panel="true"
-                    @close="closePanel"
+                    @close="onClosePanel"
                 ></story-detail-card>
             </div>
         </div>

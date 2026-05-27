@@ -82,21 +82,21 @@
     background: var(--yi-text-secondary);
 }
 
-/* Meta Row — tags + stats side by side */
+/* ==============================================
+   Meta Row — project tags + stats bar
+   ============================================== */
 .sp-meta-row {
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
 }
-/* Tags wrapper — fills remaining space in meta row, positions fade overlays */
-.sp-header-tags-wrapper {
-    flex: 1;
-    min-width: 0;
+.sp-filter-bar-tags {
+    flex: 1 1 200px;
+    min-width: 150px;
     position: relative;
 }
 .sp-header-tags-row {
-    width: 100%;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -109,12 +109,37 @@
 .sp-header-tags-row::-webkit-scrollbar {
     display: none;
 }
-/* Fade overlays — absolutely positioned against the wrapper, outside scroll flow */
+/* Filter toggle button */
+.sp-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 11px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: inherit;
+    margin-right: 2px;
+}
+.sp-filter-toggle:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+}
+.sp-filter-toggle-label {
+    font-weight: 500;
+}
+/* Fade overlays */
 .sp-tags-fade {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 64px;
+    width: 48px;
     pointer-events: none;
     z-index: var(--z-local-2);
     opacity: 0;
@@ -131,97 +156,93 @@
 .sp-tags-fade.is-visible {
     opacity: 1;
 }
-/* Stats Bar */
+/* Stats Bar — inline in header after count */
 .sp-stats-bar {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 24px;
-    padding: 6px 16px;
+    gap: 2px;
+    margin-left: 4px;
     flex-shrink: 0;
     flex-wrap: wrap;
-    margin-left: auto;
-}
-.sp-stat-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--yi-text-secondary);
-    padding: 4px 8px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-}
-.sp-stat-icon {
-    font-size: 14px;
-    color: var(--yi-primary);
-}
-.sp-stat-value {
-    font-weight: 600;
-    color: var(--yi-text);
-}
-.sp-stat-label {
-    color: var(--yi-text-muted);
+    padding-left: 8px;
+    border-left: 1px solid var(--yi-border);
 }
 .sp-stat-btn {
-    background: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--yi-text-secondary);
+    font-size: 11px;
+    font-family: inherit;
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    font-family: inherit;
-    font-size: inherit;
-    color: inherit;
+    white-space: nowrap;
 }
 .sp-stat-btn:hover {
     background: var(--yi-surface-hover);
     border-color: var(--yi-border);
+    color: var(--yi-text);
 }
 .sp-stat-btn--active {
     background: var(--yi-primary-subtle);
     border-color: var(--yi-primary);
+    color: var(--yi-primary);
+}
+.sp-stat-icon {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.sp-stat-value {
+    font-weight: 600;
+    color: inherit;
+    font-size: 11px;
+}
+.sp-stat-label {
+    color: inherit;
+    opacity: 0.75;
+    font-size: 10px;
 }
 
-/* Filter Bar — 对齐 aicr filter bar 规格 */
+/* ==============================================
+   Collapsible Filter Bar
+   ============================================== */
 .sp-filter-bar {
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 4px 16px;
-    border-bottom: 1px solid transparent;
-    border-image: var(--quantum-filter-border) 1;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
     flex-wrap: wrap;
-    gap: 16px;
+}
+.sp-filter-bar.is-collapsed {
+    padding: 4px 16px;
+    align-items: center;
 }
 .sp-filter-group {
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-basis: 100%;
-    flex-wrap: nowrap;
-    flex-shrink: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+}
+.sp-filter-bar.is-collapsed .sp-filter-group {
+    display: none;
 }
 .sp-filter-label {
     font-size: 12px;
     color: var(--yi-text-muted);
-    margin-right: 4px;
     white-space: nowrap;
-    position: sticky;
-    left: 0;
-    z-index: var(--z-local-2);
-    background: var(--yi-bg);
-    padding-right: 6px;
-}
-.sp-filter-empty {
-    font-size: 12px;
-    color: var(--yi-text-tertiary);
-    white-space: nowrap;
+    font-weight: 500;
+    margin-right: 2px;
 }
 .sp-filter-tag {
     display: inline-flex;
     align-items: center;
-    padding: 4px 12px;
+    padding: 3px 10px;
     border: 1px solid var(--yi-border);
     border-radius: 6px;
     font-size: 12px;
@@ -230,6 +251,7 @@
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
+    font-family: inherit;
 }
 .sp-filter-tag:hover {
     border-color: var(--yi-primary);
@@ -240,98 +262,46 @@
     border-color: var(--yi-primary);
     color: var(--yi-text-on-primary);
 }
-.sp-filter-tag.active .sp-filter-count {
-    color: var(--yi-text-on-primary);
-    opacity: 0.8;
-}
-.sp-filter-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
+.sp-filter-tag-count {
     font-size: 10px;
-    font-weight: 600;
-    background: var(--yi-surface-elevated);
-    color: var(--yi-text-muted);
-    margin-left: 2px;
+    margin-left: 3px;
+    opacity: 0.7;
 }
-.sp-filter-clear--inline {
+.sp-filter-tag.active .sp-filter-tag-count {
+    opacity: 1;
+}
+.sp-filter-clear-inline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     padding: 0;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     background: transparent;
-    color: var(--yi-text-secondary);
+    color: var(--yi-text-tertiary);
     cursor: pointer;
-    transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    flex-shrink: 0;
+    font-size: 11px;
+    font-family: inherit;
 }
-.sp-filter-clear--inline:hover {
+.sp-filter-clear-inline:hover {
+    border-color: var(--yi-border);
     color: var(--yi-danger);
-    background: rgba(var(--yi-danger-rgb), 0.1);
+}
+.sp-filter-empty {
+    font-size: 12px;
+    color: var(--yi-text-muted);
+    font-style: italic;
 }
 
-/* Filter toggle actions — sticky left inside scrollable tags row */
-.sp-meta-filter-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 0;
-    flex-shrink: 0;
-    position: sticky;
-    left: 0;
-    z-index: var(--z-local-3);
-    background: var(--yi-bg);
-    padding-right: 8px;
-    margin-right: 2px;
-}
-.sp-meta-filter-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 12px;
-    border: 1px solid var(--yi-border);
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 500;
-    background: var(--yi-surface);
-    color: var(--yi-text-secondary);
-    cursor: pointer;
-    transition: all var(--yi-duration-fast) var(--yi-easing-default);
-    white-space: nowrap;
-}
-.sp-meta-filter-toggle:hover {
-    border-color: var(--yi-primary);
-    color: var(--yi-text);
-    background: var(--yi-surface-hover);
-}
-.sp-meta-filter-toggle-label {
-    font-size: 12px;
-}
-
-/* Collapsed: hide full tag buttons, show summary line */
-.sp-filter-bar.is-collapsed .sp-filter-group {
-    display: none;
-}
-.sp-filter-bar.is-collapsed {
-    padding-top: 6px;
-    padding-bottom: 6px;
-}
-/* Collapsed row — single scrollable row for active filter pills */
+/* Collapsed pills row */
 .sp-filter-collapsed-row {
     display: none;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
     min-width: 0;
-    flex-basis: 100%;
 }
 .sp-filter-bar.is-collapsed .sp-filter-collapsed-row {
     display: flex;
@@ -351,22 +321,25 @@
 }
 .sp-filter-collapsed-empty {
     font-size: 12px;
-    color: var(--yi-text-tertiary);
+    color: var(--yi-text-muted);
     white-space: nowrap;
-    flex-shrink: 0;
 }
 .sp-filter-collapsed-pill {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 8px;
-    border: 1px solid var(--sc-accent, var(--yi-border));
+    padding: 2px 10px;
+    border: 1px solid var(--yi-border);
     border-radius: 9999px;
     font-size: 12px;
-    background: var(--sc-accent-bg, var(--yi-surface));
-    color: var(--sc-accent, var(--yi-text-secondary));
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
+}
+.sp-filter-collapsed-pill--type {
+    border-color: var(--yi-primary);
+    color: var(--yi-primary);
 }
 .sp-filter-collapsed-pill-close {
     display: inline-flex;
@@ -390,22 +363,22 @@
 .sp-filter-collapsed-clear {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    font-size: 13px;
+    gap: 4px;
+    padding: 3px 10px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 12px;
     background: transparent;
     color: var(--yi-text-tertiary);
     cursor: pointer;
     flex-shrink: 0;
     transition: color var(--yi-duration-fast) var(--yi-easing-default);
+    font-family: inherit;
 }
 .sp-filter-collapsed-clear:hover {
     color: var(--yi-danger);
 }
+
 .sp-empty-clear-btn {
     display: inline-flex;
     align-items: center;
@@ -444,6 +417,7 @@
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
+    flex-shrink: 0;
 }
 .sp-project-tag:hover {
     border-color: var(--sc-accent, var(--yi-primary));
