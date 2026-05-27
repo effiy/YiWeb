@@ -24,11 +24,8 @@ registerGlobalComponent({
         untaggedCount:         { type: Number, default: 0 },
         typeTags:              { type: Array, default: () => [] },
         typeStats:             { type: Array, default: () => [] },
-        storyTags:             { type: Array, default: () => [] },
         tagColorMap:           { type: Object, default: () => ({}) },
-        storyOptions:          { type: Array, default: () => [] },
         selectedProjectTags:   { type: Array, default: () => [] },
-        selectedStoryTags:     { type: Array, default: () => [] },
         filterSummaryPills:    { type: Array, default: () => [] },
         panelVisible:          { type: Boolean, default: false },
         viewModes:             { type: Array, default: () => [] },
@@ -73,12 +70,6 @@ registerGlobalComponent({
         },
         onClearTypeTags() {
             this.$emit('clear-type-tags');
-        },
-        onStorySelect(event) {
-            const value = event.target.value;
-            if (value) {
-                this.$emit('toggle-session-tag', value);
-            }
         },
         onSetView(mode) {
             this.$emit('set-view', mode);

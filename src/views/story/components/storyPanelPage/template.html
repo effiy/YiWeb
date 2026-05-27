@@ -77,29 +77,6 @@
     </div>
 
     <div v-if="totalStories > 0 && !loading" class="sp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
-        <div class="sp-filter-group">
-            <span class="sp-filter-label">故事 ({{ storyTags.length }})</span>
-            <template v-if="storyTags.length > 0">
-                <button
-                    v-for="st in storyTags"
-                    :key="st.name"
-                    type="button"
-                    class="sp-filter-tag"
-                    :class="{ active: selectedStoryTags.includes(st.name) }"
-                    @click="onToggleSessionTag(st.name)"
-                >{{ st.name }} ({{ st.count }})</button>
-                <button
-                    v-if="selectedStoryTags.length > 0 || tagFilterNoTags"
-                    type="button"
-                    class="sp-filter-clear-inline"
-                    @click="onClearProjectTags"
-                    title="清除故事筛选"
-                >
-                    <yi-icon name="close"></yi-icon>
-                </button>
-            </template>
-            <span v-else class="sp-filter-empty">没有故事</span>
-        </div>
         <div class="sp-filter-group sp-filter-group--type">
             <span class="sp-filter-label">故事状态 ({{ typeTags.length }})</span>
             <template v-if="typeTags.length > 0">
@@ -135,10 +112,6 @@
                     <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleUntagged" title="移除筛选">×</button>
                 </span>
                 <span v-for="tag in selectedProjectTags" :key="'p-' + tag" class="sp-filter-collapsed-pill">
-                    {{ tag }}
-                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleSessionTag(tag)" title="移除筛选">×</button>
-                </span>
-                <span v-for="tag in selectedStoryTags" :key="'s-' + tag" class="sp-filter-collapsed-pill">
                     {{ tag }}
                     <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleSessionTag(tag)" title="移除筛选">×</button>
                 </span>

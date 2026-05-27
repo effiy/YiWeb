@@ -3,13 +3,12 @@
  *
  * 所有派生数据集中于此，使用 Vue.computed() 包装。
  * 对标 aicr/index.js computed 模式。
- * projectTags / storyTags / typeTags / typeStats 直接从文件树计算，
+ * projectTags / typeTags / typeStats 直接从文件树计算，
  * 与 AICR 页面使用完全相同的逻辑。
  */
 
 import {
     getFirstLevelNames,
-    extractStoryNames,
     extractDocTypes,
     getDocTypeFallback,
 } from '/src/views/aicr/utils/filterHelpers.js';
@@ -30,14 +29,6 @@ function getSelectedProjectTags(state) {
     return tags.filter(t => firstLevelNames.has(t));
 }
 
-function getSelectedStoryTags(state) {
-    const tree = state.fileTree.value;
-    const firstLevelNames = getFirstLevelNames(tree);
-    const tags = state.selectedSessionTags.value;
-    if (!Array.isArray(tags)) return [];
-    return tags.filter(t => !firstLevelNames.has(t));
-}
-
 function _matchSearch(story, q) {
     if (!q || !story) return true;
     return (story.name || '').toLowerCase().includes(q) ||
@@ -49,7 +40,6 @@ function _applyFilters(state, stories, exclude) {
     if (!Array.isArray(stories)) return [];
 
     const selProjectTags = getSelectedProjectTags(state);
-    const selStoryTags = getSelectedStoryTags(state);
     const selTypeTags = state.selectedTypeTags.value;
     const noTags = state.tagFilterNoTags.value;
     const searchQuery = (state.localSearchQuery.value || '').trim().toLowerCase();
@@ -64,9 +54,6 @@ function _applyFilters(state, stories, exclude) {
                 Array.isArray(s.projectTags) && s.projectTags.some(t => selProjectTags.includes(t))
             );
         }
-    }
-    if (exclude !== 'storyTag' && selStoryTags.length > 0) {
-        result = result.filter(s => selStoryTags.includes(s.name));
     }
     if (exclude !== 'docFilter' && Array.isArray(selTypeTags) && selTypeTags.length > 0) {
         result = result.filter(s => {
@@ -305,68 +292,6 @@ export function useComputed(store) {
         return result.sort((a, b) => a.name.localeCompare(b.name));
     });
 
-    /* ---- 故事标签（对标 AICR storyTags computed — 从文件树计算） ---- */
-
-    const storyTags = computed(() => {
-        const tree = store.fileTree?.value;
-        if (!tree || !Array.isArray(tree)) return [];
-
-        const firstLevelNames = getFirstLevelNames(tree);
-        const selectedTypes = store.selectedTypeTags?.value || [];
-        const hasType = selectedTypes.length > 0;
-
-        const countInScope = (items) => {
-            if (!Array.isArray(items)) return 0;
-            let count = 0;
-            for (const item of items) {
-                if (item.type === 'file') {
-                    if (!hasType) { count++; continue; }
-                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                    if (selectedTypes.includes(fileName)) count++;
-                } else if (item.type === 'folder' && item.children) {
-                    count += countInScope(item.children);
-                }
-            }
-            return count;
-        };
-
-        const resultMap = new Map();
-        const walk = (items, parentName = '') => {
-            if (!Array.isArray(items)) return;
-            for (const item of items) {
-                if (item.type === 'folder') {
-                    if (parentName === '故事任务面板') {
-                        const count = countInScope(item.children || []);
-                        const existing = resultMap.get(item.name);
-                        resultMap.set(item.name, existing !== undefined ? existing + count : count);
-                    }
-                    if (item.children) walk(item.children, item.name);
-                }
-            }
-        };
-
-        // 项目级联动
-        const selectedTags = store.selectedSessionTags?.value || [];
-        const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
-        const hasProject = projectSel.length > 0;
-
-        if (hasProject) {
-            for (const item of tree) {
-                if (item.type === 'folder' && projectSel.includes(item.name)) {
-                    walk(item.children || []);
-                }
-            }
-        } else {
-            walk(tree);
-        }
-
-        const result = [];
-        for (const [name, count] of resultMap) {
-            if (count > 0) result.push({ name, count });
-        }
-        return result.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
-    });
-
     /* ---- 文档类型标签（对标 AICR typeTags computed — 从文件树提取） ---- */
 
     const typeTags = computed(() => {
@@ -377,19 +302,16 @@ export function useComputed(store) {
         const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : getDocTypeFallback());
         const selectedTags = store.selectedSessionTags?.value || [];
         const firstLevelNames = getFirstLevelNames(tree);
-        const storyNameSet = new Set(extractStoryNames(tree));
 
         const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
-        const storySel = selectedTags.filter(t => storyNameSet.has(t));
         const hasProject = projectSel.length > 0;
-        const hasStory = storySel.length > 0;
 
         const typeCounts = {};
-        const walk = (items, depth, projectOk, storyOk, parentName = '') => {
+        const walk = (items, depth, projectOk) => {
             if (!Array.isArray(items)) return;
             for (const item of items) {
                 if (item.type === 'file') {
-                    if (projectOk && storyOk) {
+                    if (projectOk) {
                         const fileName = (item.name || '').replace(/\.md$/i, '');
                         if (docTypeSet.has(fileName)) {
                             typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
@@ -403,15 +325,10 @@ export function useComputed(store) {
                     ? (!hasProject || projectSel.includes(item.name))
                     : projectOk;
 
-                const isStory = (parentName === '故事任务面板');
-                const nextStoryOk = isStory
-                    ? (!hasStory || storySel.includes(item.name))
-                    : storyOk;
-
-                if (item.children) walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
+                if (item.children) walk(item.children, depth + 1, nextProjectOk);
             }
         };
-        walk(tree, 0, !hasProject, !hasStory);
+        walk(tree, 0, !hasProject);
 
         return Object.entries(typeCounts)
             .map(([type, count]) => ({ type, count }))
@@ -441,12 +358,7 @@ export function useComputed(store) {
         return map;
     });
 
-    const storyOptions = computed(() => {
-        return storyTags.value.map(st => ({ value: st.name, label: st.name, count: st.count }));
-    });
-
     const selectedProjectTags = computed(() => getSelectedProjectTags(store));
-    const selectedStoryTags = computed(() => getSelectedStoryTags(store));
 
     /* ---- 筛选摘要 pills ---- */
 
@@ -462,14 +374,6 @@ export function useComputed(store) {
         for (const tag of selectedProjectTags.value) {
             pills.push({
                 type: 'tag', label: tag,
-                clear: () => {
-                    store.selectedSessionTags.value = store.selectedSessionTags.value.filter(t => t !== tag);
-                },
-            });
-        }
-        for (const tag of selectedStoryTags.value) {
-            pills.push({
-                type: 'story', label: tag,
                 clear: () => {
                     store.selectedSessionTags.value = store.selectedSessionTags.value.filter(t => t !== tag);
                 },
@@ -514,11 +418,8 @@ export function useComputed(store) {
         projectTags,
         typeTags,
         typeStats,
-        storyTags,
         tagColorMap,
-        storyOptions,
         selectedProjectTags,
-        selectedStoryTags,
         filterSummaryPills,
         panelVisible,
         viewModes,
