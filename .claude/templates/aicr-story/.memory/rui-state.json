@@ -1,0 +1,4 @@
+{
+  "branch": "feat/{{MODULE_NAME}}",
+  "last_updated": "{{INIT_DATE}}"
+}
