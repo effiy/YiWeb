@@ -1,6 +1,0 @@
-{"timestamp":"2026-05-27T06:44:38.877Z","story":"story","step":"log","status":"success","duration_ms":2,"error":null,"retry_count":0,"notification_template_version":"1.0.0"}
-{"timestamp":"2026-05-27T06:44:39.310Z","story":"story","step":"notify","status":"success","duration_ms":436,"error":null,"retry_count":0,"notification_template_version":"1.0.0"}
-{"timestamp":"2026-05-27T06:48:19.130Z","story":"story","step":"log","status":"success","duration_ms":7,"error":null,"retry_count":0,"notification_template_version":"1.0.0"}
-{"timestamp":"2026-05-27T06:48:19.489Z","story":"story","step":"notify","status":"success","duration_ms":367,"error":null,"retry_count":0,"notification_template_version":"1.0.0"}
-{"timestamp":"2026-05-27T06:57:45.558Z","story":"story","step":"log","status":"success","duration_ms":9,"error":null,"retry_count":0,"notification_template_version":"1.0.0"}
-{"timestamp":"2026-05-27T06:57:46.198Z","story":"story","step":"notify","status":"success","duration_ms":650,"error":null,"retry_count":0,"notification_template_version":"1.0.0"}
