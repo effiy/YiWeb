@@ -31,6 +31,9 @@ registerGlobalComponent({
         viewModes:             { type: Array, default: () => [] },
         selectedSessionTags:   { type: Array, default: () => [] },
         selectedTypeTags:      { type: Array, default: () => [] },
+        selectedMissingTags:   { type: Array, default: () => [] },
+        missingTags:           { type: Array, default: () => [] },
+        storyTaskCount:        { type: Number, default: 0 },
         tagFilterNoTags:       { type: Boolean, default: false },
         localSearchQuery:      { type: String, default: '' },
         viewMode:              { type: String, default: 'board' },
@@ -42,6 +45,7 @@ registerGlobalComponent({
         'select-story', 'back',
         'toggle-session-tag', 'clear-session-tags', 'toggle-untagged',
         'toggle-type-tag', 'clear-type-tags',
+        'toggle-missing-tag', 'clear-missing-tags',
         'set-search-query', 'clear-search-query', 'clear-all-filters',
         'set-view', 'toggle-sort', 'open-detail', 'close-panel',
         'handle-tags-scroll', 'clear-cache',
@@ -70,6 +74,12 @@ registerGlobalComponent({
         },
         onClearTypeTags() {
             this.$emit('clear-type-tags');
+        },
+        onToggleMissingTag(missingKey) {
+            this.$emit('toggle-missing-tag', missingKey);
+        },
+        onClearMissingTags() {
+            this.$emit('clear-missing-tags');
         },
         onSetView(mode) {
             this.$emit('set-view', mode);

@@ -39,7 +39,7 @@
     color: var(--yi-text-secondary);
 }
 
-/* Meta Row — tags + stats side by side */
+/* Meta Row — project tag pills row */
 .aicr-meta-row {
     display: flex;
     align-items: center;
@@ -177,16 +177,13 @@
     color: var(--yi-text-on-primary);
 }
 
-/* Stats Bar */
+/* Stats Bar — inline in header-left, after title and count */
 .aicr-stats-bar {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 24px;
-    padding: 6px 16px;
+    gap: 16px;
     flex-shrink: 0;
-    flex-wrap: wrap;
-    margin-left: auto;
+    align-self: center;
 }
 .aicr-stat-item {
     display: flex;

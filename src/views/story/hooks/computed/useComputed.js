@@ -21,6 +21,23 @@ const _TYPE_META = {
     '自改进复盘': { icon: 'refresh', label: '自改进' },
 };
 
+// 缺失文档筛选定义
+const MISSING_DOC_TYPES = [
+    { key: '使用场景', label: '缺使用场景' },
+    { key: '技术评审', label: '缺技术评审' },
+    { key: '测试设计', label: '缺测试设计' },
+    { key: '实施报告', label: '缺实施报告' },
+    { key: '自改进复盘', label: '缺自改进复盘' },
+];
+
+function _storyHasDocType(story, docTypeKey) {
+    if (!story || !Array.isArray(story.files)) return false;
+    return story.files.some(f => {
+        const fn = (f.fileName || '').replace(/\.md$/i, '');
+        return fn === docTypeKey || fn.endsWith('-' + docTypeKey);
+    });
+}
+
 function getSelectedProjectTags(state) {
     const tree = state.fileTree.value;
     const firstLevelNames = getFirstLevelNames(tree);
@@ -64,6 +81,14 @@ function _applyFilters(state, stories, exclude) {
                     return fn === type || fn.endsWith('-' + type);
                 })
             );
+        });
+    }
+    // 缺失文档筛选：选中的类型，故事中不包含该类型才保留
+    const selMissing = state.selectedMissingTags?.value || [];
+    if (exclude !== 'missingFilter' && selMissing.length > 0) {
+        result = result.filter(s => {
+            if (!s || !Array.isArray(s.files)) return true;
+            return selMissing.every(type => !_storyHasDocType(s, type));
         });
     }
     if (exclude !== 'search' && searchQuery) {
@@ -132,6 +157,7 @@ export function useComputed(store) {
             store.localSearchQuery.value ||
             store.selectedSessionTags.value.length > 0 ||
             store.selectedTypeTags.value.length > 0 ||
+            store.selectedMissingTags.value.length > 0 ||
             store.tagFilterNoTags.value
         );
     });
@@ -233,51 +259,26 @@ export function useComputed(store) {
         return count;
     });
 
-    /* ---- 项目标签（对标 AICR projectTags computed — 从文件树计算） ---- */
+    /* ---- 项目标签（每个项目下的故事数 — 联动 type/missing 筛选） ---- */
 
     const projectTags = computed(() => {
-        const tree = store.fileTree?.value;
-        if (!tree || !Array.isArray(tree)) return [];
+        const base = store.stories?.value;
+        if (!base || !Array.isArray(base)) return [];
 
-        const selectedTypes = store.selectedTypeTags?.value || [];
-        const hasType = selectedTypes.length > 0;
+        // 排除自身（projectTag），联动 type + missing
+        const filtered = _applyFilters(store, base, 'projectTag');
 
-        const hasMatchingType = (items) => {
-            if (!Array.isArray(items)) return false;
-            for (const item of items) {
-                if (item.type === 'file') {
-                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                    if (selectedTypes.includes(fileName)) return true;
-                } else if (item.type === 'folder' && item.children && hasMatchingType(item.children)) {
-                    return true;
-                }
+        const counts = {};
+        for (const story of filtered) {
+            const tags = Array.isArray(story.projectTags) ? story.projectTags : [];
+            const tag = tags.length > 0 ? tags[0] : null;
+            if (tag) {
+                counts[tag] = (counts[tag] || 0) + 1;
             }
-            return false;
-        };
-
-        const countInScope = (items) => {
-            if (!Array.isArray(items)) return 0;
-            let count = 0;
-            for (const item of items) {
-                if (item.type === 'file') {
-                    if (!hasType) { count++; continue; }
-                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                    if (selectedTypes.includes(fileName)) count++;
-                } else if (item.type === 'folder' && item.children) {
-                    count += countInScope(item.children);
-                }
-            }
-            return count;
-        };
-
-        const result = [];
-        for (const item of tree) {
-            if (item.type !== 'folder' || !item.children) continue;
-            if (hasType && !hasMatchingType(item.children)) continue;
-            result.push({ name: item.name, count: countInScope(item.children) });
         }
 
-        // localStorage drag order — 与 AICR 共享 key
+        const result = Object.entries(counts).map(([name, count]) => ({ name, count }));
+
         try {
             const saved = localStorage.getItem('aicr_file_tag_order');
             const savedOrder = saved ? JSON.parse(saved) : null;
@@ -292,43 +293,29 @@ export function useComputed(store) {
         return result.sort((a, b) => a.name.localeCompare(b.name));
     });
 
-    /* ---- 文档类型标签（对标 AICR typeTags computed — 从文件树提取） ---- */
+    /* ---- 文档类型标签（每个类型下的故事数 — 联动 project/missing 筛选） ---- */
 
     const typeTags = computed(() => {
-        const tree = store.fileTree?.value;
-        if (!tree || !Array.isArray(tree)) return [];
+        const base = store.stories?.value;
+        if (!base || !Array.isArray(base)) return [];
 
-        const treeTypes = extractDocTypes(tree);
+        // 排除自身（docFilter），联动 project + missing
+        const filtered = _applyFilters(store, base, 'docFilter');
+
+        const treeTypes = extractDocTypes(store.fileTree?.value);
         const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : getDocTypeFallback());
-        const selectedTags = store.selectedSessionTags?.value || [];
-        const firstLevelNames = getFirstLevelNames(tree);
-
-        const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
-        const hasProject = projectSel.length > 0;
 
         const typeCounts = {};
-        const walk = (items, depth, projectOk) => {
-            if (!Array.isArray(items)) return;
-            for (const item of items) {
-                if (item.type === 'file') {
-                    if (projectOk) {
-                        const fileName = (item.name || '').replace(/\.md$/i, '');
-                        if (docTypeSet.has(fileName)) {
-                            typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
-                        }
-                    }
-                    continue;
+        for (const story of filtered) {
+            const seen = new Set();
+            for (const f of (story.files || [])) {
+                const name = (f.fileName || '').replace(/\.md$/i, '');
+                if (docTypeSet.has(name) && !seen.has(name)) {
+                    seen.add(name);
+                    typeCounts[name] = (typeCounts[name] || 0) + 1;
                 }
-                if (item.type !== 'folder') continue;
-
-                const nextProjectOk = depth === 0
-                    ? (!hasProject || projectSel.includes(item.name))
-                    : projectOk;
-
-                if (item.children) walk(item.children, depth + 1, nextProjectOk);
             }
-        };
-        walk(tree, 0, !hasProject);
+        }
 
         return Object.entries(typeCounts)
             .map(([type, count]) => ({ type, count }))
@@ -340,6 +327,29 @@ export function useComputed(store) {
             const meta = _TYPE_META[tt.type] || { icon: 'file', label: tt.type };
             return { type: tt.type, count: tt.count, icon: meta.icon, label: meta.label };
         });
+    });
+
+    /* ---- 缺失文档标签（每个缺失类型下的故事数 — 联动 project/type 筛选） ---- */
+
+    const missingTags = computed(() => {
+        const base = store.stories?.value;
+        if (!base || !Array.isArray(base)) return MISSING_DOC_TYPES.map(mt => ({ ...mt, count: 0 }));
+
+        // 排除自身（missingFilter），联动 project + type
+        const filtered = _applyFilters(store, base, 'missingFilter');
+
+        return MISSING_DOC_TYPES.map(mt => {
+            const count = filtered.filter(s => !_storyHasDocType(s, mt.key)).length;
+            return { ...mt, count };
+        });
+    });
+
+    /* ---- 故事任务计数（联动所有筛选） ---- */
+
+    const storyTaskCount = computed(() => {
+        const stories = filteredStories.value;
+        if (!Array.isArray(stories)) return 0;
+        return stories.filter(s => _storyHasDocType(s, '故事任务')).length;
     });
 
     const tagColorMap = computed(() => {
@@ -387,6 +397,15 @@ export function useComputed(store) {
                 },
             });
         }
+        for (const missingKey of store.selectedMissingTags.value) {
+            const mt = MISSING_DOC_TYPES.find(m => m.key === missingKey);
+            pills.push({
+                type: 'missing', label: mt ? mt.label : missingKey,
+                clear: () => {
+                    store.selectedMissingTags.value = store.selectedMissingTags.value.filter(t => t !== missingKey);
+                },
+            });
+        }
         return pills;
     });
 
@@ -418,6 +437,8 @@ export function useComputed(store) {
         projectTags,
         typeTags,
         typeStats,
+        missingTags,
+        storyTaskCount,
         tagColorMap,
         selectedProjectTags,
         filterSummaryPills,

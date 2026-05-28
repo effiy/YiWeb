@@ -3,6 +3,25 @@
         <div class="aicr-header-left">
             <h1 class="aicr-header-title quantum-header-title">代码审查</h1>
             <span v-if="projectTags && projectTags.length > 0" class="aicr-header-count">{{ projectTags.length }} 个项目</span>
+            <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-stats-bar">
+                <div class="aicr-stat-item">
+                    <yi-icon name="file" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
+                    <span class="aicr-stat-value">{{ filteredFileCount }}</span>
+                    <span class="aicr-stat-label">文件</span>
+                </div>
+                <button
+                    v-for="stat in typeStats"
+                    :key="stat.type"
+                    type="button"
+                    class="aicr-stat-item aicr-stat-btn"
+                    :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes(stat.type) }"
+                    @click="toggleTypeTag(stat.type)"
+                >
+                    <yi-icon :name="stat.icon" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
+                    <span class="aicr-stat-value">{{ stat.count }}</span>
+                    <span class="aicr-stat-label">{{ stat.label }}</span>
+                </button>
+            </div>
         </div>
         <header-actions @clear-cache="clearCacheAndRefresh">
                 <div class="aicr-search">
@@ -77,25 +96,6 @@
             </div>
             <div class="aicr-tags-fade aicr-tags-fade--left" :class="{ 'is-visible': tagsScrollLeft > 0 }"></div>
             <div class="aicr-tags-fade aicr-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
-        </div>
-        <div class="aicr-stats-bar">
-            <div class="aicr-stat-item">
-                <yi-icon name="file" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ filteredFileCount }}</span>
-                <span class="aicr-stat-label">文件</span>
-            </div>
-            <button
-                v-for="stat in typeStats"
-                :key="stat.type"
-                type="button"
-                class="aicr-stat-item aicr-stat-btn"
-                :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes(stat.type) }"
-                @click="toggleTypeTag(stat.type)"
-            >
-                <yi-icon :name="stat.icon" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
-                <span class="aicr-stat-value">{{ stat.count }}</span>
-                <span class="aicr-stat-label">{{ stat.label }}</span>
-            </button>
         </div>
     </div>
 

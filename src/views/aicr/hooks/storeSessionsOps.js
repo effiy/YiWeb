@@ -144,7 +144,7 @@ export function createAicrStoreSessionsOps(deps, state) {
         return parts[idx + 1];
     };
 
-    const DEFAULT_DOC_TYPES = ['故事任务', '使用场景', '技术评审', '测试设计', '安全审计', '实施报告', '测试报告', '自改进复盘'];
+    const DEFAULT_DOC_TYPES = ['故事任务', '使用场景', '技术评审', '测试设计', '实施报告', '测试报告', '自改进复盘'];
 
     const extractDocType = (filePath) => {
         const parts = (filePath || '').split('/');

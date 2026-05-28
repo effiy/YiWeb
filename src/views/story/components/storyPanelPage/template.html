@@ -2,7 +2,8 @@
     <header class="sp-header quantum-panel-header">
         <div class="sp-header-left">
             <h1 class="sp-header-title quantum-header-title">故事任务面板</h1>
-            <span v-if="filteredStories.length > 0" class="sp-header-count">{{ filteredStories.length }} 个故事</span>
+            <span v-if="projectTags.length > 0" class="sp-header-count">{{ projectTags.length }} 个项目</span>
+            <span v-if="projectTags.length > 0" class="sp-header-count">{{ storyTaskCount }} 个故事任务</span>
         </div>
         <header-actions @clear-cache="onClearCache">
             <div class="sp-search">
@@ -99,6 +100,26 @@
                 </button>
             </template>
             <span v-else class="sp-filter-empty">没有故事状态</span>
+        </div>
+        <div class="sp-filter-group sp-filter-group--missing">
+            <span class="sp-filter-label">缺失文档 ({{ missingTags.length }})</span>
+            <button
+                v-for="mt in missingTags"
+                :key="mt.key"
+                type="button"
+                class="sp-filter-tag sp-filter-tag--missing"
+                :class="{ active: selectedMissingTags.includes(mt.key) }"
+                @click="onToggleMissingTag(mt.key)"
+            >{{ mt.label }} ({{ mt.count }})</button>
+            <button
+                v-if="selectedMissingTags.length > 0"
+                type="button"
+                class="sp-filter-clear-inline"
+                @click="onClearMissingTags"
+                title="清除缺失文档筛选"
+            >
+                <yi-icon name="close"></yi-icon>
+            </button>
         </div>
         <div class="sp-filter-collapsed-row">
             <div class="sp-filter-collapsed-scroll">

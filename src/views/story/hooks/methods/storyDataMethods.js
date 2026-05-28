@@ -52,11 +52,12 @@ function extractStoryName(filePath) {
     return parts[idx + 1];
 }
 
-function extractProjectTag(filePath) {
-    const parts = (filePath || '').split('/');
-    const idx = parts.indexOf('故事任务面板');
-    if (idx > 0) return parts[idx - 1];
-    return null;
+function extractProjectTag(item) {
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    const normalized = tags
+        .map(t => (t == null ? '' : String(t)).trim())
+        .filter(t => t.length > 0 && String(t).toLowerCase() !== 'default');
+    return normalized.length > 0 ? normalized[0] : null;
 }
 
 function determineStatus(filenames) {
@@ -137,7 +138,7 @@ export function createStoryDataMethods(state) {
 
                 const projectTagsSet = new Set();
                 for (const f of files) {
-                    const tag = extractProjectTag(f.file_path || '');
+                    const tag = extractProjectTag(f);
                     if (tag) projectTagsSet.add(tag);
                 }
                 const projectTags = [...projectTagsSet].sort();

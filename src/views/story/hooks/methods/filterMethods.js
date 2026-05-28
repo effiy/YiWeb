@@ -60,6 +60,23 @@ export function createFilterMethods(state) {
         state.selectedTypeTags.value = [];
     }
 
+    /* ---- missing document filter ---- */
+
+    function toggleMissingTag(missingKey) {
+        if (!missingKey || typeof missingKey !== 'string') return;
+        const current = state.selectedMissingTags.value;
+        const idx = current.indexOf(missingKey);
+        if (idx >= 0) {
+            state.selectedMissingTags.value = current.filter(t => t !== missingKey);
+        } else {
+            state.selectedMissingTags.value = [...current, missingKey];
+        }
+    }
+
+    function clearMissingTags() {
+        state.selectedMissingTags.value = [];
+    }
+
     /* ---- search ---- */
 
     function setSearchQuery(query) {
@@ -76,6 +93,7 @@ export function createFilterMethods(state) {
         state.localSearchQuery.value = '';
         state.selectedSessionTags.value = [];
         state.selectedTypeTags.value = [];
+        state.selectedMissingTags.value = [];
         state.tagFilterNoTags.value = false;
         state.sortField.value = 'lastModified';
         state.sortDirection.value = 'desc';
@@ -94,6 +112,8 @@ export function createFilterMethods(state) {
         toggleUntagged,
         toggleTypeTag,
         clearTypeTags,
+        toggleMissingTag,
+        clearMissingTags,
         setSearchQuery,
         clearSearchQuery,
         clearAllFilters,
