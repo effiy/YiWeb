@@ -64,12 +64,20 @@ registerGlobalComponent({
                 const hasNoTags = this.tagFilterNoTags;
                 const hasSessionSearch = this.sessionSearchQuery && this.sessionSearchQuery.length > 0;
                 const hasTypeTags = this.selectedTypeTags && this.selectedTypeTags.length > 0;
-                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasTypeTags) {
+                const hasSkillTags = this.selectedSkillTags && this.selectedSkillTags.length > 0;
+                const hasTemplateTags = this.selectedTemplateTags && this.selectedTemplateTags.length > 0;
+                const hasRuleTags = this.selectedRuleTags && this.selectedRuleTags.length > 0;
+                const hasAgentTags = this.selectedAgentTags && this.selectedAgentTags.length > 0;
+                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasTypeTags || hasSkillTags || hasTemplateTags || hasRuleTags || hasAgentTags) {
                     e.preventDefault();
                     if (typeof this.clearSearch === 'function') this.clearSearch();
                     if (typeof this.handleTagClear === 'function') this.handleTagClear();
                     if (typeof this.clearSessionSearch === 'function') this.clearSessionSearch();
                     if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
+                    if (typeof this.handleSkillTagsClear === 'function') this.handleSkillTagsClear();
+                    if (typeof this.handleTemplateTagsClear === 'function') this.handleTemplateTagsClear();
+                    if (typeof this.handleRuleTagsClear === 'function') this.handleRuleTagsClear();
+                    if (typeof this.handleAgentTagsClear === 'function') this.handleAgentTagsClear();
                 }
             }
 
@@ -167,11 +175,55 @@ registerGlobalComponent({
         toggleFilterBar() {
             this.filterBarCollapsed = !this.filterBarCollapsed;
         },
+        toggleSkillTag(name) {
+            if (typeof this.handleSkillTagToggle === 'function') {
+                this.handleSkillTagToggle(name);
+            }
+        },
+        clearSkillTags() {
+            if (typeof this.handleSkillTagsClear === 'function') {
+                this.handleSkillTagsClear();
+            }
+        },
+        toggleTemplateTag(name) {
+            if (typeof this.handleTemplateTagToggle === 'function') {
+                this.handleTemplateTagToggle(name);
+            }
+        },
+        clearTemplateTags() {
+            if (typeof this.handleTemplateTagsClear === 'function') {
+                this.handleTemplateTagsClear();
+            }
+        },
+        toggleRuleTag(name) {
+            if (typeof this.handleRuleTagToggle === 'function') {
+                this.handleRuleTagToggle(name);
+            }
+        },
+        clearRuleTags() {
+            if (typeof this.handleRuleTagsClear === 'function') {
+                this.handleRuleTagsClear();
+            }
+        },
+        toggleAgentTag(name) {
+            if (typeof this.handleAgentTagToggle === 'function') {
+                this.handleAgentTagToggle(name);
+            }
+        },
+        clearAgentTags() {
+            if (typeof this.handleAgentTagsClear === 'function') {
+                this.handleAgentTagsClear();
+            }
+        },
         clearAllAicrFilters() {
             this.clearSessionSearch();
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
             if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
+            if (typeof this.handleSkillTagsClear === 'function') this.handleSkillTagsClear();
+            if (typeof this.handleTemplateTagsClear === 'function') this.handleTemplateTagsClear();
+            if (typeof this.handleRuleTagsClear === 'function') this.handleRuleTagsClear();
+            if (typeof this.handleAgentTagsClear === 'function') this.handleAgentTagsClear();
         },
         clearAllTags() {
             if (typeof this.handleTagClear === 'function') this.handleTagClear();

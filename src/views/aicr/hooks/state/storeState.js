@@ -112,6 +112,10 @@ export function createAicrStoreState(vueRef) {
     const storyDocTypes = vueRef([]);
     const tagOrder = vueRef(null);
     const selectedTypeTags = vueRef([]);
+    const selectedSkillTags = vueRef([]);
+    const selectedTemplateTags = vueRef([]);
+    const selectedRuleTags = vueRef([]);
+    const selectedAgentTags = vueRef([]);
 
     if (!sessions.value || !Array.isArray(sessions.value)) {
         sessions.value = [];
@@ -218,6 +222,10 @@ export function createAicrStoreState(vueRef) {
             storyDocTypes,
             tagOrder,
             selectedTypeTags,
+            selectedSkillTags,
+            selectedTemplateTags,
+            selectedRuleTags,
+            selectedAgentTags,
             availableModels,
             modelsLoading,
             modelsError

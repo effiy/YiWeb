@@ -540,6 +540,78 @@ export const createMainPageMethods = (store) => {
                 logError('[主页面] 清除类型标签处理失败:', error);
             }
         },
+        handleSkillTagToggle: function (skillName) {
+            logInfo('[主页面] 切换 Skills 标签:', skillName);
+            try {
+                const methods = useMethods(store);
+                methods.handleSkillTagToggle(skillName);
+            } catch (error) {
+                logError('[主页面] Skills 标签切换失败:', error);
+            }
+        },
+        handleSkillTagsClear: function () {
+            logInfo('[主页面] 清除 Skills 标签');
+            try {
+                const methods = useMethods(store);
+                methods.handleSkillTagsClear();
+            } catch (error) {
+                logError('[主页面] 清除 Skills 标签失败:', error);
+            }
+        },
+        handleTemplateTagToggle: function (templateName) {
+            logInfo('[主页面] 切换 Templates 标签:', templateName);
+            try {
+                const methods = useMethods(store);
+                methods.handleTemplateTagToggle(templateName);
+            } catch (error) {
+                logError('[主页面] Templates 标签切换失败:', error);
+            }
+        },
+        handleTemplateTagsClear: function () {
+            logInfo('[主页面] 清除 Templates 标签');
+            try {
+                const methods = useMethods(store);
+                methods.handleTemplateTagsClear();
+            } catch (error) {
+                logError('[主页面] 清除 Templates 标签失败:', error);
+            }
+        },
+        handleRuleTagToggle: function (ruleName) {
+            logInfo('[主页面] 切换 Rules 标签:', ruleName);
+            try {
+                const methods = useMethods(store);
+                methods.handleRuleTagToggle(ruleName);
+            } catch (error) {
+                logError('[主页面] Rules 标签切换失败:', error);
+            }
+        },
+        handleRuleTagsClear: function () {
+            logInfo('[主页面] 清除 Rules 标签');
+            try {
+                const methods = useMethods(store);
+                methods.handleRuleTagsClear();
+            } catch (error) {
+                logError('[主页面] 清除 Rules 标签失败:', error);
+            }
+        },
+        handleAgentTagToggle: function (agentName) {
+            logInfo('[主页面] 切换 Agents 标签:', agentName);
+            try {
+                const methods = useMethods(store);
+                methods.handleAgentTagToggle(agentName);
+            } catch (error) {
+                logError('[主页面] Agents 标签切换失败:', error);
+            }
+        },
+        handleAgentTagsClear: function () {
+            logInfo('[主页面] 清除 Agents 标签');
+            try {
+                const methods = useMethods(store);
+                methods.handleAgentTagsClear();
+            } catch (error) {
+                logError('[主页面] 清除 Agents 标签失败:', error);
+            }
+        },
         handleToggleSelectAllSessions: function (payload) {
             logInfo('[主页面] 全选/取消全选会话', payload);
             try {

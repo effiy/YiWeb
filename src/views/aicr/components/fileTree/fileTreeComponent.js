@@ -66,6 +66,10 @@ const componentOptions = {
         selectedTypeTags: {
             type: Array,
             default: () => []
+        },
+        claudeFilterAllowedSessionKeys: {
+            type: [Set, null],
+            default: null
         }
     },
     computed: fileTreeComputed,
