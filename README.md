@@ -95,6 +95,25 @@ YiWeb/
 └── CLAUDE.md                     # 项目画像与执行准则
 ```
 
+## 故事任务
+
+> 由 rui 驱动生成，详细内容见 `docs/故事任务面板/`。
+
+| 故事 | 文档数 | 版本 | 说明 |
+|------|:------:|------|------|
+| aicr | 6 | v2.1.2 | AI 代码审查核心业务视图 |
+| cdn | 5 | v1.0.0 | CDN 托管通用组件与工具 |
+| claude | 5 | v1.0.0 | Claude 管理面板视图 |
+| services | 5 | v1.0.0 | 核心服务层与接口封装 |
+| story | 8 | v2.1.0 | 故事任务面板视图 |
+| yiweb-arch | 6 | v1.0.0 | 系统架构知识固化（父故事） |
+| └ yiweb-arch-layers | 4 | v1.0.0 | FP1: 提取系统分层结构 |
+| └ yiweb-arch-modules | 4 | v1.0.0 | FP2: 建立模块关系图谱 |
+| └ yiweb-arch-dataflow | 4 | v1.0.0 | FP3: 绘制数据流转路径 |
+| └ yiweb-arch-security | 4 | v1.0.0 | FP4: 标注安全防护边界 |
+| └ yiweb-arch-deps | 4 | v1.0.0 | FP5: 生成依赖关系矩阵 |
+| yiweb-self-test | 8 | v1.0.0 | 项目自主测试方案 |
+
 ## 领域语言
 
 | 术语 | 定义 | 关系 |
