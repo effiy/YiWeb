@@ -106,7 +106,7 @@ YiWeb/
 | claude | 5 | v1.0.0 | Claude 管理面板视图 |
 | services | 5 | v1.0.0 | 核心服务层与接口封装 |
 | story | 8 | v2.1.0 | 故事任务面板视图 |
-| yiweb-arch | 6 | v1.0.0 | 系统架构知识固化（父故事） |
+| yiweb-arch | 6 | v1.1.0 | 系统架构知识固化（父故事，含 5 子故事） |
 | └ yiweb-arch-layers | 4 | v1.0.0 | FP1: 提取系统分层结构 |
 | └ yiweb-arch-modules | 4 | v1.0.0 | FP2: 建立模块关系图谱 |
 | └ yiweb-arch-dataflow | 4 | v1.0.0 | FP3: 绘制数据流转路径 |
