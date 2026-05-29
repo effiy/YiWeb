@@ -9,18 +9,6 @@
                     <span class="aicr-stat-value">{{ filteredFileCount }}</span>
                     <span class="aicr-stat-label">文件</span>
                 </div>
-                <button
-                    v-for="stat in typeStats"
-                    :key="stat.type"
-                    type="button"
-                    class="aicr-stat-item aicr-stat-btn"
-                    :class="{ 'aicr-stat-btn--active': selectedTypeTags && selectedTypeTags.includes(stat.type) }"
-                    @click="toggleTypeTag(stat.type)"
-                >
-                    <yi-icon :name="stat.icon" class-name="aicr-stat-icon quantum-stat-icon"></yi-icon>
-                    <span class="aicr-stat-value">{{ stat.count }}</span>
-                    <span class="aicr-stat-label">{{ stat.label }}</span>
-                </button>
             </div>
         </div>
         <header-actions @clear-cache="clearCacheAndRefresh">
@@ -123,29 +111,6 @@
             </template>
             <span v-else class="aicr-filter-empty">没有故事</span>
         </div>
-        <div class="aicr-filter-group aicr-filter-group--type">
-            <span class="aicr-filter-label">故事状态 ({{ typeTags ? typeTags.length : 0 }})</span>
-            <template v-if="typeTags && typeTags.length > 0">
-                <button
-                    v-for="tt in typeTags"
-                    :key="tt.type"
-                    type="button"
-                    class="aicr-filter-tag aicr-filter-tag--type"
-                    :class="{ active: selectedTypeTags && selectedTypeTags.includes(tt.type) }"
-                    @click="toggleTypeTag(tt.type)"
-                >{{ tt.type }} ({{ tt.count }})</button>
-                <button
-                    v-if="selectedTypeTags && selectedTypeTags.length > 0"
-                    type="button"
-                    class="aicr-filter-clear aicr-filter-clear--inline"
-                    @click="clearTypeTags"
-                    title="清除故事状态筛选"
-                >
-                    <yi-icon name="close"></yi-icon>
-                </button>
-            </template>
-            <span v-else class="aicr-filter-empty">没有故事状态</span>
-        </div>
         <div class="aicr-filter-group aicr-filter-group--skills">
             <span class="aicr-filter-label">Skills ({{ skillTags ? skillTags.length : 0 }})</span>
             <template v-if="skillTags && skillTags.length > 0">
@@ -240,7 +205,7 @@
         </div>
         <div class="aicr-filter-collapsed-row">
             <div class="aicr-filter-collapsed-scroll">
-                <span v-if="!tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) && (!selectedTypeTags || selectedTypeTags.length === 0) && (!selectedSkillTags || selectedSkillTags.length === 0) && (!selectedTemplateTags || selectedTemplateTags.length === 0) && (!selectedRuleTags || selectedRuleTags.length === 0) && (!selectedAgentTags || selectedAgentTags.length === 0)" class="aicr-filter-collapsed-empty">未选择筛选</span>
+                <span v-if="!tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) && (!selectedSkillTags || selectedSkillTags.length === 0) && (!selectedTemplateTags || selectedTemplateTags.length === 0) && (!selectedRuleTags || selectedRuleTags.length === 0) && (!selectedAgentTags || selectedAgentTags.length === 0)" class="aicr-filter-collapsed-empty">未选择筛选</span>
                 <span v-if="tagFilterNoTags" class="aicr-filter-collapsed-pill">
                     没有标签
                     <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleTagFilterNoTags" title="移除筛选">×</button>
@@ -248,10 +213,6 @@
                 <span v-for="tag in (selectedSessionTags || [])" :key="tag" class="aicr-filter-collapsed-pill">
                     {{ tag }}
                     <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleAicrTag(tag)" title="移除筛选">×</button>
-                </span>
-                <span v-for="type in (selectedTypeTags || [])" :key="type" class="aicr-filter-collapsed-pill aicr-filter-collapsed-pill--type">
-                    {{ type }}
-                    <button type="button" class="aicr-filter-collapsed-pill-close" @click.stop="toggleTypeTag(type)" title="移除筛选">×</button>
                 </span>
                 <span v-for="sk in (selectedSkillTags || [])" :key="'sk-' + sk" class="aicr-filter-collapsed-pill aicr-filter-collapsed-pill--skill">
                     {{ sk }}
@@ -271,7 +232,7 @@
                 </span>
             </div>
             <button
-                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedTypeTags && selectedTypeTags.length > 0) || (selectedSkillTags && selectedSkillTags.length > 0) || (selectedTemplateTags && selectedTemplateTags.length > 0) || (selectedRuleTags && selectedRuleTags.length > 0) || (selectedAgentTags && selectedAgentTags.length > 0)"
+                v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags || (selectedSkillTags && selectedSkillTags.length > 0) || (selectedTemplateTags && selectedTemplateTags.length > 0) || (selectedRuleTags && selectedRuleTags.length > 0) || (selectedAgentTags && selectedAgentTags.length > 0)"
                 type="button"
                 class="aicr-filter-collapsed-clear"
                 @click="clearAllAicrFilters"
@@ -282,7 +243,7 @@
         </div>
     </div>
 
-    <main class="aicr-main" :class="{ 'is-cards': viewMode === 'cards' }">
+    <main class="aicr-main" :class="{ 'is-cards': viewMode === 'cards', 'is-graph': viewMode === 'graph' }">
         <aicr-sidebar></aicr-sidebar>
         <aicr-code-area></aicr-code-area>
     </main>

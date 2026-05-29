@@ -11,6 +11,7 @@ import { useMethods } from '/src/views/story/hooks/useMethods.js';
 import { createBaseView } from '/cdn/utils/view/baseView.js';
 import { logInfo, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
+import '/cdn/utils/ui/tooltipPortal.js';
 
 (async function initStoryPanelApp() {
     // 启用调试日志，确保数据流日志在浏览器控制台可见
@@ -62,7 +63,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
 
                 // 筛选状态
                 selectedSessionTags: store.selectedSessionTags,
-                selectedTypeTags: store.selectedTypeTags,
                 selectedMissingTags: store.selectedMissingTags,
                 tagFilterNoTags: store.tagFilterNoTags,
                 localSearchQuery: store.localSearchQuery,
@@ -83,14 +83,10 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 filteredStories: computedRefs.filteredStories,
                 hasActiveFilters: computedRefs.hasActiveFilters,
                 documentCounts: computedRefs.documentCounts,
-                filteredStoriesByStatus: computedRefs.filteredStoriesByStatus,
-                kanbanColumns: computedRefs.kanbanColumns,
                 groupedStories: computedRefs.groupedStories,
                 projectTagCounts: computedRefs.projectTagCounts,
                 untaggedCount: computedRefs.untaggedCount,
                 projectTags: computedRefs.projectTags,
-                typeTags: computedRefs.typeTags,
-                typeStats: computedRefs.typeStats,
                 missingTags: computedRefs.missingTags,
                 storyTaskCount: computedRefs.storyTaskCount,
                 tagColorMap: computedRefs.tagColorMap,
@@ -113,8 +109,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 toggleSessionTag: (tag) => store.toggleSessionTag(tag),
                 clearSessionTags: () => store.clearSessionTags(),
                 toggleUntagged: () => store.toggleUntagged(),
-                toggleTypeTag: (docType) => store.toggleTypeTag(docType),
-                clearTypeTags: () => store.clearTypeTags(),
                 toggleMissingTag: (missingKey) => store.toggleMissingTag(missingKey),
                 clearMissingTags: () => store.clearMissingTags(),
                 setSearchQuery: (q) => store.setSearchQuery(q),

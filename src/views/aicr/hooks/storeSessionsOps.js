@@ -144,27 +144,16 @@ export function createAicrStoreSessionsOps(deps, state) {
         return parts[idx + 1];
     };
 
-    const DEFAULT_DOC_TYPES = ['故事任务', '使用场景', '技术评审', '测试设计', '实施报告', '测试报告', '自改进复盘'];
-
-    const extractDocType = (filePath) => {
-        const parts = (filePath || '').split('/');
-        const last = parts[parts.length - 1] || '';
-        return last.replace(/\.md$/i, '') || null;
-    };
-
     const extractFromSessions = (sessions) => {
         const names = new Set();
-        const docTypes = new Set();
         for (const s of sessions) {
             const fp = s.file_path || s.filePath || '';
             if (fp.startsWith('故事任务面板/')) {
                 const name = extractStoryName(fp);
                 if (name) names.add(name);
-                const docType = extractDocType(fp);
-                if (docType) docTypes.add(docType);
             }
         }
-        return { names, docTypes };
+        return { names };
     };
 
     const fallbackStoryNames = () => {
@@ -185,10 +174,9 @@ export function createAicrStoreSessionsOps(deps, state) {
             const tree = state.fileTree?.value;
             if (tree && Array.isArray(tree) && tree.length > 0) {
                 // 运行时 import 避免循环依赖
-                const { extractStoryNames, extractDocTypes } = await import('/src/views/aicr/utils/filterHelpers.js');
+                const { extractStoryNames } = await import('/src/views/aicr/utils/filterHelpers.js');
                 state.storyNames.value = extractStoryNames(tree);
-                state.storyDocTypes.value = extractDocTypes(tree);
-                console.log('[loadStoryNames] 从文件树提取:', state.storyNames.value.length, '个故事,', state.storyDocTypes.value.length, '种类型');
+                console.log('[loadStoryNames] 从文件树提取:', state.storyNames.value.length, '个故事');
                 return;
             }
 
@@ -216,8 +204,7 @@ export function createAicrStoreSessionsOps(deps, state) {
 
                 if (apiResult.names.size > 0) {
                     state.storyNames.value = [...apiResult.names].sort();
-                    state.storyDocTypes.value = [...apiResult.docTypes].sort();
-                    console.log('[loadStoryNames] API 加载:', state.storyNames.value.length, '个故事,', state.storyDocTypes.value.length, '种类型');
+                    console.log('[loadStoryNames] API 加载:', state.storyNames.value.length, '个故事');
                     return;
                 }
 
@@ -225,14 +212,12 @@ export function createAicrStoreSessionsOps(deps, state) {
                 const sessionResult = extractFromSessions(state.sessions?.value || []);
                 if (sessionResult.names.size > 0) {
                     state.storyNames.value = [...sessionResult.names].sort();
-                    state.storyDocTypes.value = [...sessionResult.docTypes].sort();
                     console.log('[loadStoryNames] 从已加载会话中提取:', state.storyNames.value.length, '个故事');
                     return;
                 }
 
                 // Both failed — use fallback
                 state.storyNames.value = fallbackStoryNames();
-                state.storyDocTypes.value = DEFAULT_DOC_TYPES;
                 console.log('[loadStoryNames] 使用回退策略:', state.storyNames.value.length, '个故事');
             } catch (error) {
                 console.warn('[loadStoryNames] API 调用失败，尝试从已加载会话中提取:', error);
@@ -240,14 +225,12 @@ export function createAicrStoreSessionsOps(deps, state) {
                 const sessionResult = extractFromSessions(state.sessions?.value || []);
                 if (sessionResult.names.size > 0) {
                     state.storyNames.value = [...sessionResult.names].sort();
-                    state.storyDocTypes.value = [...sessionResult.docTypes].sort();
                     console.log('[loadStoryNames] 从已加载会话中提取:', state.storyNames.value.length, '个故事');
                     return;
                 }
 
                 state.storyNames.value = fallbackStoryNames();
-                state.storyDocTypes.value = DEFAULT_DOC_TYPES;
-                console.log('[loadStoryNames] 回退:', state.storyNames.value.length, '个故事,', state.storyDocTypes.value.length, '种类型');
+                console.log('[loadStoryNames] 回退:', state.storyNames.value.length, '个故事');
             }
         }, '提取故事元数据');
     };

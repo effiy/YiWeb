@@ -23,7 +23,8 @@ registerGlobalComponent({
         viewModes() {
             return [
                 { value: 'tree', label: '树形', icon: 'list' },
-                { value: 'cards', label: '卡片', icon: 'grid' }
+                { value: 'cards', label: '卡片', icon: 'grid' },
+                { value: 'graph', label: '图谱', icon: 'graph' }
             ];
         },
         filterSummaryText() {
@@ -63,17 +64,15 @@ registerGlobalComponent({
                 const hasTags = this.selectedSessionTags && this.selectedSessionTags.length > 0;
                 const hasNoTags = this.tagFilterNoTags;
                 const hasSessionSearch = this.sessionSearchQuery && this.sessionSearchQuery.length > 0;
-                const hasTypeTags = this.selectedTypeTags && this.selectedTypeTags.length > 0;
                 const hasSkillTags = this.selectedSkillTags && this.selectedSkillTags.length > 0;
                 const hasTemplateTags = this.selectedTemplateTags && this.selectedTemplateTags.length > 0;
                 const hasRuleTags = this.selectedRuleTags && this.selectedRuleTags.length > 0;
                 const hasAgentTags = this.selectedAgentTags && this.selectedAgentTags.length > 0;
-                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasTypeTags || hasSkillTags || hasTemplateTags || hasRuleTags || hasAgentTags) {
+                if (hasSearch || hasTags || hasNoTags || hasSessionSearch || hasSkillTags || hasTemplateTags || hasRuleTags || hasAgentTags) {
                     e.preventDefault();
                     if (typeof this.clearSearch === 'function') this.clearSearch();
                     if (typeof this.handleTagClear === 'function') this.handleTagClear();
                     if (typeof this.clearSessionSearch === 'function') this.clearSessionSearch();
-                    if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
                     if (typeof this.handleSkillTagsClear === 'function') this.handleSkillTagsClear();
                     if (typeof this.handleTemplateTagsClear === 'function') this.handleTemplateTagsClear();
                     if (typeof this.handleRuleTagsClear === 'function') this.handleRuleTagsClear();
@@ -164,11 +163,6 @@ registerGlobalComponent({
                 this.handleTagSelect(newTags);
             }
         },
-        toggleTypeTag(type) {
-            if (typeof this.handleTypeTagToggle === 'function') {
-                this.handleTypeTagToggle(type);
-            }
-        },
         handleFilterToggle() {
             this.filterBarCollapsed = !this.filterBarCollapsed;
         },
@@ -219,7 +213,6 @@ registerGlobalComponent({
             this.clearSessionSearch();
             if (typeof this.clearSearch === 'function') this.clearSearch();
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
-            if (typeof this.handleTypeTagClear === 'function') this.handleTypeTagClear();
             if (typeof this.handleSkillTagsClear === 'function') this.handleSkillTagsClear();
             if (typeof this.handleTemplateTagsClear === 'function') this.handleTemplateTagsClear();
             if (typeof this.handleRuleTagsClear === 'function') this.handleRuleTagsClear();
@@ -228,11 +221,6 @@ registerGlobalComponent({
         clearAllTags() {
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
             if (typeof this.handleTagFilterNoTags === 'function') this.handleTagFilterNoTags(false);
-        },
-        clearTypeTags() {
-            if (typeof this.handleTypeTagClear === 'function') {
-                this.handleTypeTagClear();
-            }
         },
         toggleTagFilterNoTags() {
             if (typeof this.handleTagFilterNoTags === 'function') {

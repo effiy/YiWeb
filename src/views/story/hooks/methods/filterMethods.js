@@ -5,7 +5,7 @@
  * 使用 selectedSessionTags 存储项目级筛选标签。
  */
 
-import { validateTag, validateDocType, sanitizeSearchQuery } from '../validators.js';
+import { validateTag, sanitizeSearchQuery } from '../validators.js';
 import { getFirstLevelNames } from '/src/views/aicr/utils/filterHelpers.js';
 
 export function createFilterMethods(state) {
@@ -43,23 +43,6 @@ export function createFilterMethods(state) {
         }
     }
 
-    /* ---- document type filter ---- */
-
-    function toggleTypeTag(docType) {
-        if (!validateDocType(docType)) return;
-        const current = state.selectedTypeTags.value;
-        const idx = current.indexOf(docType);
-        if (idx >= 0) {
-            state.selectedTypeTags.value = current.filter(t => t !== docType);
-        } else {
-            state.selectedTypeTags.value = [...current, docType];
-        }
-    }
-
-    function clearTypeTags() {
-        state.selectedTypeTags.value = [];
-    }
-
     /* ---- missing document filter ---- */
 
     function toggleMissingTag(missingKey) {
@@ -92,7 +75,6 @@ export function createFilterMethods(state) {
     function clearAllFilters() {
         state.localSearchQuery.value = '';
         state.selectedSessionTags.value = [];
-        state.selectedTypeTags.value = [];
         state.selectedMissingTags.value = [];
         state.tagFilterNoTags.value = false;
         state.sortField.value = 'lastModified';
@@ -110,8 +92,6 @@ export function createFilterMethods(state) {
         toggleSessionTag,
         clearSessionTags,
         toggleUntagged,
-        toggleTypeTag,
-        clearTypeTags,
         toggleMissingTag,
         clearMissingTags,
         setSearchQuery,

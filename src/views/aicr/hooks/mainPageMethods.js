@@ -522,24 +522,6 @@ export const createMainPageMethods = (store) => {
                 logError('[主页面] 切换会话选择状态失败:', error);
             }
         },
-        handleTypeTagToggle: function (type) {
-            logInfo('[主页面] 收到类型标签切换事件:', type);
-            try {
-                const methods = useMethods(store);
-                methods.handleTypeTagToggle(type);
-            } catch (error) {
-                logError('[主页面] 类型标签切换处理失败:', error);
-            }
-        },
-        handleTypeTagClear: function () {
-            logInfo('[主页面] 收到清除类型标签事件');
-            try {
-                const methods = useMethods(store);
-                methods.handleTypeTagClear();
-            } catch (error) {
-                logError('[主页面] 清除类型标签处理失败:', error);
-            }
-        },
         handleSkillTagToggle: function (skillName) {
             logInfo('[主页面] 切换 Skills 标签:', skillName);
             try {

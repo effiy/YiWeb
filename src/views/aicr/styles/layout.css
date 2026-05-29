@@ -146,6 +146,22 @@
     display: block;
 }
 
+/* 卡片 / 图谱模式：侧边栏占满宽度，隐藏代码区 */
+.aicr-main.is-cards .aicr-sidebar,
+.aicr-main.is-graph .aicr-sidebar {
+    flex: 1;
+    max-width: 100%;
+    position: relative;
+    height: auto;
+    max-height: none;
+    align-self: stretch;
+}
+
+.aicr-main.is-cards .aicr-code,
+.aicr-main.is-graph .aicr-code {
+    display: none;
+}
+
 @media (max-width: 950px) {
     .aicr-sidebar.collapsed {
         transform: translateY(-100%);
@@ -413,10 +429,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: var(--z-local-30); /* Match z-index */
+  z-index: 0; /* 不遮挡文件树内容 */
   transition: all var(--yi-duration-normal) var(--yi-easing-default);
   color: var(--yi-text-secondary);
-  box-shadow: 0 6px 18px rgba(var(--yi-primary-rgb),0.15); /* Match initial shadow */
+  box-shadow: 0 6px 18px rgba(var(--yi-primary-rgb),0.15);
   backdrop-filter: blur(10px); /* Match backdrop-filter */
   -webkit-backdrop-filter: blur(10px);
 }

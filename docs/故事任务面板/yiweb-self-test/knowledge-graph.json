@@ -1,0 +1,127 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-05-29T12:51:41Z",
+  "projectRoot": "docs/故事任务面板/yiweb-self-test/",
+  "story": {
+    "name": "YiWeb-自主测试 · 故事任务",
+    "description": "",
+    "scenarios": [
+      {
+        "name": "场景1 · 全量自检 — 项目初始化后完整检查",
+        "description": "扫描项目根目录 → 检查项目说明(完整项目画像?) → 检查项目说明书(≥3个领域术语?) → 检查故事目录(每个任务都有完整文档?) → 检查架构规则(模块间有违规引用?) → 检查安全(代码中藏有密码或密钥?) → 检查版本(各处版本号一致?) → 检查分支(分支名规范?) → 全部通过生成健康报告",
+        "sourceFiles": [
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "检查项注册表 (JSON)",
+            "description": "15 项规则配置"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "执行引擎",
+            "description": "顺序/并行/降级"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "报告生成器",
+            "description": "JSON + 终端"
+          },
+          {
+            "type": "开发",
+            "file": "CLAUDE.md",
+            "keyContent": "五大标记段",
+            "description": "claude-completeness 检查依据"
+          },
+          {
+            "type": "测试",
+            "file": "tests/self-test/full.test.js",
+            "keyContent": "全量自检测试",
+            "description": "验证合规+违规场景"
+          }
+        ]
+      },
+      {
+        "name": "场景2 · 增量自检 — 提交前仅检查变更文件",
+        "description": "提交触发 → 找出本次变更了哪些文件 → 有文件变更? → 按文件类型分类(文档/代码/配置) → 变更了文档?(检查文档格式+引用) / 变更了代码?(检查安全+日志+架构) / 变更了配置?(检查环境切换) → 全部通过(允许提交) / 有失败(阻断提交列出失败项)",
+        "sourceFiles": [
+          {
+            "type": "开发",
+            "file": "自检脚本 (增量模式)",
+            "keyContent": "git diff --name-only",
+            "description": "变更检测"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "按扩展名分发检查",
+            "description": "文档(.md)/代码(.js)/配置(.json)"
+          },
+          {
+            "type": "测试",
+            "file": "tests/self-test/incremental.test.js",
+            "keyContent": "增量自检测试",
+            "description": "验证混合变更场景"
+          }
+        ]
+      },
+      {
+        "name": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+        "description": "读取模块地图了解文档声称的目录结构 → 扫描实际代码列出真实存在的目录和文件 → 对比视图层(文档列出的视图代码中都有吗?) → 反向检查(代码中有而文档未列出的模块) → 对比服务层(文档中的服务实际文件存在吗?) → 汇总差异清单 → 差异数=0(完全一致评审可继续) / 差异数>0(发现不一致建议先修复)",
+        "sourceFiles": [
+          {
+            "type": "开发",
+            "file": "模块地图文档",
+            "keyContent": "全部模块条目",
+            "description": "文档基线"
+          }
+        ]
+      },
+      {
+        "name": "场景4 · 安全回归 — 安全相关变更后触发检查",
+        "description": "安全相关代码变更检测 → 变更是否涉及安全面? → 启动安全面回归检查 → 检查密钥暴露 → 检查请求安全 → 检查日志安全 → 检查存储安全 → 检查第三方内容过滤 → 五项全通过?(安全回归通过) / 有发现?(汇总安全问题，高风险阻断)",
+        "sourceFiles": [
+          {
+            "type": "开发",
+            "file": "自检脚本 (安全模块)",
+            "keyContent": "`security-no-secrets`",
+            "description": "密钥暴露检查"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本 (安全模块)",
+            "keyContent": "`security-fetch-credentials`",
+            "description": "请求安全检查"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本 (安全模块)",
+            "keyContent": "`security-no-raw-log`",
+            "description": "日志安全检查"
+          },
+          {
+            "type": "开发",
+            "file": "src/core/services/helper/requestHelper.js",
+            "keyContent": "credentials:omit",
+            "description": "请求安全验证目标",
+            "code": "/**\n * 发送 HTTP 请求的辅助函数 - 简化版本\n * 作者：liangliang\n */\n\n// 模块依赖改为全局方式\n// import { window.checkStatus, window.isJsonResponse } from '/src/core/services/helper/window.checkStatus.js';\n// import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用\nimport '/src/core/services/helper/checkStatus.js';\n// 导入认证工具，确保 getAuthHeaders 函数可用\nimport { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 默认请求配置\n */\nconst DEFAULT_CONFIG = {\n  timeout: 5 * 60 * 1000, // 5分钟\n  headers: {\n    'Content-Type': 'application/json',"
+          },
+          {
+            "type": "开发",
+            "file": "cdn/markdown/plugins/SanitizePlugin.js",
+            "keyContent": "DOMPurify",
+            "description": "第三方过滤验证目标",
+            "code": "/**\n * Sanitize Plugin\n * Cleans HTML to prevent XSS\n */\n\nconst sanitizeClassName = (className) => {\n  if (!className || typeof className !== 'string') return '';\n  const cleaned = className.replace(/[^a-zA-Z0-9 _-]/g, ' ').replace(/\\s+/g, ' ').trim();\n  return cleaned.length > 128 ? cleaned.slice(0, 128).trim() : cleaned;\n};\n\nconst isSafeCssColor = (color) => {\n  if (!color || typeof color !== 'string') return false;\n  const value = color.trim();\n  if (!value || value.length > 48) return false;\n  if (/^#[0-9a-fA-F]{3}$/.test(value) || /^#[0-9a-fA-F]{6}$/.test(value)) return true;\n  if (/^[a-zA-Z]+$/.test(value)) return true;\n  const rgbMatch = value.match(/^rgb\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*\\)$/i);\n  if (rgbMatch) {\n    const r = Number(rgbMatch[1]);\n    const g = Number(rgbMatch[2]);\n    const b = Number(rgbMatch[3]);\n    return r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255;\n  }\n  const rgbaMatch = value.match(/^rgba\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(0|1|0?\\.\\d+)\\s*\\)$/i);"
+          },
+          {
+            "type": "测试",
+            "file": "tests/self-test/security.test.js",
+            "keyContent": "安全回归测试",
+            "description": "验证 5 项检查"
+          }
+        ]
+      }
+    ]
+  }
+}

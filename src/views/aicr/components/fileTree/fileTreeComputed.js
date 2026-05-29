@@ -9,38 +9,17 @@ const fileTreeComputed = {
 
         if (firstLevelTags.length === 0) return [];
 
-        const selectedTypes = this.selectedTypeTags || [];
-        const hasType = selectedTypes.length > 0;
-
         const allowedKeys = this.claudeFilterAllowedSessionKeys;
         const hasSessionFilter = allowedKeys && allowedKeys.size > 0;
 
         const tags = new Set();
-
-        const countInScope = (items) => {
-            if (!Array.isArray(items)) return 0;
-            let count = 0;
-            for (const item of items) {
-                if (item.type === 'file') {
-                    if (hasSessionFilter && (item.sessionKey == null || !allowedKeys.has(String(item.sessionKey)))) continue;
-                    if (!hasType) { count++; continue; }
-                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                    if (selectedTypes.includes(fileName)) count++;
-                } else if (item.type === 'folder' && item.children) {
-                    count += countInScope(item.children);
-                }
-            }
-            return count;
-        };
 
         const collectStories = (items, parentName = '') => {
             if (!Array.isArray(items)) return;
             for (const item of items) {
                 if (item.type === 'folder') {
                     if (parentName === '故事任务面板') {
-                        if (!hasType || countInScope(item.children || []) > 0) {
-                            tags.add(item.name);
-                        }
+                        tags.add(item.name);
                     }
                     if (item.children) collectStories(item.children, item.name);
                 }
@@ -74,9 +53,6 @@ const fileTreeComputed = {
         const counts = {};
         let noTagsCount = 0;
 
-        const selectedTypes = this.selectedTypeTags || [];
-        const hasType = selectedTypes.length > 0;
-
         const allowedKeys = this.claudeFilterAllowedSessionKeys;
         const hasSessionFilter = allowedKeys && allowedKeys.size > 0;
 
@@ -86,9 +62,7 @@ const fileTreeComputed = {
             for (const item of items) {
                 if (item.type === 'file') {
                     if (hasSessionFilter && (item.sessionKey == null || !allowedKeys.has(String(item.sessionKey)))) continue;
-                    if (!hasType) { fileCount++; continue; }
-                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                    if (selectedTypes.includes(fileName)) fileCount++;
+                    fileCount++;
                 } else if (item.type === 'folder' && item.children) {
                     fileCount += countFilesInFolder(item.children);
                 }
@@ -121,7 +95,6 @@ const fileTreeComputed = {
 
         for (const item of this.tree) {
             if (item.type === 'file') {
-                if (hasType) continue;
                 if (hasSessionFilter && (item.sessionKey == null || !allowedKeys.has(String(item.sessionKey)))) continue;
                 noTagsCount++;
             }
@@ -259,30 +232,6 @@ const fileTreeComputed = {
                 return result;
             };
             filteredItems = filterByStory(filteredItems);
-        }
-
-        // 类型筛选
-        const selectedTypes = this.selectedTypeTags || [];
-        if (selectedTypes.length > 0) {
-            const filterByType = (items) => {
-                if (!Array.isArray(items)) return [];
-                const result = [];
-                for (const item of items) {
-                    if (item.type === 'file') {
-                        const fileName = (item.name || '').replace(/\.md$/i, '');
-                        if (selectedTypes.includes(fileName)) {
-                            result.push(item);
-                        }
-                    } else if (item.type === 'folder' && item.children) {
-                        const filteredChildren = filterByType(item.children);
-                        if (filteredChildren.length > 0) {
-                            result.push({ ...item, children: filteredChildren });
-                        }
-                    }
-                }
-                return result;
-            };
-            filteredItems = filterByType(filteredItems);
         }
 
         if (this.searchQuery && this.searchQuery.trim()) {

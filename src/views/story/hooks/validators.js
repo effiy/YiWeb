@@ -15,7 +15,7 @@ export const VALID_DOC_TYPES = ['story_task', 'scenario', 'implementation', 'tes
 
 export const VALID_SORT_FIELDS = ['lastModified', 'createdAt', 'name', 'status', 'healthScore', 'fileCount'];
 
-export const VALID_VIEW_MODES = ['board', 'cards', 'list'];
+export const VALID_VIEW_MODES = ['cards', 'list'];
 
 const MAX_SEARCH_LENGTH = 200;
 const MAX_TAG_LENGTH = 500;
@@ -113,11 +113,6 @@ export function validateTag(tag) {
     return true;
 }
 
-export function validateDocType(docType) {
-    if (typeof docType !== 'string' || docType.length === 0) return false;
-    return true;
-}
-
 export function sanitizeSearchQuery(query) {
     if (typeof query !== 'string') return '';
     return query.trim().slice(0, MAX_SEARCH_LENGTH);
@@ -134,7 +129,7 @@ export function validateSortDirection(dir) {
 }
 
 export function validateViewMode(mode) {
-    return VALID_VIEW_MODES.includes(mode) ? mode : 'board';
+    return VALID_VIEW_MODES.includes(mode) ? mode : 'cards';
 }
 
 /* ---- 文件名校验 ---- */

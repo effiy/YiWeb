@@ -367,6 +367,8 @@
 .file-tree-content {
     flex: 1;
     min-height: 0;
+    position: relative;
+    z-index: 1; /* 始终在 file-tree-toggle (z-index:0) 之上 */
     /* 移除独立的滚动，让 .aicr-sidebar 处理滚动，这样 sticky 才能正确工作 */
     overflow: visible;
     display: flex;

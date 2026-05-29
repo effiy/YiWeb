@@ -23,7 +23,8 @@ export const TIMEOUTS = {
 // 视图模式
 export const VIEW_MODES = {
     TREE: 'tree',
-    CARDS: 'cards'
+    CARDS: 'cards',
+    GRAPH: 'graph'
 };
 
 // 消息类型

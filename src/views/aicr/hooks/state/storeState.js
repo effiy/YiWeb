@@ -109,9 +109,7 @@ export function createAicrStoreState(vueRef) {
 
     const tagFilterNoTags = vueRef(false);
     const storyNames = vueRef([]);
-    const storyDocTypes = vueRef([]);
     const tagOrder = vueRef(null);
-    const selectedTypeTags = vueRef([]);
     const selectedSkillTags = vueRef([]);
     const selectedTemplateTags = vueRef([]);
     const selectedRuleTags = vueRef([]);
@@ -219,9 +217,7 @@ export function createAicrStoreState(vueRef) {
             sessionEditData,
             tagFilterNoTags,
             storyNames,
-            storyDocTypes,
             tagOrder,
-            selectedTypeTags,
             selectedSkillTags,
             selectedTemplateTags,
             selectedRuleTags,

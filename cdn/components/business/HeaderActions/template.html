@@ -6,7 +6,7 @@
     class="header-icon-btn"
     :class="{ active: bgAnimationEnabled }"
     @click="toggleBgAnimation"
-    :title="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
+    :data-tooltip="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
     :aria-label="bgAnimationEnabled ? '关闭背景动画' : '开启背景动画'"
   >
     <yi-icon name="palette"></yi-icon>
@@ -16,7 +16,7 @@
     type="button"
     class="header-icon-btn"
     @click="openAuth"
-    title="API 鉴权"
+    data-tooltip="API 鉴权"
     aria-label="API 鉴权"
   >
     <yi-icon name="key"></yi-icon>
@@ -26,7 +26,7 @@
     type="button"
     class="header-icon-btn"
     @click="$emit('clear-cache')"
-    title="清缓存并刷新"
+    data-tooltip="清缓存并刷新"
     aria-label="清缓存并刷新"
   >
     <yi-icon name="rotate-right"></yi-icon>

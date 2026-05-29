@@ -3,23 +3,12 @@
  *
  * 所有派生数据集中于此，使用 Vue.computed() 包装。
  * 对标 aicr/index.js computed 模式。
- * projectTags / typeTags / typeStats 直接从文件树计算，
- * 与 AICR 页面使用完全相同的逻辑。
+ * projectTags 直接从文件树计算，与 AICR 页面使用完全相同的逻辑。
  */
 
 import {
     getFirstLevelNames,
-    extractDocTypes,
-    getDocTypeFallback,
 } from '/src/views/aicr/utils/filterHelpers.js';
-
-// 与 aicr/index.js _TYPE_META 保持一致（用于 stats-bar 等）
-const _TYPE_META = {
-    '故事任务': { icon: 'tag', label: '故事' },
-    '使用场景': { icon: 'layout', label: '场景' },
-    '技术评审': { icon: 'edit', label: '设计' },
-    '自改进复盘': { icon: 'refresh', label: '自改进' },
-};
 
 // 缺失文档筛选定义
 const MISSING_DOC_TYPES = [
@@ -57,7 +46,6 @@ function _applyFilters(state, stories, exclude) {
     if (!Array.isArray(stories)) return [];
 
     const selProjectTags = getSelectedProjectTags(state);
-    const selTypeTags = state.selectedTypeTags.value;
     const noTags = state.tagFilterNoTags.value;
     const searchQuery = (state.localSearchQuery.value || '').trim().toLowerCase();
 
@@ -71,17 +59,6 @@ function _applyFilters(state, stories, exclude) {
                 Array.isArray(s.projectTags) && s.projectTags.some(t => selProjectTags.includes(t))
             );
         }
-    }
-    if (exclude !== 'docFilter' && Array.isArray(selTypeTags) && selTypeTags.length > 0) {
-        result = result.filter(s => {
-            if (!s || !Array.isArray(s.files)) return false;
-            return selTypeTags.some(type =>
-                s.files.some(f => {
-                    const fn = (f.fileName || '').replace(/\.md$/i, '');
-                    return fn === type || fn.endsWith('-' + type);
-                })
-            );
-        });
     }
     // 缺失文档筛选：选中的类型，故事中不包含该类型才保留
     const selMissing = state.selectedMissingTags?.value || [];
@@ -156,7 +133,6 @@ export function useComputed(store) {
         return !!(
             store.localSearchQuery.value ||
             store.selectedSessionTags.value.length > 0 ||
-            store.selectedTypeTags.value.length > 0 ||
             store.selectedMissingTags.value.length > 0 ||
             store.tagFilterNoTags.value
         );
@@ -179,26 +155,6 @@ export function useComputed(store) {
             }
         }
         return counts;
-    });
-
-    /* ---- 看板视图 ---- */
-
-    const filteredStoriesByStatus = computed(() => {
-        const filtered = _applyFilters(store, store.stories.value, 'sort');
-        const groups = { planning: [], design: [], develop: [], testing: [], operations: [] };
-        if (!Array.isArray(filtered)) return groups;
-        for (const story of filtered) {
-            if (!story) continue;
-            const status = groups[story.status] ? story.status : 'planning';
-            groups[status].push(story);
-        }
-        return groups;
-    });
-
-    const kanbanColumns = computed(() => {
-        const order = ['planning', 'design', 'develop', 'testing', 'operations'];
-        const groups = filteredStoriesByStatus.value || {};
-        return order.map(status => ({ status, stories: Array.isArray(groups[status]) ? groups[status] : [] }));
     });
 
     /* ---- 卡片 / 列表视图（按项目标签分组） ---- */
@@ -293,43 +249,7 @@ export function useComputed(store) {
         return result.sort((a, b) => a.name.localeCompare(b.name));
     });
 
-    /* ---- 文档类型标签（每个类型下的故事数 — 联动 project/missing 筛选） ---- */
-
-    const typeTags = computed(() => {
-        const base = store.stories?.value;
-        if (!base || !Array.isArray(base)) return [];
-
-        // 排除自身（docFilter），联动 project + missing
-        const filtered = _applyFilters(store, base, 'docFilter');
-
-        const treeTypes = extractDocTypes(store.fileTree?.value);
-        const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : getDocTypeFallback());
-
-        const typeCounts = {};
-        for (const story of filtered) {
-            const seen = new Set();
-            for (const f of (story.files || [])) {
-                const name = (f.fileName || '').replace(/\.md$/i, '');
-                if (docTypeSet.has(name) && !seen.has(name)) {
-                    seen.add(name);
-                    typeCounts[name] = (typeCounts[name] || 0) + 1;
-                }
-            }
-        }
-
-        return Object.entries(typeCounts)
-            .map(([type, count]) => ({ type, count }))
-            .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
-    });
-
-    const typeStats = computed(() => {
-        return typeTags.value.map(tt => {
-            const meta = _TYPE_META[tt.type] || { icon: 'file', label: tt.type };
-            return { type: tt.type, count: tt.count, icon: meta.icon, label: meta.label };
-        });
-    });
-
-    /* ---- 缺失文档标签（每个缺失类型下的故事数 — 联动 project/type 筛选） ---- */
+    /* ---- 缺失文档标签（每个缺失类型下的故事数 — 联动 project 筛选） ---- */
 
     const missingTags = computed(() => {
         const base = store.stories?.value;
@@ -389,14 +309,6 @@ export function useComputed(store) {
                 },
             });
         }
-        for (const docType of store.selectedTypeTags.value) {
-            pills.push({
-                type: 'doc', label: docType,
-                clear: () => {
-                    store.selectedTypeTags.value = store.selectedTypeTags.value.filter(t => t !== docType);
-                },
-            });
-        }
         for (const missingKey of store.selectedMissingTags.value) {
             const mt = MISSING_DOC_TYPES.find(m => m.key === missingKey);
             pills.push({
@@ -414,7 +326,6 @@ export function useComputed(store) {
     const panelVisible = computed(() => !!store.panelStory.value);
 
     const viewModes = computed(() => [
-        { value: 'board', label: '看板', icon: 'columns' },
         { value: 'cards', label: '卡片', icon: 'grid' },
         { value: 'list', label: '列表', icon: 'list' },
     ]);
@@ -429,14 +340,10 @@ export function useComputed(store) {
         filteredStories,
         hasActiveFilters,
         documentCounts,
-        filteredStoriesByStatus,
-        kanbanColumns,
         groupedStories,
         projectTagCounts,
         untaggedCount,
         projectTags,
-        typeTags,
-        typeStats,
         missingTags,
         storyTaskCount,
         tagColorMap,

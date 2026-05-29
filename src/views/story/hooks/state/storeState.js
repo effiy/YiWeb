@@ -16,13 +16,12 @@ export function createStoryStoreState(vueRef) {
 
     // 筛选状态
     const selectedSessionTags = vueRef([]);
-    const selectedTypeTags = vueRef([]);
     const selectedMissingTags = vueRef([]);
     const tagFilterNoTags = vueRef(false);
     const localSearchQuery = vueRef('');
 
     // UI 状态
-    const viewMode = vueRef('board');
+    const viewMode = vueRef('cards');
     const panelStory = vueRef(null);
     const sortField = vueRef('lastModified');
     const sortDirection = vueRef('desc');
@@ -38,7 +37,6 @@ export function createStoryStoreState(vueRef) {
             selectedStory,
             allProjectTags,
             selectedSessionTags,
-            selectedTypeTags,
             selectedMissingTags,
             tagFilterNoTags,
             localSearchQuery,

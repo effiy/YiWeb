@@ -131,7 +131,7 @@ export const createSessionListMethods = ({
     return {
         setViewMode: async (mode) => {
             return safeExecute(async () => {
-                const validModes = [VIEW_MODES.TREE, VIEW_MODES.CARDS];
+                const validModes = [VIEW_MODES.TREE, VIEW_MODES.CARDS, VIEW_MODES.GRAPH];
                 if (!viewMode || !validModes.includes(mode)) return;
 
                 const previousMode = viewMode.value;

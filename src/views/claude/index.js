@@ -7,6 +7,7 @@ import { useMethods } from '/src/views/claude/hooks/useMethods.js';
 import { createBaseView } from '/cdn/utils/view/baseView.js';
 import { logInfo, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
+import '/cdn/utils/ui/tooltipPortal.js';
 
 (async function initClaudePanelApp() {
     try {

@@ -51,7 +51,7 @@
   visibility: hidden;
   transition: all var(--yi-duration-fast) var(--yi-easing-default);
   pointer-events: none;
-  z-index: var(--z-tooltip);
+  z-index: var(--z-overlay);
   border: 1px solid var(--border-primary);
 }
 

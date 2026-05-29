@@ -9,9 +9,10 @@ import { createMainPageMethods } from '/src/views/aicr/hooks/mainPageMethods.js'
 import { createBaseView } from '/cdn/utils/view/baseView.js';
 import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
+import '/cdn/utils/ui/tooltipPortal.js';
 import { createSidebarResizers } from '/src/views/aicr/utils/resizer.js';
 import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.js';
-import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/views/aicr/utils/filterHelpers.js';
+import { getFirstLevelNames, extractStoryNames } from '/src/views/aicr/utils/filterHelpers.js';
 
 // 创建代码审查页面应用
 (async function initAicrApp() {
@@ -144,7 +145,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                 fileTree: store.fileTree,
                 // 标签过滤相关状态
                 tagFilterNoTags: store.tagFilterNoTags,
-                selectedTypeTags: store.selectedTypeTags,
                 selectedSkillTags: store.selectedSkillTags,
                 selectedTemplateTags: store.selectedTemplateTags,
                 selectedRuleTags: store.selectedRuleTags,
@@ -368,23 +368,30 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     sessionSearchQuery: function () { return store.sessionSearchQuery ? store.sessionSearchQuery.value : ''; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
                     tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    selectedTypeTags: function () { return store.selectedTypeTags ? store.selectedTypeTags.value : []; },
+                    sessions: function () { return store.sessions ? store.sessions.value : []; },
+                    selectedSkillTags: function () { return store.selectedSkillTags ? store.selectedSkillTags.value : []; },
+                    selectedTemplateTags: function () { return store.selectedTemplateTags ? store.selectedTemplateTags.value : []; },
+                    selectedRuleTags: function () { return store.selectedRuleTags ? store.selectedRuleTags.value : []; },
+                    selectedAgentTags: function () { return store.selectedAgentTags ? store.selectedAgentTags.value : []; },
                     claudeFilterAllowedSessionKeys: function () {
                         const sks = store.selectedSkillTags?.value || [];
                         const tms = store.selectedTemplateTags?.value || [];
-                        if (sks.length === 0 && tms.length === 0) return null;
+                        const rls = store.selectedRuleTags?.value || [];
+                        const ags = store.selectedAgentTags?.value || [];
+                        if (sks.length === 0 && tms.length === 0 && rls.length === 0 && ags.length === 0) return null;
                         const sessions = store.sessions?.value || [];
+                        const _match = (fp, dir, names) => {
+                            if (names.length === 0) return true;
+                            return names.every(n => fp.includes('/' + dir + '/' + n + '/') || fp.endsWith('/' + dir + '/' + n));
+                        };
                         const result = new Set();
                         for (const s of sessions) {
                             const fp = s.file_path || s.filePath || '';
-                            let ok = true;
-                            if (sks.length > 0) {
-                                ok = sks.every(sn => fp.includes('/skills/' + sn + '/') || fp.endsWith('/skills/' + sn));
-                            }
-                            if (ok && tms.length > 0) {
-                                ok = tms.every(tn => fp.includes('/templates/' + tn + '/') || fp.endsWith('/templates/' + tn));
-                            }
-                            if (ok && s.key != null) result.add(String(s.key));
+                            if (!_match(fp, 'skills', sks)) continue;
+                            if (!_match(fp, 'templates', tms)) continue;
+                            if (!_match(fp, 'rules', rls)) continue;
+                            if (!_match(fp, 'agents', ags)) continue;
+                            if (s.key != null) result.add(String(s.key));
                         }
                         return result.size > 0 ? result : null;
                     }
@@ -406,46 +413,18 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
                 },
-                // 文档类型图标/标签映射（用于 stats-bar 动态渲染）
-                // 未知类型使用默认图标
-                _TYPE_META: {
-                    '故事任务': { icon: 'tag', label: '故事' },
-                    '使用场景': { icon: 'layout', label: '场景' },
-                    '技术评审': { icon: 'edit', label: '设计' },
-                    '自改进复盘': { icon: 'refresh', label: '自改进' }
-                },
-
                 // 项目标签：顶层文件夹名 + 文件数 [{ name, count }]
                 projectTags: function () {
                     const tree = store.fileTree?.value;
                     if (!tree || !Array.isArray(tree)) return [];
 
-                    const selectedTypes = store.selectedTypeTags?.value || [];
-                    const hasType = selectedTypes.length > 0;
-
-                    // 递归检查子树是否包含任一选中类型文件
-                    const hasMatchingType = (items) => {
-                        if (!Array.isArray(items)) return false;
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                const fileName = (item.name || '').replace(/\.md$/i, '');
-                                if (selectedTypes.includes(fileName)) return true;
-                            } else if (item.type === 'folder' && item.children && hasMatchingType(item.children)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    };
-
-                    // 递归计数：仅统计选中类型文件
+                    // 递归计数
                     const countInScope = (items) => {
                         if (!Array.isArray(items)) return 0;
                         let count = 0;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                if (!hasType) { count++; continue; }
-                                const fileName = (item.name || '').replace(/\.md$/i, '');
-                                if (selectedTypes.includes(fileName)) count++;
+                                count++;
                             } else if (item.type === 'folder' && item.children) {
                                 count += countInScope(item.children);
                             }
@@ -456,7 +435,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     const result = [];
                     for (const item of tree) {
                         if (item.type !== 'folder' || !item.children) continue;
-                        if (hasType && !hasMatchingType(item.children)) continue;
                         if (!_projectPassesClaudeFilter(item.name)) continue;
                         result.push({ name: item.name, count: countInScope(item.children) });
                     }
@@ -493,17 +471,13 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     if (!tree || !Array.isArray(tree)) return [];
 
                     const firstLevelNames = getFirstLevelNames(tree);
-                    const selectedTypes = store.selectedTypeTags?.value || [];
-                    const hasType = selectedTypes.length > 0;
 
                     const countInScope = (items) => {
                         if (!Array.isArray(items)) return 0;
                         let count = 0;
                         for (const item of items) {
                             if (item.type === 'file') {
-                                if (!hasType) { count++; continue; }
-                                const fileName = (item.name || '').replace(/\.md$/i, '');
-                                if (selectedTypes.includes(fileName)) count++;
+                                count++;
                             } else if (item.type === 'folder' && item.children) {
                                 count += countInScope(item.children);
                             }
@@ -552,60 +526,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     return result.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
                 },
 
-                // 类型标签：文档类型名 + 文件数 [{ type, count }]
-                // 级联：项目选中 → 仅统计该项目下的类型；故事选中 → 进一步限定
-                typeTags: function () {
-                    const tree = store.fileTree?.value;
-                    if (!tree || !Array.isArray(tree)) return [];
-
-                    const apiTypes = store.storyDocTypes?.value || [];
-                    const treeTypes = extractDocTypes(tree);
-                    const docTypeSet = new Set(treeTypes.length > 0 ? treeTypes : apiTypes);
-                    const selectedTags = store.selectedSessionTags?.value || [];
-                    const firstLevelNames = getFirstLevelNames(tree);
-                    const storyNameSet = new Set(extractStoryNames(tree));
-
-                    const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
-                    const storySel = selectedTags.filter(t => storyNameSet.has(t));
-                    const hasProject = projectSel.length > 0;
-                    const hasStory = storySel.length > 0;
-
-                    const typeCounts = {};
-                    const walk = (items, depth, projectOk, storyOk, parentName = '') => {
-                        if (!Array.isArray(items)) return;
-                        for (const item of items) {
-                            if (item.type === 'file') {
-                                if (projectOk && storyOk) {
-                                    const fileName = (item.name || '').replace(/\.md$/i, '');
-                                    if (docTypeSet.has(fileName)) {
-                                        typeCounts[fileName] = (typeCounts[fileName] || 0) + 1;
-                                    }
-                                }
-                                continue;
-                            }
-                            if (item.type !== 'folder') continue;
-
-                            // 项目级范围：depth 0 判断是否在选中项目中，并检查 skills/templates
-                            const nextProjectOk = depth === 0
-                                ? (!hasProject || projectSel.includes(item.name)) && _projectPassesClaudeFilter(item.name)
-                                : projectOk;
-
-                            // 故事级范围：只有直接父目录为「故事任务面板」的才是故事
-                            const isStory = (parentName === '故事任务面板');
-                            const nextStoryOk = isStory
-                                ? (!hasStory || storySel.includes(item.name))
-                                : storyOk;
-
-                            if (item.children) walk(item.children, depth + 1, nextProjectOk, nextStoryOk, item.name);
-                        }
-                    };
-                    walk(tree, 0, !hasProject, !hasStory);
-
-                    return Object.entries(typeCounts)
-                        .map(([type, count]) => ({ type, count }))
-                        .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
-                },
-
                 // Skills 标签：从 sessions 的 file_path 中提取 skills/<name>（联动 project/story/type 筛选）
                 skillTags: function () {
                     const sessions = store.sessions?.value;
@@ -613,29 +533,12 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
 
                     const tree = store.fileTree?.value || [];
                     const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
                     const firstLevelNames = getFirstLevelNames(tree);
                     const storyNameSet = new Set(extractStoryNames(tree));
                     const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
                     const storySel = selectedTags.filter(t => storyNameSet.has(t));
                     const hasProject = projectSel.length > 0;
                     const hasStory = storySel.length > 0;
-                    const hasType = selectedTypes.length > 0;
-
-                    // 收集每个项目包含的文档类型（用于 type 联动）
-                    const projectTypes = new Map();
-                    if (hasType) {
-                        for (const s of sessions) {
-                            const fp = s.file_path || s.filePath || '';
-                            const tags = Array.isArray(s.tags) ? s.tags : [];
-                            const proj = tags[0] || fp.split('/')[0] || '';
-                            if (!proj) continue;
-                            const docType = (fp.split('/').pop() || '').replace(/\.md$/i, '');
-                            if (!docType) continue;
-                            if (!projectTypes.has(proj)) projectTypes.set(proj, new Set());
-                            projectTypes.get(proj).add(docType);
-                        }
-                    }
 
                     const projectSkills = new Map();
                     for (const s of sessions) {
@@ -659,10 +562,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                                 return panelIdx !== -1 && panelIdx + 1 < parts.length && storySel.includes(parts[panelIdx + 1]);
                             });
                             if (!projHasStory) continue;
-                        }
-                        if (hasType) {
-                            const types = projectTypes.get(proj);
-                            if (!types || !selectedTypes.some(t => types.has(t))) continue;
                         }
 
                         const key = proj + '|||' + skillName;
@@ -688,28 +587,12 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
 
                     const tree = store.fileTree?.value || [];
                     const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
                     const firstLevelNames = getFirstLevelNames(tree);
                     const storyNameSet = new Set(extractStoryNames(tree));
                     const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
                     const storySel = selectedTags.filter(t => storyNameSet.has(t));
                     const hasProject = projectSel.length > 0;
                     const hasStory = storySel.length > 0;
-                    const hasType = selectedTypes.length > 0;
-
-                    const projectTypes = new Map();
-                    if (hasType) {
-                        for (const s of sessions) {
-                            const fp = s.file_path || s.filePath || '';
-                            const tags = Array.isArray(s.tags) ? s.tags : [];
-                            const proj = tags[0] || fp.split('/')[0] || '';
-                            if (!proj) continue;
-                            const docType = (fp.split('/').pop() || '').replace(/\.md$/i, '');
-                            if (!docType) continue;
-                            if (!projectTypes.has(proj)) projectTypes.set(proj, new Set());
-                            projectTypes.get(proj).add(docType);
-                        }
-                    }
 
                     const projectTemplates = new Map();
                     for (const s of sessions) {
@@ -733,10 +616,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                                 return panelIdx !== -1 && panelIdx + 1 < parts.length && storySel.includes(parts[panelIdx + 1]);
                             });
                             if (!projHasStory) continue;
-                        }
-                        if (hasType) {
-                            const types = projectTypes.get(proj);
-                            if (!types || !selectedTypes.some(t => types.has(t))) continue;
                         }
 
                         const key = proj + '|||' + tmplName;
@@ -762,28 +641,12 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
 
                     const tree = store.fileTree?.value || [];
                     const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
                     const firstLevelNames = getFirstLevelNames(tree);
                     const storyNameSet = new Set(extractStoryNames(tree));
                     const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
                     const storySel = selectedTags.filter(t => storyNameSet.has(t));
                     const hasProject = projectSel.length > 0;
                     const hasStory = storySel.length > 0;
-                    const hasType = selectedTypes.length > 0;
-
-                    const projectTypes = new Map();
-                    if (hasType) {
-                        for (const s of sessions) {
-                            const fp = s.file_path || s.filePath || '';
-                            const tags = Array.isArray(s.tags) ? s.tags : [];
-                            const proj = tags[0] || fp.split('/')[0] || '';
-                            if (!proj) continue;
-                            const docType = (fp.split('/').pop() || '').replace(/\.md$/i, '');
-                            if (!docType) continue;
-                            if (!projectTypes.has(proj)) projectTypes.set(proj, new Set());
-                            projectTypes.get(proj).add(docType);
-                        }
-                    }
 
                     const projectRules = new Map();
                     for (const s of sessions) {
@@ -807,10 +670,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                                 return panelIdx !== -1 && panelIdx + 1 < parts.length && storySel.includes(parts[panelIdx + 1]);
                             });
                             if (!projHasStory) continue;
-                        }
-                        if (hasType) {
-                            const types = projectTypes.get(proj);
-                            if (!types || !selectedTypes.some(t => types.has(t))) continue;
                         }
 
                         const key = proj + '|||' + ruleName;
@@ -836,28 +695,12 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
 
                     const tree = store.fileTree?.value || [];
                     const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
                     const firstLevelNames = getFirstLevelNames(tree);
                     const storyNameSet = new Set(extractStoryNames(tree));
                     const projectSel = selectedTags.filter(t => firstLevelNames.has(t));
                     const storySel = selectedTags.filter(t => storyNameSet.has(t));
                     const hasProject = projectSel.length > 0;
                     const hasStory = storySel.length > 0;
-                    const hasType = selectedTypes.length > 0;
-
-                    const projectTypes = new Map();
-                    if (hasType) {
-                        for (const s of sessions) {
-                            const fp = s.file_path || s.filePath || '';
-                            const tags = Array.isArray(s.tags) ? s.tags : [];
-                            const proj = tags[0] || fp.split('/')[0] || '';
-                            if (!proj) continue;
-                            const docType = (fp.split('/').pop() || '').replace(/\.md$/i, '');
-                            if (!docType) continue;
-                            if (!projectTypes.has(proj)) projectTypes.set(proj, new Set());
-                            projectTypes.get(proj).add(docType);
-                        }
-                    }
 
                     const projectAgents = new Map();
                     for (const s of sessions) {
@@ -881,10 +724,6 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                                 return panelIdx !== -1 && panelIdx + 1 < parts.length && storySel.includes(parts[panelIdx + 1]);
                             });
                             if (!projHasStory) continue;
-                        }
-                        if (hasType) {
-                            const types = projectTypes.get(proj);
-                            if (!types || !selectedTypes.some(t => types.has(t))) continue;
                         }
 
                         const key = proj + '|||' + agentName;
@@ -929,22 +768,12 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     return result.size > 0 ? result : null;
                 },
 
-                // Stats bar 类型统计：[{ type, count, icon, label }] — 替代硬编码4项
-                typeStats: function () {
-                    return this.typeTags.map(tt => {
-                        const meta = this._TYPE_META[tt.type] || { icon: 'file', label: tt.type };
-                        return { type: tt.type, count: tt.count, icon: meta.icon, label: meta.label };
-                    });
-                },
-
                 // 筛选后文件总数（项目/故事/类型三级级联 + 会话搜索 + skills/templates）
                 filteredFileCount: function () {
                     const tree = store.fileTree?.value;
                     if (!tree || !Array.isArray(tree)) return 0;
 
                     const selectedTags = store.selectedSessionTags?.value || [];
-                    const selectedTypes = store.selectedTypeTags?.value || [];
-                    const hasType = selectedTypes.length > 0;
                     const noTags = store.tagFilterNoTags?.value || false;
                     const sessionQuery = (store.sessionSearchQuery?.value || '').trim().toLowerCase();
                     const firstLevelNames = getFirstLevelNames(tree);
@@ -968,7 +797,7 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                     }
 
                     // "没有故事"：仅统计根级文件
-                    if (noTags && !hasProject && !hasStory && !hasType) {
+                    if (noTags && !hasProject && !hasStory) {
                         let count = 0;
                         for (const item of workingTree) {
                             if (item.type === 'file') count++;
@@ -982,9 +811,7 @@ import { getFirstLevelNames, extractStoryNames, extractDocTypes } from '/src/vie
                         for (const item of items) {
                             if (item.type === 'file') {
                                 if (hasStory && !storyOk) continue;
-                                if (!hasType) { total++; continue; }
-                                const fileName = (item.name || '').replace(/\.md$/i, '');
-                                if (selectedTypes.includes(fileName)) total++;
+                                total++;
                             } else if (item.type === 'folder' && item.children) {
                                 // 项目级范围
                                 let nextProjectOk = depth === 0

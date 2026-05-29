@@ -49,7 +49,7 @@ const componentOptions = {
         viewMode: {
             type: String,
             default: 'tree',
-            validator: (value) => ['tree', 'cards'].includes(value)
+            validator: (value) => ['tree', 'cards', 'graph'].includes(value)
         },
         selectedTags: {
             type: Array,
@@ -63,21 +63,119 @@ const componentOptions = {
             type: String,
             default: ''
         },
-        selectedTypeTags: {
-            type: Array,
-            default: () => []
-        },
         claudeFilterAllowedSessionKeys: {
             type: [Set, null],
             default: null
+        },
+        sessions: {
+            type: Array,
+            default: () => []
+        },
+        selectedSkillTags: {
+            type: Array,
+            default: () => []
+        },
+        selectedTemplateTags: {
+            type: Array,
+            default: () => []
+        },
+        selectedRuleTags: {
+            type: Array,
+            default: () => []
+        },
+        selectedAgentTags: {
+            type: Array,
+            default: () => []
         }
     },
     computed: fileTreeComputed,
-    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change'],
+    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change', 'skill-tag-toggle', 'template-tag-toggle', 'rule-tag-toggle', 'agent-tag-toggle'],
     data() {
         return {
-            tagOrderVersion: 0
+            tagOrderVersion: 0,
+            graphTooltip: null,
+            graphTooltipStyle: {},
+            _graphResizeObserver: null,
+            graphSearchQuery: '',
+            graphSearchMatches: '',
+            graphSearchIndex: 0,
+            graphSearchTotal: 0,
+            graphCurrentLayer: 1
         };
+    },
+    watch: {
+        viewMode: {
+            handler(newMode) {
+                if (newMode === 'graph') {
+                    this.$nextTick(() => {
+                        this.initGraph();
+                        if (!this._graphResizeObserver && typeof ResizeObserver !== 'undefined') {
+                            this._graphResizeObserver = new ResizeObserver(() => {
+                                this.watchGraphResize();
+                            });
+                            const container = this.$refs.graphContainer;
+                            if (container) this._graphResizeObserver.observe(container);
+                        }
+                    });
+                }
+            },
+            immediate: false
+        },
+        tree: {
+            handler() {
+                if (this.viewMode === 'graph' && this.isGraphActive()) {
+                    this.$nextTick(() => this.rebuildGraph());
+                }
+            },
+            deep: true
+        },
+        selectedTags: {
+            handler() {
+                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
+                    this.$nextTick(() => this.applyGraphFilterHighlight());
+                }
+            },
+            deep: true
+        },
+        selectedSkillTags: {
+            handler() {
+                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
+                    this.$nextTick(() => this.applyGraphFilterHighlight());
+                }
+            },
+            deep: true
+        },
+        selectedTemplateTags: {
+            handler() {
+                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
+                    this.$nextTick(() => this.applyGraphFilterHighlight());
+                }
+            },
+            deep: true
+        },
+        selectedRuleTags: {
+            handler() {
+                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
+                    this.$nextTick(() => this.applyGraphFilterHighlight());
+                }
+            },
+            deep: true
+        },
+        selectedAgentTags: {
+            handler() {
+                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
+                    this.$nextTick(() => this.applyGraphFilterHighlight());
+                }
+            },
+            deep: true
+        },
+        tagFilterNoTags: {
+            handler() {
+                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
+                    this.$nextTick(() => this.applyGraphFilterHighlight());
+                }
+            }
+        },
     },
     methods: fileTreeMethods
 };

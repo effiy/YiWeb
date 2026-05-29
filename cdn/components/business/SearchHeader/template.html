@@ -4,7 +4,7 @@
       type="button"
       class="home-btn"
       @click="goHome"
-      :title="homeButtonTitle"
+      :data-tooltip="homeButtonTitle"
       :aria-label="homeButtonTitle"
     >
       <i :class="resolvedHomeIconClass" aria-hidden="true"></i>
@@ -67,7 +67,7 @@
               class="search-panel-delete"
               @click.stop="deleteItem(item)"
               :aria-label="'删除 ' + item"
-              title="删除"
+              data-tooltip="删除"
             >
               <yi-icon name="close"></yi-icon>
             </button>
@@ -101,7 +101,7 @@
       type="button"
       class="header-icon-btn"
       @click="openNews"
-      title="新闻"
+      data-tooltip="新闻"
       aria-label="新闻"
     >
       <yi-icon name="newspaper"></yi-icon>
@@ -112,7 +112,7 @@
       type="button"
       class="header-icon-btn"
       @click="toggleSidebar"
-      :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+      :data-tooltip="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
       :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
     >
       <yi-icon :name="sidebarCollapsed ? 'chevron-right' : 'chevron-left'"></yi-icon>

@@ -67,12 +67,93 @@
                         :title="`文件: ${file.name}`"
                         :aria-label="`打开文件: ${file.name}`"
                     >
+                        <span class="file-card-badge">{{ getFileExtensionBadge(file) }}</span>
                         <span class="file-card-icon">{{ getFileIcon(file) }}</span>
                         <span class="file-card-name">{{ file.name }}</span>
-                        <span v-if="file.size" class="file-card-size">{{ getFileSizeDisplay(file) }}</span>
+                        <span v-if="file.pageDescription" class="file-card-desc">{{ file.pageDescription }}</span>
+                        <span class="file-card-meta">
+                            <span v-if="file.size" class="file-card-meta-item file-card-size">{{ getFileSizeDisplay(file) }}</span>
+                            <span v-if="getFileModifiedTime(file)" class="file-card-meta-item file-card-time">{{ getFileModifiedTime(file) }}</span>
+                        </span>
                     </button>
                 </div>
             </div>
+        </div>
+
+        <!-- 知识图谱视图 -->
+        <div v-else-if="viewMode === 'graph'" class="file-graph-view" ref="graphContainer">
+            <canvas
+                ref="graphCanvas"
+                class="file-graph-canvas"
+                @mousemove="onGraphMouseMove"
+                @mousedown="onGraphMouseDown"
+                @mouseup="onGraphMouseUp"
+                @click="onGraphClick"
+                @dblclick="onGraphDblClick"
+                @mouseleave="onGraphMouseLeave"
+                @wheel.prevent="onGraphWheel"
+            ></canvas>
+            <!-- 顶部工具栏：图层切换 + 搜索 -->
+            <div class="graph-top-bar">
+                <div class="graph-layer-controls">
+                    <button
+                        v-for="l in [{v:1,l:'L1 概览',h:'项目 + 故事'},{v:2,l:'L2 详情',h:'故事 + 场景'},{v:3,l:'L3 深入',h:'场景 + 文件'}]"
+                        :key="l.v"
+                        :class="['graph-layer-btn', { 'graph-layer-btn--active': graphCurrentLayer === l.v }]"
+                        @click="setGraphLayer(l.v)"
+                        :title="l.h"
+                    >{{ l.l }}</button>
+                </div>
+                <div class="graph-search-bar">
+                    <span class="graph-search-icon">🔍</span>
+                    <input
+                        type="text"
+                        class="graph-search-input"
+                        placeholder="搜索节点..."
+                        :value="graphSearchQuery"
+                        @input="onGraphSearchInput"
+                        @keydown.escape="onGraphSearchClear"
+                        @keydown.enter="onGraphSearchNext"
+                    />
+                    <button v-if="graphSearchQuery" class="graph-search-count" @click="onGraphSearchClear" title="清除搜索">
+                        {{ graphSearchMatches }} / {{ graphSearchIndex > 0 ? graphSearchIndex + '/' : '' }}{{ graphSearchTotal }}
+                    </button>
+                </div>
+            </div>
+            <!-- 缩放控件 -->
+            <div class="graph-zoom-controls">
+                <button class="graph-zoom-btn" @click="onGraphZoomIn" title="放大">+</button>
+                <span class="graph-zoom-level">{{ getGraphZoomPercent() }}%</span>
+                <button class="graph-zoom-btn" @click="onGraphZoomOut" title="缩小">−</button>
+                <button class="graph-zoom-btn graph-zoom-btn--reset" @click="onGraphZoomReset" title="重置视图">⊡</button>
+                <button class="graph-zoom-btn graph-zoom-btn--focus" @click="onGraphFocusFiltered" title="聚焦匹配节点">⊙</button>
+            </div>
+            <!-- 信息提示 -->
+            <div v-if="graphTooltip" class="graph-tooltip" :style="graphTooltipStyle">
+                <div class="graph-tooltip-name">{{ graphTooltip.name }}</div>
+                <div v-if="graphTooltip.desc" class="graph-tooltip-desc">{{ graphTooltip.desc }}</div>
+                <div v-if="graphTooltip.meta" class="graph-tooltip-meta">{{ graphTooltip.meta }}</div>
+                <pre v-if="graphTooltip.code" class="graph-tooltip-code">{{ graphTooltip.code }}</pre>
+            </div>
+            <!-- 图例 -->
+            <div class="graph-legend">
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#3b82f6"></span> 项目</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#10b981"></span> 故事</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#0ea5e9"></span> 场景</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#8b5cf6"></span> Skills</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#f59e0b"></span> Templates</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#f43f5e"></span> Rules</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#06b6d4"></span> Agents</span>
+                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#d1d5db;border-radius:50%"></span> 文件</span>
+            </div>
+            <!-- 迷你地图 -->
+            <canvas
+                ref="graphMiniMap"
+                class="graph-minimap"
+                width="160"
+                height="120"
+                @click="onMiniMapClick"
+            ></canvas>
         </div>
 
     </div>

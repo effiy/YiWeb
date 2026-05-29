@@ -109,34 +109,6 @@ export const createTagFilterMethods = ({ store }) => {
     };
 
     /**
-     * 切换类型标签选中状态
-     */
-    const handleTypeTagToggle = (type) => {
-        return safeExecute(() => {
-            if (store.selectedTypeTags) {
-                const current = store.selectedTypeTags.value || [];
-                const idx = current.indexOf(type);
-                if (idx > -1) {
-                    store.selectedTypeTags.value = current.filter(t => t !== type);
-                } else {
-                    store.selectedTypeTags.value = [...current, type];
-                }
-            }
-        }, '切换类型标签');
-    };
-
-    /**
-     * 清除所有类型标签
-     */
-    const handleTypeTagClear = () => {
-        return safeExecute(() => {
-            if (store.selectedTypeTags) {
-                store.selectedTypeTags.value = [];
-            }
-        }, '清除类型标签');
-    };
-
-    /**
      * 切换 Skills 标签选中状态
      */
     const handleSkillTagToggle = (skillName) => {
@@ -253,8 +225,6 @@ export const createTagFilterMethods = ({ store }) => {
         handleTagClear,
         handleTagFilterNoTags,
         handleSessionSearchChange,
-        handleTypeTagToggle,
-        handleTypeTagClear,
         handleSkillTagToggle,
         handleSkillTagsClear,
         handleTemplateTagToggle,

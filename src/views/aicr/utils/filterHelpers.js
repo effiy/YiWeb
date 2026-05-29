@@ -103,43 +103,4 @@ export function extractStoryNames(fileTree) {
     return [...names].sort();
 }
 
-/**
- * 从文件树中提取文档类型名（故事任务面板下各故事目录的直接子目录名）
- * @param {Array} fileTree — 文件树根节点数组
- * @returns {string[]} 排序后的文档类型名数组
- */
-export function extractDocTypes(fileTree) {
-    const types = new Set();
-    if (!fileTree || !Array.isArray(fileTree)) return [];
-
-    const findPanel = (items) => {
-        if (!Array.isArray(items)) return;
-        for (const item of items) {
-            if (item.type === 'folder') {
-                if (item.name === '故事任务面板' && Array.isArray(item.children)) {
-                    for (const story of item.children) {
-                        if (story.type === 'folder' && Array.isArray(story.children)) {
-                            for (const docFile of story.children) {
-                                if (docFile.type === 'file') {
-                                    const name = (docFile.name || '').replace(/\.md$/i, '');
-                                    if (name) types.add(name);
-                                }
-                            }
-                        }
-                    }
-                }
-                if (item.children) findPanel(item.children);
-            }
-        }
-    };
-    findPanel(fileTree);
-
-    return [...types].sort();
-}
-
-const DEFAULT_DOC_TYPES = ['故事任务', '使用场景', '技术评审', '测试设计', '实施报告', '测试报告', '自改进复盘'];
-
-export function getDocTypeFallback() {
-    return DEFAULT_DOC_TYPES;
-}
 

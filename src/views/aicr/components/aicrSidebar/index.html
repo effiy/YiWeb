@@ -6,7 +6,7 @@
 </button>
 
 <!-- 侧边栏收起按钮 (展开时显示，跟随侧边栏宽度) -->
-<button type="button" class="file-tree-toggle" v-show="!sidebarCollapsed" @click="toggleSidebar" title="收起侧边栏"
+<button type="button" class="file-tree-toggle" v-show="!sidebarCollapsed && viewMode === 'tree'" @click="toggleSidebar" title="收起侧边栏"
     aria-label="收起侧边栏"
     :style="{ left: (sidebarWidth - 14) + 'px', right: 'auto' }">
     <yi-icon name="chevron-left"></yi-icon>
@@ -22,8 +22,13 @@
             :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="viewMode || 'tree'"
             :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
             :tag-filter-no-tags="tagFilterNoTags || false"
-            :selected-type-tags="selectedTypeTags || []"
-            :claude-filter-allowed-session-keys="claudeFilterAllowedSessionKeys" @file-select="handleFileSelect"
+            :claude-filter-allowed-session-keys="claudeFilterAllowedSessionKeys"
+            :sessions="sessions"
+            :selected-skill-tags="selectedSkillTags || []"
+            :selected-template-tags="selectedTemplateTags || []"
+            :selected-rule-tags="selectedRuleTags || []"
+            :selected-agent-tags="selectedAgentTags || []"
+            @file-select="handleFileSelect"
             @folder-toggle="handleFolderToggle" @create-folder="handleCreateFolder"
             @create-file="handleCreateFile" @rename-item="handleRenameItem" @delete-item="handleDeleteItem"
             @create-session="handleCreateSession" @toggle-collapse="toggleSidebar"
@@ -35,7 +40,11 @@
             @folder-export="handleFolderExport"
             @tag-select="handleTagSelect" @tag-clear="handleTagClear"
             @tag-filter-no-tags="handleTagFilterNoTags"
-            @session-search-change="handleSessionSearchChange"></file-tree>
+            @session-search-change="handleSessionSearchChange"
+            @skill-tag-toggle="handleSkillTagToggle"
+            @template-tag-toggle="handleTemplateTagToggle"
+            @rule-tag-toggle="handleRuleTagToggle"
+            @agent-tag-toggle="handleAgentTagToggle"></file-tree>
     </div>
 </aside>
 

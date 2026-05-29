@@ -17,26 +17,21 @@ registerGlobalComponent({
         filteredStories:       { type: Array, default: () => [] },
         hasActiveFilters:      { type: Boolean, default: false },
         documentCounts:        { type: Object, default: () => ({}) },
-        filteredStoriesByStatus:{ type: Object, default: () => ({}) },
-        kanbanColumns:         { type: Array, default: () => [] },
         groupedStories:        { type: Array, default: () => [] },
         projectTagCounts:      { type: Object, default: () => ({}) },
         untaggedCount:         { type: Number, default: 0 },
-        typeTags:              { type: Array, default: () => [] },
-        typeStats:             { type: Array, default: () => [] },
         tagColorMap:           { type: Object, default: () => ({}) },
         selectedProjectTags:   { type: Array, default: () => [] },
         filterSummaryPills:    { type: Array, default: () => [] },
         panelVisible:          { type: Boolean, default: false },
         viewModes:             { type: Array, default: () => [] },
         selectedSessionTags:   { type: Array, default: () => [] },
-        selectedTypeTags:      { type: Array, default: () => [] },
         selectedMissingTags:   { type: Array, default: () => [] },
         missingTags:           { type: Array, default: () => [] },
         storyTaskCount:        { type: Number, default: 0 },
         tagFilterNoTags:       { type: Boolean, default: false },
         localSearchQuery:      { type: String, default: '' },
-        viewMode:              { type: String, default: 'board' },
+        viewMode:              { type: String, default: 'cards' },
         panelStory:            { type: Object, default: null },
         sortField:             { type: String, default: 'lastModified' },
         sortDirection:         { type: String, default: 'desc' },
@@ -44,7 +39,6 @@ registerGlobalComponent({
     emits: [
         'select-story', 'back',
         'toggle-session-tag', 'clear-session-tags', 'toggle-untagged',
-        'toggle-type-tag', 'clear-type-tags',
         'toggle-missing-tag', 'clear-missing-tags',
         'set-search-query', 'clear-search-query', 'clear-all-filters',
         'set-view', 'toggle-sort', 'open-detail', 'close-panel',
@@ -68,12 +62,6 @@ registerGlobalComponent({
         },
         onToggleUntagged() {
             this.$emit('toggle-untagged');
-        },
-        onSelectDocFilter(docType) {
-            this.$emit('toggle-type-tag', docType);
-        },
-        onClearTypeTags() {
-            this.$emit('clear-type-tags');
         },
         onToggleMissingTag(missingKey) {
             this.$emit('toggle-missing-tag', missingKey);

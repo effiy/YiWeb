@@ -163,6 +163,7 @@
   --yi-z-dropdown: 1000;
   --yi-z-sticky: 1020;
   --yi-z-fixed: 1030;
+  --yi-z-header: 9990;
   --yi-z-modal-backdrop: 1040;
   --yi-z-modal: 1050;
   --yi-z-popover: 1060;
@@ -413,6 +414,7 @@
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-fixed: 1030;
+  --z-header: 9990;
   --z-modal-backdrop: 1040;
   --z-modal: 1050;
   --z-popover: 1060;

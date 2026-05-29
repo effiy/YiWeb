@@ -549,12 +549,15 @@
     position: relative;
 }
 
-/* 卡片视图 — 铺满 aicr-main */
+/* 卡片 / 图谱视图 — 铺满 aicr-main */
 .aicr-main.is-cards .aicr-code-area,
-.aicr-main.is-cards .aicr-code {
+.aicr-main.is-cards .aicr-code,
+.aicr-main.is-graph .aicr-code-area,
+.aicr-main.is-graph .aicr-code {
     display: none;
 }
-.aicr-main.is-cards .aicr-sidebar {
+.aicr-main.is-cards .aicr-sidebar,
+.aicr-main.is-graph .aicr-sidebar {
     flex: 1;
     width: 100% !important;
     border-right: none;

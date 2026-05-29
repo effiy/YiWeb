@@ -88,9 +88,15 @@ export function buildFileTreeFromSessions(allSessions) {
             content: '',
             size: session.size || 0,
             lastModified: session.updatedAt || session.createdAt,
+            createdAt: session.createdAt || null,
             sessionKey: sessionKey,
             url: session.url || '',
-            extension: extension
+            extension: extension,
+            pageDescription: session.pageDescription || '',
+            tags: session.tags || [],
+            title: session.title || session.pageTitle || '',
+            filePath: session.file_path || '',
+            folderKey: item.folderKey || ''
         });
 
         if (sessionKey != null) {

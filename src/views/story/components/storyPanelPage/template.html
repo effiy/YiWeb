@@ -78,29 +78,6 @@
     </div>
 
     <div v-if="totalStories > 0 && !loading" class="sp-filter-bar" :class="{ 'is-collapsed': filterBarCollapsed }">
-        <div class="sp-filter-group sp-filter-group--type">
-            <span class="sp-filter-label">故事状态 ({{ typeTags.length }})</span>
-            <template v-if="typeTags.length > 0">
-                <button
-                    v-for="tt in typeTags"
-                    :key="tt.type"
-                    type="button"
-                    class="sp-filter-tag sp-filter-tag--type"
-                    :class="{ active: selectedTypeTags.includes(tt.type) }"
-                    @click="onSelectDocFilter(tt.type)"
-                >{{ tt.type }} ({{ tt.count }})</button>
-                <button
-                    v-if="selectedTypeTags.length > 0"
-                    type="button"
-                    class="sp-filter-clear-inline"
-                    @click="onClearTypeTags"
-                    title="清除故事状态筛选"
-                >
-                    <yi-icon name="close"></yi-icon>
-                </button>
-            </template>
-            <span v-else class="sp-filter-empty">没有故事状态</span>
-        </div>
         <div class="sp-filter-group sp-filter-group--missing">
             <span class="sp-filter-label">缺失文档 ({{ missingTags.length }})</span>
             <button
@@ -136,10 +113,6 @@
                     {{ tag }}
                     <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onToggleSessionTag(tag)" title="移除筛选">×</button>
                 </span>
-                <span v-for="type in selectedTypeTags" :key="'t-' + type" class="sp-filter-collapsed-pill sp-filter-collapsed-pill--type">
-                    {{ type }}
-                    <button type="button" class="sp-filter-collapsed-pill-close" @click.stop="onSelectDocFilter(type)" title="移除筛选">×</button>
-                </span>
             </div>
             <button
                 v-if="hasActiveFilters"
@@ -161,25 +134,6 @@
     </div>
 
     <template v-else>
-        <!-- Board View -->
-        <div v-if="viewMode === 'board'" class="sp-kanban">
-            <div v-for="col in kanbanColumns" :key="col.status" class="sp-column">
-                <div class="sp-column-header" :class="'sp-column-header--' + col.status">
-                    <story-status-badge :status="col.status" size="sm"></story-status-badge>
-                    <span class="sp-column-count">{{ col.stories.length }}</span>
-                </div>
-                <div class="sp-column-cards">
-                    <story-card
-                        v-for="story in col.stories"
-                        :key="story.name"
-                        :story="story"
-                        @select="onOpenDetail"
-                    ></story-card>
-                    <div v-if="col.stories.length === 0" class="sp-column-empty">—</div>
-                </div>
-            </div>
-        </div>
-
         <!-- Card Grid View -->
         <div v-if="viewMode === 'cards'" class="sp-card-grid">
             <template v-for="group in groupedStories" :key="group.label">
