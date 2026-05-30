@@ -128,6 +128,28 @@
     max-width: 100%;
 }
 
+/* ---- card description row (inline edit) ---- */
+.file-card-desc-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    cursor: default;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: 0 -4px;
+    transition: background 0.15s ease;
+}
+.file-card:hover .file-card-desc-row {
+    background: rgba(var(--yi-primary-rgb), 0.04);
+}
+.file-card-desc-row:has(.file-card-desc-placeholder) {
+    cursor: pointer;
+}
+.file-card:hover .file-card-desc-row:has(.file-card-desc-placeholder) {
+    background: rgba(var(--yi-primary-rgb), 0.06);
+}
+
 .file-card-desc {
     font-size: 11px;
     color: var(--yi-text-muted);
@@ -138,6 +160,118 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     max-width: 100%;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-card-desc-placeholder {
+    font-size: 11px;
+    color: var(--yi-text-muted);
+    line-height: 1.4;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    flex: 1;
+}
+.file-card:hover .file-card-desc-placeholder {
+    opacity: 1;
+    color: var(--yi-primary);
+}
+
+/* ---- card edit button (inline in desc row) ---- */
+.file-card-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--yi-text-muted);
+    cursor: pointer;
+    opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.file-card:hover .file-card-edit-btn {
+    opacity: 1;
+}
+.file-card-edit-btn:hover {
+    background: rgba(var(--yi-primary-rgb), 0.10);
+    color: var(--yi-primary);
+}
+.file-card-edit-icon {
+    font-size: 11px;
+}
+
+/* ---- card editing state ---- */
+.file-card--editing {
+    border-color: var(--yi-primary) !important;
+    box-shadow: 0 0 0 1px var(--yi-primary), 0 0 16px rgba(var(--yi-primary-rgb), 0.10);
+    cursor: default;
+}
+.file-card--editing::before {
+    opacity: 1;
+}
+.file-card-edit-area {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+.file-card-textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: inherit;
+    color: var(--yi-text);
+    background: var(--yi-bg);
+    resize: vertical;
+    outline: none;
+    line-height: 1.4;
+    box-sizing: border-box;
+}
+.file-card-textarea:focus {
+    border-color: var(--yi-primary);
+    box-shadow: var(--yi-shadow-focus);
+}
+.file-card-edit-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.file-card-edit-save,
+.file-card-edit-cancel {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.file-card-edit-save {
+    border: 1px solid var(--yi-primary);
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+}
+.file-card-edit-save:hover:not(:disabled) {
+    opacity: 0.9;
+}
+.file-card-edit-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.file-card-edit-cancel {
+    border: 1px solid var(--yi-border);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+}
+.file-card-edit-cancel:hover {
+    border-color: var(--yi-text-muted);
+    color: var(--yi-text);
 }
 
 /* Metadata row at bottom */
@@ -289,65 +423,6 @@
     height: 7px;
     border-radius: 2px;
     flex-shrink: 0;
-}
-
-/* ====== 图谱搜索栏（顶部居中） ====== */
-.graph-search-bar {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.94);
-    border: 1px solid rgba(0,0,0,0.07);
-    border-radius: 22px;
-    padding: 7px 16px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-    min-width: 220px;
-    max-width: 340px;
-    z-index: var(--z-local-50);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-.graph-search-icon {
-    font-size: 13px;
-    flex-shrink: 0;
-    opacity: 0.35;
-}
-
-.graph-search-input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 12px;
-    color: var(--yi-text);
-    padding: 2px 0;
-}
-
-.graph-search-input::placeholder {
-    color: var(--yi-text-muted);
-}
-
-.graph-search-count {
-    flex-shrink: 0;
-    font-size: 10px;
-    color: var(--yi-text-muted);
-    background: rgba(0,0,0,0.05);
-    border: none;
-    border-radius: 10px;
-    padding: 2px 8px;
-    cursor: pointer;
-    transition: all var(--yi-duration-fast);
-}
-
-.graph-search-count:hover {
-    background: rgba(0,0,0,0.10);
-    color: var(--yi-text);
 }
 
 /* ====== 图谱缩放控件（右上角纵向组） ====== */

@@ -55,6 +55,8 @@
                 :panel-story="panelStory"
                 :sort-field="sortField"
                 :sort-direction="sortDirection"
+                :story-deps="storyDeps"
+                :saving="saving"
                 @select-story="viewStory"
                 @back="goBack"
                 @toggle-session-tag="toggleSessionTag"
@@ -71,6 +73,9 @@
                 @close-panel="closePanel"
                 @handle-tags-scroll="handleTagsScroll"
                 @clear-cache="clearCache"
+                @update-story="updateStoryDescription"
+                @add-dep="addDependency"
+                @remove-dep="removeDependency"
             ></story-panel-page>
         </div>
     </main>

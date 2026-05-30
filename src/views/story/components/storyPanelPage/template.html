@@ -146,7 +146,9 @@
                     :key="group.label + '-' + story.name"
                     :story="story"
                     :story-deps="storyDeps"
+                    :saving="saving"
                     @select="onOpenDetail"
+                    @update-story="onUpdateStory"
                 ></story-card>
             </template>
             <div v-if="filteredStories.length === 0" class="sp-card-grid-empty">
@@ -194,8 +196,12 @@
                     :story="panelStory"
                     :panel="true"
                     :story-deps="storyDeps"
+                    :saving="saving"
                     @close="onClosePanel"
                     @select-story="onOpenDetail"
+                    @update-story="onUpdateStory"
+                    @add-dep="onAddDep"
+                    @remove-dep="onRemoveDep"
                 ></story-detail-card>
             </div>
         </div>

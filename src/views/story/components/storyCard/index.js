@@ -6,9 +6,16 @@ registerGlobalComponent({
     css: '/src/views/story/components/storyCard/index.css',
     props: {
         story: { type: Object, default: null },
-        storyDeps: { type: Array, default: () => [] }
+        storyDeps: { type: Array, default: () => [] },
+        saving: { type: Boolean, default: false }
     },
-    emits: ['select'],
+    emits: ['select', 'update-story'],
+    data() {
+        return {
+            editing: false,
+            editDescription: '',
+        };
+    },
     computed: {
         depCounts() {
             const name = this.story?.name;
@@ -58,9 +65,24 @@ registerGlobalComponent({
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
         },
         onClick() {
+            if (this.editing) return;
             if (this.story) {
                 this.$emit('select', this.story);
             }
-        }
+        },
+        startEdit(e) {
+            if (e) e.stopPropagation();
+            this.editDescription = this.story?.description || '';
+            this.editing = true;
+        },
+        cancelEdit() {
+            this.editing = false;
+            this.editDescription = '';
+        },
+        async saveEdit() {
+            if (!this.story) return;
+            this.$emit('update-story', { name: this.story.name, description: this.editDescription });
+            this.editing = false;
+        },
     }
 });

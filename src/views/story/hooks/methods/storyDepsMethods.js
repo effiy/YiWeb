@@ -1,13 +1,13 @@
 /**
  * 故事任务面板 - 依赖数据方法
  *
- * 加载 story-dependencies.json 并提供依赖关系查询方法。
+ * 加载 story-deps.json 并提供依赖关系查询方法。
  * 所有方法通过依赖注入接收 state。
  */
 
 import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
 
-const DEPS_JSON_PATH = '/docs/故事任务面板/story-dependencies.json';
+const DEPS_JSON_PATH = '/docs/故事任务面板/story-deps.json';
 
 export function createStoryDepsMethods(state) {
     async function fetchDependencies() {

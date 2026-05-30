@@ -9,6 +9,7 @@ import { createStoryDataMethods } from '../methods/storyDataMethods.js';
 import { createFilterMethods } from '../methods/filterMethods.js';
 import { createUiMethods } from '../methods/uiMethods.js';
 import { createStoryDepsMethods } from '../methods/storyDepsMethods.js';
+import { createStoryEditMethods } from '../methods/storyEditMethods.js';
 
 const vueRef = typeof Vue !== 'undefined' && Vue.ref
     ? Vue.ref
@@ -21,6 +22,7 @@ export function createStore() {
     const filterMethods = createFilterMethods(state);
     const uiMethods = createUiMethods(state);
     const depsMethods = createStoryDepsMethods(state);
+    const editMethods = createStoryEditMethods(state);
 
     return {
         ...state,
@@ -28,5 +30,6 @@ export function createStore() {
         ...filterMethods,
         ...uiMethods,
         ...depsMethods,
+        ...editMethods,
     };
 }

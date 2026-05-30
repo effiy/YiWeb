@@ -24,6 +24,10 @@ export function createStoryStoreState(vueRef) {
     const storyDeps = vueRef([]);
     const depsLoading = vueRef(false);
 
+    // 编辑状态
+    const editingField = vueRef(null);
+    const saving = vueRef(false);
+
     // UI 状态
     const viewMode = vueRef('cards');
     const panelStory = vueRef(null);
@@ -46,6 +50,8 @@ export function createStoryStoreState(vueRef) {
             localSearchQuery,
             storyDeps,
             depsLoading,
+            editingField,
+            saving,
             viewMode,
             panelStory,
             sortField,

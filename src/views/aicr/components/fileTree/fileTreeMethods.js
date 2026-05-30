@@ -593,61 +593,6 @@ const fileTreeMethods = {
         GraphEngine.focusFiltered();
     },
 
-    onGraphSearchInput(e) {
-        const query = (e.target.value || '').trim().toLowerCase();
-        this.graphSearchQuery = query;
-
-        if (!query) {
-            this.graphSearchMatches = '';
-            this.graphSearchIndex = 0;
-            this.graphSearchTotal = 0;
-            GraphEngine.searchNodes('');
-            GraphEngine.renderCurrentGraph();
-            const mm = this.$refs.graphMiniMap;
-            if (mm) GraphEngine.renderCurrentMiniMap(mm);
-            return;
-        }
-
-        const matches = GraphEngine.searchNodes(query);
-        this.graphSearchIndex = 0;
-        this.graphSearchTotal = matches.length;
-        this.graphSearchMatches = matches.length > 0 ? '找到 ' + matches.length + ' 个' : '无匹配';
-
-        if (matches.length === 1) {
-            GraphEngine.focusNode(matches[0]);
-            this.graphSearchIndex = 1;
-        }
-
-        GraphEngine.renderCurrentGraph();
-        const mm = this.$refs.graphMiniMap;
-        if (mm) GraphEngine.renderCurrentMiniMap(mm);
-    },
-
-    onGraphSearchNext() {
-        const query = (this.graphSearchQuery || '').trim().toLowerCase();
-        if (!query || this.graphSearchTotal === 0) return;
-
-        const state = GraphEngine.getState();
-        const matches = state.nodes.filter(n => (n.name || '').toLowerCase().includes(query));
-        if (matches.length === 0) return;
-
-        const idx = (this.graphSearchIndex % matches.length);
-        GraphEngine.focusNode(matches[idx]);
-        this.graphSearchIndex = idx + 1;
-        this.graphSearchMatches = (idx + 1) + ' / ' + matches.length;
-    },
-
-    onGraphSearchClear() {
-        this.graphSearchQuery = '';
-        this.graphSearchMatches = '';
-        this.graphSearchIndex = 0;
-        this.graphSearchTotal = 0;
-        GraphEngine.searchNodes('');
-        GraphEngine.renderCurrentGraph();
-        const mm = this.$refs.graphMiniMap;
-        if (mm) GraphEngine.renderCurrentMiniMap(mm);
-    },
-
     onMiniMapClick(e) {
         GraphEngine.handleMiniMapClick(e, this.$refs.graphMiniMap);
     },
@@ -763,6 +708,50 @@ const fileTreeMethods = {
         return state.nodes.filter(n =>
             n._visible !== false && this.graphNodeNeedsEnrich(n)
         );
+    },
+
+    /* ====== 卡片编辑 ====== */
+
+    onCardClick(file) {
+        if (this.editingCardKey) return;
+        this.handleTagClick(file.key);
+    },
+
+    startCardEdit(file) {
+        this.editingCardKey = file.key;
+        this.editingCardDesc = file.pageDescription || '';
+    },
+
+    cancelCardEdit() {
+        this.editingCardKey = null;
+        this.editingCardDesc = '';
+    },
+
+    async saveCardEdit(file) {
+        if (!file || !file.key) return;
+        this.cardSaving = true;
+        try {
+            await enrichDocumentPageDescription({
+                cname: 'sessions',
+                filePath: file.key,
+                pageDescription: this.editingCardDesc,
+            });
+            file.pageDescription = this.editingCardDesc;
+            if (this.sessions && Array.isArray(this.sessions)) {
+                for (const s of this.sessions) {
+                    if (s.key === file.key || s.file_path === file.key) {
+                        s.pageDescription = this.editingCardDesc;
+                        break;
+                    }
+                }
+            }
+            this.editingCardKey = null;
+            this.editingCardDesc = '';
+        } catch (err) {
+            console.error('[FileTree] 保存描述失败:', err);
+        } finally {
+            this.cardSaving = false;
+        }
     },
 };
 

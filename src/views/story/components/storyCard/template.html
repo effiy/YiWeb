@@ -1,4 +1,4 @@
-<div v-if="story" :class="cardClass" :style="tagAccentStyle" @click="onClick">
+<div v-if="story" :class="[cardClass, { 'sc-card--editing': editing }]" :style="tagAccentStyle" @click="onClick">
     <div class="sc-card-tags">
         <span v-if="story.projectTags.length > 0" class="sc-card-tags-left">
             <span v-for="tag in story.projectTags" :key="tag" class="sc-card-tag">{{ tag }}</span>
@@ -8,11 +8,30 @@
             <span v-if="depCounts.dependsOn > 0" class="sc-dep-count sc-dep-count--on">↑{{ depCounts.dependsOn }}</span>
         </span>
         <span class="sc-card-date">{{ formatDate(story.lastModified) }}</span>
+        <button v-if="!editing" type="button" class="sc-card-edit-btn" @click.stop="startEdit" title="编辑描述">
+            <yi-icon name="edit" class-name="sc-card-edit-icon"></yi-icon>
+        </button>
     </div>
     <div class="sc-card-name">
         {{ story.name }}
         <span class="sc-card-file-count">{{ story.fileCount }}</span>
     </div>
+    <!-- 编辑模式 -->
+    <div v-if="editing" class="sc-card-edit-area" @click.stop>
+        <textarea
+            class="sc-card-textarea"
+            v-model="editDescription"
+            placeholder="输入故事描述..."
+            rows="3"
+            @keydown.escape="cancelEdit"
+        ></textarea>
+        <div class="sc-card-edit-actions">
+            <button type="button" class="sc-card-edit-save" @click.stop="saveEdit" :disabled="saving">保存</button>
+            <button type="button" class="sc-card-edit-cancel" @click.stop="cancelEdit">取消</button>
+        </div>
+    </div>
+    <!-- 只读描述 -->
+    <div v-else-if="story.description" class="sc-card-desc">{{ story.description }}</div>
     <div v-if="stageCounts" class="sc-card-stages">
         <span class="sc-stage-item">规<span class="sc-stage-num">{{ stageCounts.plan }}</span></span>
         <span class="sc-stage-item">设<span class="sc-stage-num">{{ stageCounts.design }}</span></span>

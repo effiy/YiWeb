@@ -77,30 +77,51 @@
                     <span class="cards-group__count">{{ group.files.length }}</span>
                 </div>
                 <div class="cards-grid">
-                    <button
-                        type="button"
+                    <div
                         v-for="file in group.files"
                         :key="file.key"
                         :class="['file-card', {
                             'selected': !batchMode && isFileSelected(file.key),
-                            'batch-selected': batchMode && isFileSelected(file.key)
+                            'batch-selected': batchMode && isFileSelected(file.key),
+                            'file-card--editing': editingCardKey === file.key
                         }]"
-                        @click="handleTagClick(file.key)"
+                        @click="onCardClick(file)"
                         :title="batchMode ? '选择: ' + file.name : '打开: ' + file.name"
                     >
-                        <span v-if="batchMode" class="file-card__check">
+                        <span v-if="batchMode" class="file-card__check" @click.stop="handleTagClick(file.key)">
                             <span v-if="isFileSelected(file.key)" class="file-card__check--on">✓</span>
                             <span v-else class="file-card__check--off"></span>
                         </span>
                         <span class="file-card-badge">{{ getFileExtensionBadge(file) }}</span>
                         <span class="file-card-icon">{{ getFileIcon(file) }}</span>
                         <span class="file-card-name">{{ file.name }}</span>
-                        <span v-if="file.pageDescription" class="file-card-desc">{{ file.pageDescription }}</span>
-                        <span class="file-card-meta">
+                        <!-- 编辑模式 -->
+                        <div v-if="editingCardKey === file.key" class="file-card-edit-area" @click.stop>
+                            <textarea
+                                class="file-card-textarea"
+                                v-model="editingCardDesc"
+                                placeholder="输入描述..."
+                                rows="3"
+                                @keydown.escape="cancelCardEdit"
+                            ></textarea>
+                            <div class="file-card-edit-actions">
+                                <button type="button" class="file-card-edit-save" @click.stop="saveCardEdit(file)" :disabled="cardSaving">保存</button>
+                                <button type="button" class="file-card-edit-cancel" @click.stop="cancelCardEdit">取消</button>
+                            </div>
+                        </div>
+                        <!-- 只读描述 -->
+                        <div v-else class="file-card-desc-row" @click.stop="!batchMode && startCardEdit(file)">
+                            <span v-if="file.pageDescription" class="file-card-desc">{{ file.pageDescription }}</span>
+                            <span v-else class="file-card-desc-placeholder">+ 添加描述</span>
+                            <button v-if="file.pageDescription && !batchMode" type="button" class="file-card-edit-btn" title="编辑描述">
+                                <yi-icon name="edit" class-name="file-card-edit-icon"></yi-icon>
+                            </button>
+                        </div>
+                        <span v-if="editingCardKey !== file.key" class="file-card-meta">
                             <span v-if="file.size" class="file-card-meta-item file-card-size">{{ getFileSizeDisplay(file) }}</span>
                             <span v-if="getFileModifiedTime(file)" class="file-card-meta-item file-card-time">{{ getFileModifiedTime(file) }}</span>
                         </span>
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -118,22 +139,6 @@
                 @mouseleave="onGraphMouseLeave"
                 @wheel.prevent="onGraphWheel"
             ></canvas>
-            <!-- 搜索栏 -->
-            <div class="graph-search-bar">
-                <span class="graph-search-icon">🔍</span>
-                <input
-                    type="text"
-                    class="graph-search-input"
-                    placeholder="搜索节点..."
-                    :value="graphSearchQuery"
-                    @input="onGraphSearchInput"
-                    @keydown.escape="onGraphSearchClear"
-                    @keydown.enter="onGraphSearchNext"
-                />
-                <button v-if="graphSearchQuery" class="graph-search-count" @click="onGraphSearchClear" title="清除搜索">
-                    {{ graphSearchMatches }} / {{ graphSearchIndex > 0 ? graphSearchIndex + '/' : '' }}{{ graphSearchTotal }}
-                </button>
-            </div>
             <!-- 缩放控件 -->
             <div class="graph-zoom-controls">
                 <button class="graph-zoom-btn" @click="onGraphZoomIn" title="放大">+</button>

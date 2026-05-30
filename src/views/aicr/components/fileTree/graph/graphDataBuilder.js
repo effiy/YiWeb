@@ -359,13 +359,16 @@ export function buildGraphData(ctx, oldPositions) {
 
     for (const item of fileItemsToRender) {
         const ext = item.extension || (item.name && item.name.includes('.') ? item.name.split('.').pop().toLowerCase() : '');
+        const tags = item.tags || [];
+        const projFromTag = tags[0] || '';
         const fileNode = addEntityNode(E.FILE, item.key, {
             treeItem: item,
             name: item.name,
             size: item.size,
             lastModified: item.lastModified,
             pageDescription: item.pageDescription || '',
-            extension: ext
+            extension: ext,
+            project: projFromTag
         });
         fileNode.name = item.name || '';
         fileNode.size = item.size;
@@ -373,9 +376,8 @@ export function buildGraphData(ctx, oldPositions) {
         fileNode.pageDescription = item.pageDescription || '';
         fileNode.extension = ext;
         fileNode.treeKey = item.key;
+        fileNode._projectName = projFromTag;
 
-        const tags = item.tags || [];
-        const projFromTag = tags[0];
         if (projFromTag && projectMap.has(projFromTag)) {
             const projKey = ekey(E.PROJECT, projFromTag);
             if (nodeMap.has(projKey)) {
@@ -417,41 +419,45 @@ export function buildGraphData(ctx, oldPositions) {
         }
     }
 
-    // ── 6. 应用筛选高亮标记 ──
+    // ── 6. 应用筛选标记（直接匹配，各维度交叉约束） ──
     if (hasAnyFilter) {
+        // 收集选中项目下的所有故事名，用于故事→文件的关联
+        const selectedStoryNames = new Set();
+        for (const [projName, pdata] of projectMap) {
+            if (selectedProjects.has(projName)) {
+                for (const sn of pdata.storyNames) selectedStoryNames.add(sn);
+            }
+        }
+
         for (const n of nodes) {
             let match = true;
+            const projName = n.extra && n.extra.project;
             if (n.entityType === E.PROJECT) {
-                if (hasProjectFilter) match = selectedProjects.has(n.name);
-                if (match && hasSkillFilter) {
-                    const pdata = projectMap.get(n.name);
-                    match = pdata && [...selectedSkills].some(sk => pdata.skillNames.has(sk));
-                }
-                if (match && hasTemplateFilter) {
-                    const pdata = projectMap.get(n.name);
-                    match = pdata && [...selectedTemplates].some(t => pdata.templateNames.has(t));
-                }
-                if (match && hasRuleFilter) {
-                    const pdata = projectMap.get(n.name);
-                    match = pdata && [...selectedRules].some(r => pdata.ruleNames.has(r));
-                }
-                if (match && hasAgentFilter) {
-                    const pdata = projectMap.get(n.name);
-                    match = pdata && [...selectedAgents].some(a => pdata.agentNames.has(a));
-                }
+                match = !hasProjectFilter || selectedProjects.has(n.name);
             } else if (n.entityType === E.STORY) {
-                match = !hasProjectFilter || selectedProjects.has(n.extra.project);
+                match = !hasProjectFilter || (projName && selectedProjects.has(projName));
+            } else if (n.entityType === E.SCENARIO) {
+                match = !hasProjectFilter || (projName && selectedProjects.has(projName));
             } else if (n.entityType === E.SKILL) {
-                match = selectedSkills.has(n.name);
+                if (hasSkillFilter) match = selectedSkills.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
             } else if (n.entityType === E.TEMPLATE) {
-                match = selectedTemplates.has(n.name);
+                if (hasTemplateFilter) match = selectedTemplates.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
             } else if (n.entityType === E.RULE) {
-                match = selectedRules.has(n.name);
+                if (hasRuleFilter) match = selectedRules.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
             } else if (n.entityType === E.AGENT) {
-                match = selectedAgents.has(n.name);
+                if (hasAgentFilter) match = selectedAgents.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
             } else if (n.entityType === E.FILE) {
-                match = visibleFileKeys.has(n.treeKey) ||
-                    visibleFileKeys.has(n.key.replace(E.FILE + '::', ''));
+                if (hasProjectFilter) {
+                    match = projName && selectedProjects.has(projName);
+                }
+                if (match) {
+                    match = visibleFileKeys.has(n.treeKey) ||
+                        visibleFileKeys.has(n.key.replace(E.FILE + '::', ''));
+                }
             }
             n.filterMatch = match;
         }
@@ -534,6 +540,12 @@ export function recomputeFilterHighlight(nodes, edges, nodeMap, ctx) {
     const hasAny = selectedProjects.size > 0 || selectedSkills.size > 0 ||
         selectedTemplates.size > 0 || selectedRules.size > 0 || selectedAgents.size > 0;
 
+    const hasProjectFilter = selectedProjects.size > 0;
+    const hasSkillFilter = selectedSkills.size > 0;
+    const hasTemplateFilter = selectedTemplates.size > 0;
+    const hasRuleFilter = selectedRules.size > 0;
+    const hasAgentFilter = selectedAgents.size > 0;
+
     const visibleFileKeys = new Set();
     const collectFileKeys = (items) => {
         if (!Array.isArray(items)) return;
@@ -558,103 +570,39 @@ export function recomputeFilterHighlight(nodes, edges, nodeMap, ctx) {
             }
         }
     } else {
-        // 第一遍：计算直接 filterMatch
-        const hasNonProjectFilter = selectedSkills.size > 0 || selectedTemplates.size > 0 ||
-            selectedRules.size > 0 || selectedAgents.size > 0;
-
         for (const n of nodes) {
             let match = true;
+            const projName = n.extra && n.extra.project;
             if (n.entityType === E.PROJECT) {
-                if (selectedProjects.size > 0) {
-                    match = selectedProjects.has(n.name);
-                } else if (hasNonProjectFilter) {
-                    // 仅 skill/template/rule/agent 筛选 → 项目默认不匹配，由第二遍级联
-                    match = false;
-                }
+                match = !hasProjectFilter || selectedProjects.has(n.name);
             } else if (n.entityType === E.STORY) {
-                if (selectedProjects.size > 0) {
-                    match = selectedProjects.has(n.extra.project);
-                } else if (hasNonProjectFilter && selectedProjects.size === 0) {
-                    // 仅 skill 等筛选 → 故事默认不匹配
-                    match = false;
-                }
-            } else if (n.entityType === E.SKILL) {
-                match = selectedSkills.size > 0 ? selectedSkills.has(n.name) : true;
-            } else if (n.entityType === E.TEMPLATE) {
-                match = selectedTemplates.size > 0 ? selectedTemplates.has(n.name) : true;
-            } else if (n.entityType === E.RULE) {
-                match = selectedRules.size > 0 ? selectedRules.has(n.name) : true;
-            } else if (n.entityType === E.AGENT) {
-                match = selectedAgents.size > 0 ? selectedAgents.has(n.name) : true;
-            } else if (n.entityType === E.FILE) {
-                match = visibleFileKeys.has(n.treeKey) ||
-                    visibleFileKeys.has(n.key.replace(E.FILE + '::', ''));
+                match = !hasProjectFilter || (projName && selectedProjects.has(projName));
             } else if (n.entityType === E.SCENARIO) {
-                match = false;
+                match = !hasProjectFilter || (projName && selectedProjects.has(projName));
+            } else if (n.entityType === E.SKILL) {
+                if (hasSkillFilter) match = selectedSkills.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
+            } else if (n.entityType === E.TEMPLATE) {
+                if (hasTemplateFilter) match = selectedTemplates.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
+            } else if (n.entityType === E.RULE) {
+                if (hasRuleFilter) match = selectedRules.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
+            } else if (n.entityType === E.AGENT) {
+                if (hasAgentFilter) match = selectedAgents.has(n.name);
+                if (match && hasProjectFilter) match = projName && selectedProjects.has(projName);
+            } else if (n.entityType === E.FILE) {
+                const fileProj = (n.extra && n.extra.treeItem && n.extra.treeItem.tags && n.extra.treeItem.tags[0]) || '';
+                if (hasProjectFilter) {
+                    match = (fileProj && selectedProjects.has(fileProj)) ||
+                        (projName && selectedProjects.has(projName));
+                }
+                if (match) {
+                    match = visibleFileKeys.has(n.treeKey) ||
+                        visibleFileKeys.has(n.key.replace(E.FILE + '::', ''));
+                }
             }
             n.filterMatch = match;
-        }
-
-        // 第二遍：级联 filterMatch（多轮，处理间接关系）
-        for (let pass = 0; pass < 3; pass++) {
-            let changed = false;
-            for (const e of edges) {
-                const fromNode = nodeMap.get(e.from);
-                const toNode = nodeMap.get(e.to);
-                if (!fromNode || !toNode) continue;
-
-                // 匹配的项目 → 其包含的故事也匹配
-                if (e.type === 'contains' && fromNode.entityType === E.PROJECT &&
-                    fromNode.filterMatch && !toNode.filterMatch &&
-                    toNode.entityType === E.STORY) {
-                    toNode.filterMatch = true; changed = true;
-                }
-
-                // 匹配的故事 → 其包含/引用的场景也匹配
-                if ((e.type === 'contains' || e.type === 'references') &&
-                    fromNode.entityType === E.STORY && fromNode.filterMatch &&
-                    !toNode.filterMatch && toNode.entityType === E.SCENARIO) {
-                    toNode.filterMatch = true; changed = true;
-                }
-
-                // 匹配的项目 → 其 uses 的能力也可见
-                if (e.type === 'uses' && fromNode.entityType === E.PROJECT &&
-                    fromNode.filterMatch && !toNode.filterMatch &&
-                    (toNode.entityType === E.SKILL || toNode.entityType === E.TEMPLATE ||
-                     toNode.entityType === E.RULE || toNode.entityType === E.AGENT)) {
-                    toNode.filterMatch = true; changed = true;
-                }
-
-                // 匹配的能力 → 其 uses 的项目也匹配
-                if (e.type === 'uses' && fromNode.entityType === E.PROJECT &&
-                    toNode.filterMatch && !fromNode.filterMatch &&
-                    (toNode.entityType === E.SKILL || toNode.entityType === E.TEMPLATE ||
-                     toNode.entityType === E.RULE || toNode.entityType === E.AGENT)) {
-                    fromNode.filterMatch = true; changed = true;
-                }
-            }
-            if (!changed) break;
-        }
-
-        // 综合筛选：项目 + 能力同时选中时，项目需同时满足两者
-        if (selectedProjects.size > 0 && hasNonProjectFilter) {
-            for (const n of nodes) {
-                if (n.entityType !== E.PROJECT || !n.filterMatch) continue;
-                // 检查该项目是否连接了至少一个匹配的非项目实体
-                let hasMatchingCapability = false;
-                for (const e of edges) {
-                    if (e.type === 'uses' && e.from === n.key) {
-                        const capNode = nodeMap.get(e.to);
-                        if (capNode && capNode.filterMatch) {
-                            hasMatchingCapability = true;
-                            break;
-                        }
-                    }
-                }
-                if (!hasMatchingCapability) {
-                    n.filterMatch = false;
-                }
-            }
         }
     }
 }

@@ -7,9 +7,26 @@
     </div>
 
     <div class="sp-detail-summary">
-        <div v-if="story.description" class="sp-summary-item">
+        <div v-if="editingDesc" class="sp-summary-item sp-summary-item--edit" @click.stop>
             <span class="sp-summary-label">📝 描述</span>
-            <span class="sp-summary-text">{{ story.description }}</span>
+            <div class="sp-summary-edit-area">
+                <textarea
+                    class="sp-summary-textarea"
+                    v-model="editDescription"
+                    placeholder="输入故事描述..."
+                    rows="3"
+                    @keydown.escape="cancelDescEdit"
+                ></textarea>
+                <div class="sp-summary-edit-actions">
+                    <button type="button" class="sp-summary-edit-save" @click.stop="saveDescEdit" :disabled="saving">保存</button>
+                    <button type="button" class="sp-summary-edit-cancel" @click.stop="cancelDescEdit">取消</button>
+                </div>
+            </div>
+        </div>
+        <div v-else class="sp-summary-item sp-summary-item--editable" @click="startDescEdit">
+            <span class="sp-summary-label">📝 描述</span>
+            <span class="sp-summary-text">{{ story.description || '点击添加描述' }}</span>
+            <yi-icon name="edit" class-name="sp-summary-edit-icon"></yi-icon>
         </div>
         <div class="sp-summary-item">
             <span class="sp-summary-label">👉 下一步</span>
@@ -38,28 +55,41 @@
         </div>
     </div>
 
-    <div v-if="depInfo" class="sp-detail-section">
+    <div v-if="depInfo || storyDeps.length > 0" class="sp-detail-section">
         <h3 class="sp-section-title">故事依赖</h3>
-        <div v-if="depInfo.dependsOn.length > 0" class="sp-dep-group">
+        <div v-if="depInfo && depInfo.dependsOn.length > 0" class="sp-dep-group">
             <span class="sp-dep-label">依赖的故事</span>
             <span v-for="d in depInfo.dependsOn" :key="d.directory" class="sp-dep-tag sp-dep-tag--depends" @click="onDepClick(d.directory)" :title="d.name">
                 {{ d.name || d.directory }}
                 <span class="sp-dep-rel">({{ relationLabel(d.relation) }})</span>
+                <button type="button" class="sp-dep-remove" @click.stop="onRemoveDep(d.directory)" title="移除依赖">×</button>
             </span>
         </div>
-        <div v-if="depInfo.dependedBy.length > 0" class="sp-dep-group">
+        <div class="sp-dep-group">
+            <span class="sp-dep-label"></span>
+            <button v-if="!showDepEditor" type="button" class="sp-dep-add-btn" @click="toggleDepEditor" title="添加依赖">+ 添加依赖</button>
+        </div>
+        <dep-editor
+            v-if="showDepEditor"
+            :story-deps="storyDeps"
+            :current-dir="currentDir"
+            :existing-deps="depInfo ? depInfo.dependsOn : []"
+            @add="onAddDep"
+            @cancel="showDepEditor = false"
+        ></dep-editor>
+        <div v-if="depInfo && depInfo.dependedBy.length > 0" class="sp-dep-group">
             <span class="sp-dep-label">被依赖</span>
             <span v-for="d in depInfo.dependedBy" :key="d.directory" class="sp-dep-tag sp-dep-tag--depended" @click="onDepClick(d.directory)" :title="d.name">
                 {{ d.name || d.directory }}
             </span>
         </div>
-        <div v-if="depInfo.children && depInfo.children.length > 0" class="sp-dep-group">
+        <div v-if="depInfo && depInfo.children && depInfo.children.length > 0" class="sp-dep-group">
             <span class="sp-dep-label">子故事</span>
             <span v-for="child in depInfo.children" :key="child" class="sp-dep-tag sp-dep-tag--child" @click="onDepClick(child)">
                 {{ child }}
             </span>
         </div>
-        <div v-if="depInfo.parent" class="sp-dep-group">
+        <div v-if="depInfo && depInfo.parent" class="sp-dep-group">
             <span class="sp-dep-label">父故事</span>
             <span class="sp-dep-tag sp-dep-tag--parent" @click="onDepClick(depInfo.parent)">{{ depInfo.parent }}</span>
         </div>

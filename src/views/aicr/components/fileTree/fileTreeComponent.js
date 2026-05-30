@@ -95,11 +95,10 @@ const componentOptions = {
             tagOrderVersion: 0,
             graphTooltip: null,
             graphTooltipStyle: {},
-            _graphResizeObserver: null,
-            graphSearchQuery: '',
-            graphSearchMatches: '',
-            graphSearchIndex: 0,
-            graphSearchTotal: 0
+            editingCardKey: null,
+            editingCardDesc: '',
+            cardSaving: false,
+            _graphResizeObserver: null
         };
     },
     watch: {

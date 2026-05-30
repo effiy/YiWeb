@@ -7,9 +7,17 @@ registerGlobalComponent({
     props: {
         story: { type: Object, default: null },
         panel: { type: Boolean, default: false },
-        storyDeps: { type: Array, default: () => [] }
+        storyDeps: { type: Array, default: () => [] },
+        saving: { type: Boolean, default: false }
     },
-    emits: ['back', 'close', 'select-story'],
+    emits: ['back', 'close', 'select-story', 'update-story', 'add-dep', 'remove-dep'],
+    data() {
+        return {
+            editingDesc: false,
+            editDescription: '',
+            showDepEditor: false,
+        };
+    },
     computed: {
         depInfo() {
             const name = this.story?.name;
@@ -28,7 +36,10 @@ registerGlobalComponent({
                 .filter(s => Array.isArray(s.dependsOn) && s.dependsOn.some(d => d.directory === name))
                 .map(s => ({ directory: s.directory, name: s.name }));
 
-            return { dependsOn, dependedBy, type: self.type, parent: self.parent, children: self.children };
+            return { dependsOn, dependedBy, type: self.type, parent: self.parent, children: self.children, directory: self.directory };
+        },
+        currentDir() {
+            return this.depInfo?.directory || this.story?.name || '';
         },
         fileGroups() {
             const files = this.story?.files || [];
@@ -65,6 +76,33 @@ registerGlobalComponent({
         relationLabel(relation) {
             const map = { blocks: '阻断', informs: '输入', references: '引用' };
             return map[relation] || relation;
-        }
+        },
+        /* ---- description editing ---- */
+        startDescEdit() {
+            this.editDescription = this.story?.description || '';
+            this.editingDesc = true;
+        },
+        cancelDescEdit() {
+            this.editingDesc = false;
+            this.editDescription = '';
+        },
+        saveDescEdit() {
+            if (!this.story) return;
+            this.$emit('update-story', { name: this.story.name, description: this.editDescription });
+            this.editingDesc = false;
+        },
+        /* ---- dependency editing ---- */
+        onRemoveDep(directory) {
+            if (!this.story) return;
+            this.$emit('remove-dep', { storyDir: this.currentDir, depDirectory: directory });
+        },
+        onAddDep(payload) {
+            if (!this.story) return;
+            this.$emit('add-dep', { storyDir: this.currentDir, depDirectory: payload.directory, relation: payload.relation });
+            this.showDepEditor = false;
+        },
+        toggleDepEditor() {
+            this.showDepEditor = !this.showDepEditor;
+        },
     }
 });

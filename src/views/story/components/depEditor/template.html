@@ -1,0 +1,15 @@
+<div class="dep-editor">
+    <div class="dep-editor-row">
+        <select class="dep-editor-select" v-model="selectedDir">
+            <option value="" disabled>选择故事</option>
+            <option v-for="s in availableStories" :key="s.directory" :value="s.directory">{{ s.name || s.directory }}</option>
+        </select>
+        <select class="dep-editor-relation" v-model="selectedRelation">
+            <option v-for="r in relationOptions" :key="r.value" :value="r.value">{{ r.label }}</option>
+        </select>
+    </div>
+    <div class="dep-editor-actions">
+        <button type="button" class="dep-editor-confirm" @click="onConfirm" :disabled="!selectedDir">确认添加</button>
+        <button type="button" class="dep-editor-cancel" @click="onCancel">取消</button>
+    </div>
+</div>

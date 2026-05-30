@@ -48,6 +48,7 @@ let _state = {
     _drillKey: null,
     _hasFittedOnce: false,
     _hasActiveFilter: false,
+    _activeFilterTypes: null,
     _graphW: 0,
     _graphH: 0
 };
@@ -94,6 +95,7 @@ export function initGraph(canvas, container) {
     _state._drillKey = null;
     _state._hasFittedOnce = false;
     _state._hasActiveFilter = false;
+    _state._activeFilterTypes = null;
     _state.nodes = [];
     _state.edges = [];
     _state.nodeMap = null;
@@ -133,6 +135,7 @@ export function buildAndLayout(ctx, rebuild = false) {
 
     // 默认 L1: 项目 + 故事
     _state._hasActiveFilter = false;
+    _state._activeFilterTypes = null;
     _applyVisibility();
 
     applyLayout(_state.nodes, _state.edges, _state.nodeMap, W, H);
@@ -197,7 +200,11 @@ function _applyVisibility() {
     const { nodes, edges, nodeMap } = _state;
     if (!nodes || nodes.length === 0) return;
 
-    const allowedTypes = LAYER_TYPES[_state._currentLayer] || LAYER_TYPES[1];
+    const baseAllowed = LAYER_TYPES[_state._currentLayer] || LAYER_TYPES[1];
+    const allowedTypes = new Set(baseAllowed);
+    if (_state._hasActiveFilter && _state._activeFilterTypes) {
+        for (const t of _state._activeFilterTypes) allowedTypes.add(t);
+    }
 
     // 1. 图层约束 + 筛选约束
     for (const n of nodes) {
@@ -228,7 +235,6 @@ function _applyVisibility() {
             for (const n of nodes) {
                 if (!n._visible) continue;
                 if (relatedKeys.has(n.key)) continue;
-                // 钻取时保留：L2 中同项目的 story + 聚焦节点的直连子节点
                 if (_state._currentLayer === 2 && n.entityType === ENTITY.STORY && n._projectName === focusProject) {
                     continue;
                 }
@@ -284,10 +290,34 @@ export function applyFilterHighlight(ctx) {
         (ctx.selectedAgentTags && ctx.selectedAgentTags.length > 0);
 
     _state._hasActiveFilter = hasAnyFilter;
+
+    // 筛选激活时记录需要额外显示的实体类型
+    const filterTypes = new Set();
+    if (ctx.selectedTags && ctx.selectedTags.length > 0) {
+        // 项目标签选中 → 显示该项目下全部实体类型
+        filterTypes.add(ENTITY.PROJECT);
+        filterTypes.add(ENTITY.STORY);
+        filterTypes.add(ENTITY.SCENARIO);
+        filterTypes.add(ENTITY.SKILL);
+        filterTypes.add(ENTITY.TEMPLATE);
+        filterTypes.add(ENTITY.RULE);
+        filterTypes.add(ENTITY.AGENT);
+        filterTypes.add(ENTITY.FILE);
+    }
+    if (ctx.selectedSkillTags && ctx.selectedSkillTags.length > 0) filterTypes.add(ENTITY.SKILL);
+    if (ctx.selectedTemplateTags && ctx.selectedTemplateTags.length > 0) filterTypes.add(ENTITY.TEMPLATE);
+    if (ctx.selectedRuleTags && ctx.selectedRuleTags.length > 0) filterTypes.add(ENTITY.RULE);
+    if (ctx.selectedAgentTags && ctx.selectedAgentTags.length > 0) filterTypes.add(ENTITY.AGENT);
+    _state._activeFilterTypes = filterTypes;
+
     _applyVisibility();
 
     renderCurrentGraph();
     if (_state._renderMiniMapCanvas) renderCurrentMiniMap(_state._renderMiniMapCanvas);
+
+    if (hasAnyFilter) {
+        fitToWindow();
+    }
 }
 
 // ── 交互 — 鼠标事件 ──

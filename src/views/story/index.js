@@ -31,6 +31,7 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 'StoryDetailCard',
                 'StoryCard',
                 'StoryStatusBadge',
+                'DepEditor',
                 'YiIcon',
                 'YiButton',
                 'YiTag',
@@ -45,6 +46,7 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 '/src/views/story/components/storyDetailCard/index.js',
                 '/src/views/story/components/storyCard/index.js',
                 '/src/views/story/components/storyStatusBadge/index.js',
+                '/src/views/story/components/depEditor/index.js',
                 '/cdn/icons/YiIcon/index.js',
                 '/cdn/components/common/buttons/YiButton/index.js',
                 '/cdn/components/common/tags/YiTag/index.js',
@@ -78,6 +80,10 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 // 依赖数据
                 storyDeps: store.storyDeps,
                 depsLoading: store.depsLoading,
+
+                // 编辑状态
+                editingField: store.editingField,
+                saving: store.saving,
 
                 // 计算属性（通过 useComputed 生成）
                 totalStories: computedRefs.totalStories,
@@ -131,6 +137,11 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 getStoryDeps: store.getStoryDeps,
                 getDirectDependents: store.getDirectDependents,
                 getRelationLabel: store.getRelationLabel,
+
+                // 编辑方法
+                updateStoryDescription: (payload) => store.updateStoryDescription(payload.name, payload.description),
+                addDependency: (payload) => store.addDependency(payload.storyDir, payload.depDirectory, payload.relation),
+                removeDependency: (payload) => store.removeDependency(payload.storyDir, payload.depDirectory),
 
                 // 工具方法
                 formatDate: methods.formatDate,

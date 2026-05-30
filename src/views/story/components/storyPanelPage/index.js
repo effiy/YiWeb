@@ -36,6 +36,7 @@ registerGlobalComponent({
         sortField:             { type: String, default: 'lastModified' },
         sortDirection:         { type: String, default: 'desc' },
         storyDeps:             { type: Array, default: () => [] },
+        saving:                { type: Boolean, default: false },
     },
     emits: [
         'select-story', 'back',
@@ -44,6 +45,7 @@ registerGlobalComponent({
         'set-search-query', 'clear-search-query', 'clear-all-filters',
         'set-view', 'toggle-sort', 'open-detail', 'close-panel',
         'handle-tags-scroll', 'clear-cache',
+        'update-story', 'add-dep', 'remove-dep',
     ],
     data() {
         return {
@@ -99,6 +101,15 @@ registerGlobalComponent({
         },
         onClearCache() {
             this.$emit('clear-cache');
+        },
+        onUpdateStory(payload) {
+            this.$emit('update-story', payload);
+        },
+        onAddDep(payload) {
+            this.$emit('add-dep', payload);
+        },
+        onRemoveDep(payload) {
+            this.$emit('remove-dep', payload);
         },
         onTagsScroll(event) {
             const el = event.target;
