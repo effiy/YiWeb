@@ -594,6 +594,147 @@ export const createMainPageMethods = (store) => {
                 logError('[主页面] 清除 Agents 标签失败:', error);
             }
         },
+        handleBatchSelectAllCards: function (keys) {
+            logInfo('[主页面] 卡片视图全选');
+            try {
+                const methods = useMethods(store);
+                if (methods.handleBatchSelectAllCards) {
+                    methods.handleBatchSelectAllCards(keys);
+                }
+            } catch (error) {
+                logError('[主页面] 卡片全选失败:', error);
+            }
+        },
+        handleBatchDeselectAllCards: function () {
+            logInfo('[主页面] 卡片视图取消全选');
+            try {
+                const methods = useMethods(store);
+                if (methods.handleBatchDeselectAllCards) {
+                    methods.handleBatchDeselectAllCards();
+                }
+            } catch (error) {
+                logError('[主页面] 卡片取消全选失败:', error);
+            }
+        },
+        handleBatchDeleteFiles: async function () {
+            logInfo('[主页面] 卡片视图批量删除文件');
+            try {
+                const selectedKeys = store.selectedKeys?.value;
+                if (!selectedKeys || selectedKeys.size === 0) return;
+
+                const count = selectedKeys.size;
+                if (!confirm(`确定删除选中的 ${count} 个文件？此操作不可撤销。`)) return;
+
+                const { showGlobalLoading, hideGlobalLoading } = await import('/cdn/utils/ui/loading.js');
+                showGlobalLoading('正在批量删除，请稍候...');
+
+                try {
+                    const { getFileDeleteService } = await import('/src/views/aicr/hooks/fileDeleteService.js');
+                    const fileDeleteService = getFileDeleteService();
+
+                    // 从 fileTree / files 中匹配选中 key 的文件对象
+                    const filesToDelete = [];
+                    const selectedArr = [...selectedKeys];
+
+                    const collectFiles = (nodes) => {
+                        if (!Array.isArray(nodes)) return;
+                        for (const node of nodes) {
+                            if (node.type === 'file' && selectedKeys.has(node.key)) {
+                                const sessionKey = node.sessionKey || node.key;
+                                filesToDelete.push({
+                                    key: node.key,
+                                    path: node.path || node.key,
+                                    type: 'file',
+                                    sessionKey,
+                                    data: { key: node.key, path: node.path || node.key }
+                                });
+                            }
+                            if (node.type === 'folder' && Array.isArray(node.children)) {
+                                collectFiles(node.children);
+                            }
+                        }
+                    };
+
+                    if (store.fileTree?.value) {
+                        collectFiles(store.fileTree.value);
+                    }
+
+                    // 对于在 files 中但不在 tree 中的文件
+                    const allFiles = store.files?.value || [];
+                    for (const key of selectedArr) {
+                        const alreadyIncluded = filesToDelete.some(f => f.key === key);
+                        if (!alreadyIncluded) {
+                            const match = allFiles.find(f => f.key === key || f.path === key);
+                            if (match) {
+                                filesToDelete.push({
+                                    key: match.key || key,
+                                    path: match.path || key,
+                                    type: 'file',
+                                    sessionKey: match.sessionKey || match.key || key,
+                                    data: { key: match.key || key, path: match.path || key }
+                                });
+                            } else {
+                                filesToDelete.push({
+                                    key,
+                                    path: key,
+                                    type: 'file',
+                                    sessionKey: key,
+                                    data: { key, path: key }
+                                });
+                            }
+                        }
+                    }
+
+                    // 从 fileTree 中移除已删除节点
+                    const removeDeletedFromTree = (nodes) => {
+                        if (!Array.isArray(nodes)) return nodes;
+                        return nodes.filter(node => {
+                            if (node.type === 'file' && selectedKeys.has(node.key)) {
+                                return false;
+                            }
+                            if (node.type === 'folder' && Array.isArray(node.children)) {
+                                node.children = removeDeletedFromTree(node.children);
+                            }
+                            return true;
+                        });
+                    };
+
+                    if (store.fileTree?.value) {
+                        store.fileTree.value = removeDeletedFromTree(store.fileTree.value);
+                    }
+
+                    // 从 files 中移除
+                    if (store.files?.value) {
+                        store.files.value = store.files.value.filter(f => !selectedKeys.has(f.key) && !selectedKeys.has(f.path));
+                    }
+
+                    // 从 sessions 中移除
+                    if (store.sessions?.value) {
+                        const deletedSessionKeys = new Set(filesToDelete.map(f => f.sessionKey).filter(Boolean));
+                        store.sessions.value = store.sessions.value.filter(s => !deletedSessionKeys.has(String(s.key || '')));
+                    }
+
+                    // 调用远端删除
+                    if (filesToDelete.length > 0) {
+                        await fileDeleteService.deleteFiles(filesToDelete);
+                    }
+
+                    // 退出批量模式并刷新
+                    if (store.batchMode) store.batchMode.value = false;
+                    selectedKeys.clear();
+
+                    if (store.loadFileTree) await store.loadFileTree();
+                    if (store.loadSessions) await store.loadSessions(false);
+
+                    const { showSuccessMessage } = await import('/cdn/utils/core/error.js');
+                    showSuccessMessage(`已删除 ${count} 个文件`);
+                } finally {
+                    try { hideGlobalLoading(); } catch (_) { }
+                }
+            } catch (error) {
+                logError('[主页面] 批量删除文件失败:', error);
+            }
+        },
         handleToggleSelectAllSessions: function (payload) {
             logInfo('[主页面] 全选/取消全选会话', payload);
             try {

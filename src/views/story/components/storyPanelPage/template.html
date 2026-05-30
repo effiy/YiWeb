@@ -145,6 +145,7 @@
                     v-for="story in group.stories"
                     :key="group.label + '-' + story.name"
                     :story="story"
+                    :story-deps="storyDeps"
                     @select="onOpenDetail"
                 ></story-card>
             </template>
@@ -192,7 +193,9 @@
                 <story-detail-card
                     :story="panelStory"
                     :panel="true"
+                    :story-deps="storyDeps"
                     @close="onClosePanel"
+                    @select-story="onOpenDetail"
                 ></story-detail-card>
             </div>
         </div>

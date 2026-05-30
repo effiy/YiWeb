@@ -108,12 +108,50 @@ export const createUiEventMethods = ({ store }) => {
         }, '文件选择切换');
     };
 
+    /**
+     * 卡片视图全选
+     */
+    const handleBatchSelectAllCards = (keys) => {
+        return safeExecute(() => {
+            const { batchMode, selectedKeys } = store;
+            if (!batchMode || !batchMode.value) {
+                console.warn('[批量选择] 未开启批量模式');
+                return;
+            }
+            if (!selectedKeys || !selectedKeys.value) {
+                console.warn('[批量选择] selectedKeys 未初始化');
+                return;
+            }
+            if (!Array.isArray(keys)) return;
+            for (const key of keys) {
+                const nk = normalizeKey ? normalizeKey(key) : String(key || '');
+                if (nk) selectedKeys.value.add(nk);
+            }
+            console.log('[批量选择] 全选卡片，选中数:', selectedKeys.value.size);
+        }, '卡片全选');
+    };
+
+    /**
+     * 卡片视图取消全选
+     */
+    const handleBatchDeselectAllCards = () => {
+        return safeExecute(() => {
+            const { selectedKeys } = store;
+            if (selectedKeys && selectedKeys.value) {
+                selectedKeys.value.clear();
+            }
+            console.log('[批量选择] 取消全选卡片');
+        }, '卡片取消全选');
+    };
+
     return {
         handleToggleSidebar,
         handleToggleChatPanel,
         handleProjectChange,
         handleRefreshData,
         toggleBatchMode,
-        toggleFileSelection
+        toggleFileSelection,
+        handleBatchSelectAllCards,
+        handleBatchDeselectAllCards
     };
 };

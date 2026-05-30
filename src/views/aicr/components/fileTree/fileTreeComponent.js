@@ -89,7 +89,7 @@ const componentOptions = {
         }
     },
     computed: fileTreeComputed,
-    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change', 'skill-tag-toggle', 'template-tag-toggle', 'rule-tag-toggle', 'agent-tag-toggle'],
+    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change', 'skill-tag-toggle', 'template-tag-toggle', 'rule-tag-toggle', 'agent-tag-toggle', 'batch-select-all-cards', 'batch-deselect-all-cards', 'batch-delete-files'],
     data() {
         return {
             tagOrderVersion: 0,
@@ -99,8 +99,7 @@ const componentOptions = {
             graphSearchQuery: '',
             graphSearchMatches: '',
             graphSearchIndex: 0,
-            graphSearchTotal: 0,
-            graphCurrentLayer: 1
+            graphSearchTotal: 0
         };
     },
     watch: {

@@ -3,6 +3,10 @@
         <span v-if="story.projectTags.length > 0" class="sc-card-tags-left">
             <span v-for="tag in story.projectTags" :key="tag" class="sc-card-tag">{{ tag }}</span>
         </span>
+        <span v-if="depCounts" class="sc-card-dep-badge" :title="'依赖 ' + depCounts.dependsOn + ' · 被 ' + depCounts.dependedBy + ' 依赖'">
+            <span v-if="depCounts.dependedBy > 0" class="sc-dep-count sc-dep-count--by">↓{{ depCounts.dependedBy }}</span>
+            <span v-if="depCounts.dependsOn > 0" class="sc-dep-count sc-dep-count--on">↑{{ depCounts.dependsOn }}</span>
+        </span>
         <span class="sc-card-date">{{ formatDate(story.lastModified) }}</span>
     </div>
     <div class="sc-card-name">

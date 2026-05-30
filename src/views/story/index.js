@@ -75,6 +75,10 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 tagsScrollLeft: store.tagsScrollLeft,
                 tagsScrollAtEnd: store.tagsScrollAtEnd,
 
+                // 依赖数据
+                storyDeps: store.storyDeps,
+                depsLoading: store.depsLoading,
+
                 // 计算属性（通过 useComputed 生成）
                 totalStories: computedRefs.totalStories,
                 statusCounts: computedRefs.statusCounts,
@@ -98,6 +102,7 @@ import '/cdn/utils/ui/tooltipPortal.js';
             onMounted: () => {
                 logInfo('[故事面板] 应用已挂载');
                 store.fetchStories();
+                store.fetchDependencies();
             },
             methods: {
                 // 数据方法
@@ -121,6 +126,11 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 openDetail: (story) => store.openDetail(story),
                 closePanel: () => store.closePanel(),
                 handleTagsScroll: (e) => store.handleTagsScroll(e),
+
+                // 依赖查询
+                getStoryDeps: store.getStoryDeps,
+                getDirectDependents: store.getDirectDependents,
+                getRelationLabel: store.getRelationLabel,
 
                 // 工具方法
                 formatDate: methods.formatDate,

@@ -13,15 +13,6 @@
     margin-bottom: 0;
 }
 
-.cards-group-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--yi-text-secondary);
-    margin: 0 0 12px 4px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--yi-border);
-}
-
 .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -110,7 +101,8 @@
 }
 
 .file-card:hover .file-card-badge,
-.file-card.selected .file-card-badge {
+.file-card.selected .file-card-badge,
+.file-card.batch-selected .file-card-badge {
     color: var(--yi-primary);
     background: rgba(var(--yi-primary-rgb), 0.08);
     border-color: var(--yi-primary);
@@ -256,6 +248,13 @@
     border-top: 1px solid rgba(0,0,0,0.06);
 }
 
+.graph-tooltip-action {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--yi-primary);
+    margin-top: 4px;
+}
+
 /* Legend */
 .graph-legend {
     position: absolute;
@@ -292,85 +291,31 @@
     flex-shrink: 0;
 }
 
-/* ====== 顶部工具栏（图层 + 搜索） ====== */
-.graph-top-bar {
+/* ====== 图谱搜索栏（顶部居中） ====== */
+.graph-search-bar {
     position: absolute;
     top: 12px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 10px;
-    z-index: var(--z-local-50);
-}
-
-/* ====== 图层切换控件 ====== */
-.graph-layer-controls {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    background: rgba(255,255,255,0.92);
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 20px;
-    padding: 3px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    white-space: nowrap;
-}
-
-.graph-layer-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 14px;
-    border: none;
-    border-radius: 17px;
-    font-size: 11px;
-    font-weight: 500;
-    background: transparent;
-    color: var(--yi-text-secondary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.graph-layer-btn:hover {
-    background: rgba(0,0,0,0.04);
-    color: var(--yi-text);
-}
-
-.graph-layer-btn--active {
-    background: var(--yi-primary);
-    color: #fff;
-    box-shadow: 0 1px 4px rgba(var(--yi-primary-rgb), 0.3);
-}
-
-.graph-layer-btn--active:hover {
-    background: var(--yi-primary-hover);
-    color: #fff;
-}
-
-/* ====== 图谱搜索栏 ====== */
-.graph-search-bar {
-    display: flex;
-    align-items: center;
     gap: 6px;
-    background: rgba(255,255,255,0.92);
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 20px;
-    padding: 6px 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.94);
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 22px;
+    padding: 7px 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
     min-width: 220px;
     max-width: 340px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    z-index: var(--z-local-50);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .graph-search-icon {
     font-size: 13px;
     flex-shrink: 0;
-    opacity: 0.4;
+    opacity: 0.35;
 }
 
 .graph-search-input {
@@ -390,79 +335,96 @@
 
 .graph-search-count {
     flex-shrink: 0;
-    font-size: 10.5px;
+    font-size: 10px;
     color: var(--yi-text-muted);
-    background: rgba(0,0,0,0.04);
+    background: rgba(0,0,0,0.05);
     border: none;
     border-radius: 10px;
     padding: 2px 8px;
     cursor: pointer;
+    transition: all var(--yi-duration-fast);
 }
 
 .graph-search-count:hover {
-    background: rgba(0,0,0,0.08);
+    background: rgba(0,0,0,0.10);
     color: var(--yi-text);
 }
 
-/* ====== 图谱缩放控件 ====== */
+/* ====== 图谱缩放控件（右上角纵向组） ====== */
 .graph-zoom-controls {
     position: absolute;
     top: 12px;
     right: 12px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 2px;
-    background: rgba(255,255,255,0.92);
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 20px;
-    padding: 4px 6px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    gap: 1px;
+    background: rgba(255,255,255,0.94);
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 10px;
+    padding: 3px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
     z-index: var(--z-local-50);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    user-select: none;
 }
 
 .graph-zoom-btn {
-    width: 28px;
+    width: 30px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border: none;
-    border-radius: 14px;
+    border-radius: 7px;
     color: var(--yi-text-secondary);
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     cursor: pointer;
-    transition: all var(--yi-duration-fast) var(--yi-easing-default);
+    transition: all 0.15s ease;
     line-height: 1;
 }
 
 .graph-zoom-btn:hover {
-    background: rgba(0,0,0,0.05);
+    background: rgba(0,0,0,0.06);
     color: var(--yi-text);
 }
 
-.graph-zoom-btn--reset,
-.graph-zoom-btn--focus {
-    font-size: 13px;
-    margin-left: 4px;
-    border-left: 1px solid rgba(0,0,0,0.08);
-    padding-left: 6px;
-    border-radius: 0 14px 14px 0;
-}
-
-.graph-zoom-btn--focus {
-    color: var(--yi-primary);
+.graph-zoom-btn:active {
+    background: rgba(0,0,0,0.10);
+    transform: scale(0.95);
 }
 
 .graph-zoom-level {
-    font-size: 10.5px;
+    font-size: 10px;
+    font-weight: 500;
     color: var(--yi-text-muted);
-    min-width: 36px;
+    min-width: 30px;
     text-align: center;
+    padding: 2px 0;
     font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+
+.graph-zoom-level:hover {
+    background: rgba(0,0,0,0.04);
+    color: var(--yi-text);
+}
+
+.graph-zoom-divider {
+    width: 18px;
+    height: 1px;
+    background: rgba(0,0,0,0.08);
+    margin: 1px 0;
+}
+
+.graph-zoom-btn--action {
+    font-size: 12px;
+    color: var(--yi-text-muted);
 }
 
 /* ====== 迷你地图 ====== */
@@ -499,4 +461,289 @@
     white-space: pre-wrap;
     word-break: break-all;
     font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ==========================================
+   卡片批操作栏 — 对齐 aicr-filter-bar 风格
+   ========================================== */
+
+.cards-batch-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 8px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid transparent;
+    border-image: var(--quantum-filter-border) 1;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* 标签 — 对齐 aicr-filter-label */
+.cards-batch-bar__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--yi-text-secondary);
+    white-space: nowrap;
+    user-select: none;
+    margin-right: 2px;
+}
+
+/* 计数 */
+.cards-batch-bar__count {
+    font-size: 12px;
+    color: var(--yi-text-muted);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.cards-batch-bar__count em {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--yi-primary);
+}
+
+.cards-batch-bar__count.has-selection {
+    color: var(--yi-text);
+}
+
+/* 弹性填充 */
+.cards-batch-bar__spacer {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 操作按钮 — 对齐 aicr-filter-tag */
+.cards-batch-bar__btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: border-color var(--yi-duration-fast) var(--yi-easing-default),
+                color var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+    font-family: var(--yi-font-ui);
+}
+
+.cards-batch-bar__btn:hover:not(:disabled) {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+}
+
+.cards-batch-bar__btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* 删除按钮 — 选中后实心危险色，对齐 aicr-filter-tag.active 填充模式 */
+.cards-batch-bar__delete {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--yi-surface);
+    color: var(--yi-text-muted);
+    cursor: pointer;
+    transition: border-color var(--yi-duration-fast) var(--yi-easing-default),
+                color var(--yi-duration-fast) var(--yi-easing-default),
+                background var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+    font-family: var(--yi-font-ui);
+    font-weight: 500;
+}
+
+.cards-batch-bar__delete:hover:not(:disabled) {
+    color: var(--yi-text);
+}
+
+.cards-batch-bar__delete.has-selection {
+    background: var(--yi-danger);
+    border-color: var(--yi-danger);
+    color: var(--yi-text-on-danger);
+}
+
+.cards-batch-bar__delete.has-selection:hover:not(:disabled) {
+    background: var(--yi-danger-hover);
+    border-color: var(--yi-danger-hover);
+}
+
+.cards-batch-bar__delete:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* 完成按钮 */
+.cards-batch-bar__exit {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: border-color var(--yi-duration-fast) var(--yi-easing-default),
+                color var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+    font-family: var(--yi-font-ui);
+}
+
+.cards-batch-bar__exit:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+}
+
+/* ==========================================
+   卡片视图工具栏（非批量模式下）
+   ========================================== */
+
+.cards-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 0 4px 12px;
+    margin-bottom: 8px;
+}
+
+.cards-toolbar__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--yi-font-ui);
+    border: 1px solid var(--yi-border);
+    border-radius: 6px;
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
+    cursor: pointer;
+    transition: border-color var(--yi-duration-fast) var(--yi-easing-default),
+                color var(--yi-duration-fast) var(--yi-easing-default);
+    white-space: nowrap;
+}
+
+.cards-toolbar__btn:hover {
+    border-color: var(--yi-primary);
+    color: var(--yi-primary);
+    background: rgba(var(--yi-primary-rgb), 0.05);
+}
+
+/* ==========================================
+   卡片分组头部
+   ========================================== */
+
+.cards-group__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--yi-border);
+}
+
+.cards-group__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--yi-text-secondary);
+    margin: 0;
+    flex: 1;
+}
+
+.cards-group__count {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--yi-text-muted);
+    background: var(--yi-surface);
+    border: 1px solid var(--yi-border);
+    border-radius: 10px;
+    padding: 1px 8px;
+}
+
+/* ==========================================
+   卡片选择指示器
+   ========================================== */
+
+.file-card__check {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.file-card__check--off {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    transition: border-color 0.18s ease;
+}
+
+.file-card:hover .file-card__check--off {
+    border-color: var(--yi-text-muted);
+}
+
+.file-card.batch-selected .file-card__check--off {
+    display: none;
+}
+
+.file-card__check--on {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(var(--yi-primary-rgb), 0.4);
+    animation: checkPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes checkPopIn {
+    from { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.15); }
+    to   { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================
+   批量模式卡片状态
+   ========================================== */
+
+.file-cards-view.is-batch-mode .file-card:not(.batch-selected) {
+    opacity: 0.6;
+}
+
+.file-cards-view.is-batch-mode .file-card:not(.batch-selected):hover {
+    opacity: 0.85;
+}
+
+.file-card.batch-selected {
+    background: rgba(var(--yi-primary-rgb), 0.10);
+    border-color: var(--yi-primary);
+    box-shadow: 0 0 0 1px rgba(var(--yi-primary-rgb), 0.4);
+}
+
+.file-card.batch-selected::before {
+    opacity: 1;
+}
+
+.file-card.batch-selected .file-card-name {
+    color: var(--yi-primary);
 }

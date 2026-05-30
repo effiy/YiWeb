@@ -5,10 +5,24 @@ registerGlobalComponent({
     html: '/src/views/story/components/storyCard/template.html',
     css: '/src/views/story/components/storyCard/index.css',
     props: {
-        story: { type: Object, default: null }
+        story: { type: Object, default: null },
+        storyDeps: { type: Array, default: () => [] }
     },
     emits: ['select'],
     computed: {
+        depCounts() {
+            const name = this.story?.name;
+            const deps = this.storyDeps || [];
+            if (!name || deps.length === 0) return null;
+            const self = deps.find(s => s.directory === name);
+            if (!self) return null;
+            const dependedBy = deps.filter(s =>
+                Array.isArray(s.dependsOn) && s.dependsOn.some(d => d.directory === name)
+            ).length;
+            const dependsOn = (self.dependsOn || []).length;
+            if (dependedBy === 0 && dependsOn === 0) return null;
+            return { dependsOn, dependedBy };
+        },
         cardClass() {
             if (!this.story) return 'sc-card';
             return `sc-card sc-card--${this.story.status}`;

@@ -8,6 +8,7 @@ import { createStoryStoreState } from './storeState.js';
 import { createStoryDataMethods } from '../methods/storyDataMethods.js';
 import { createFilterMethods } from '../methods/filterMethods.js';
 import { createUiMethods } from '../methods/uiMethods.js';
+import { createStoryDepsMethods } from '../methods/storyDepsMethods.js';
 
 const vueRef = typeof Vue !== 'undefined' && Vue.ref
     ? Vue.ref
@@ -19,11 +20,13 @@ export function createStore() {
     const dataMethods = createStoryDataMethods(state);
     const filterMethods = createFilterMethods(state);
     const uiMethods = createUiMethods(state);
+    const depsMethods = createStoryDepsMethods(state);
 
     return {
         ...state,
         ...dataMethods,
         ...filterMethods,
         ...uiMethods,
+        ...depsMethods,
     };
 }

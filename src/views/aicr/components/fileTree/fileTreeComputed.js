@@ -1,6 +1,11 @@
 import { getFirstLevelNames, extractStoryNames } from '/src/views/aicr/utils/filterHelpers.js';
 
 const fileTreeComputed = {
+    selectedKeysSize() {
+        const keys = this.selectedKeys;
+        if (!keys) return 0;
+        return keys instanceof Set ? keys.size : (Array.isArray(keys) ? keys.length : 0);
+    },
     sidebarStoryTags() {
         if (!Array.isArray(this.tree)) return [];
 
@@ -276,6 +281,15 @@ const fileTreeComputed = {
         };
         collect(this.sortedTree, '');
         return groups;
+    },
+    allCardFileKeys() {
+        const keys = [];
+        for (const group of this.groupedFiles) {
+            for (const file of group.files) {
+                if (file.key) keys.push(file.key);
+            }
+        }
+        return keys;
     }
 };
 

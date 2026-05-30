@@ -35,6 +35,7 @@ registerGlobalComponent({
         panelStory:            { type: Object, default: null },
         sortField:             { type: String, default: 'lastModified' },
         sortDirection:         { type: String, default: 'desc' },
+        storyDeps:             { type: Array, default: () => [] },
     },
     emits: [
         'select-story', 'back',

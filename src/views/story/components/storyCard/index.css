@@ -62,6 +62,31 @@
     flex-shrink: 0;
 }
 
+/* ---- dependency badge ---- */
+.sc-card-dep-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.sc-dep-count {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.4;
+}
+.sc-dep-count--by {
+    color: #2196f3;
+    background: rgba(33, 150, 243, 0.1);
+}
+.sc-dep-count--on {
+    color: #ff9800;
+    background: rgba(255, 152, 0, 0.1);
+}
+
 .sc-card-tag {
     display: inline-block;
     font-size: 10px;

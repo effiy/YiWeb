@@ -20,6 +20,10 @@ export function createStoryStoreState(vueRef) {
     const tagFilterNoTags = vueRef(false);
     const localSearchQuery = vueRef('');
 
+    // 依赖数据
+    const storyDeps = vueRef([]);
+    const depsLoading = vueRef(false);
+
     // UI 状态
     const viewMode = vueRef('cards');
     const panelStory = vueRef(null);
@@ -40,6 +44,8 @@ export function createStoryStoreState(vueRef) {
             selectedMissingTags,
             tagFilterNoTags,
             localSearchQuery,
+            storyDeps,
+            depsLoading,
             viewMode,
             panelStory,
             sortField,

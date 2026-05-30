@@ -1,0 +1,91 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-05-30",
+  "stories": [
+    {
+      "name": "YiWeb 系统架构",
+      "directory": "yiweb-arch",
+      "type": "parent",
+      "priority": "P0",
+      "fpLabel": null,
+      "dependsOn": [],
+      "children": [
+        "yiweb-arch-layers",
+        "yiweb-arch-modules",
+        "yiweb-arch-dataflow",
+        "yiweb-arch-security",
+        "yiweb-arch-deps"
+      ]
+    },
+    {
+      "name": "系统架构-分层结构",
+      "directory": "yiweb-arch-layers",
+      "type": "sub",
+      "priority": "P0",
+      "fpLabel": "FP1",
+      "parent": "yiweb-arch",
+      "dependsOn": [],
+      "children": []
+    },
+    {
+      "name": "系统架构-模块地图",
+      "directory": "yiweb-arch-modules",
+      "type": "sub",
+      "priority": "P0",
+      "fpLabel": "FP2",
+      "parent": "yiweb-arch",
+      "dependsOn": [],
+      "children": []
+    },
+    {
+      "name": "系统架构-数据流",
+      "directory": "yiweb-arch-dataflow",
+      "type": "sub",
+      "priority": "P1",
+      "fpLabel": "FP3",
+      "parent": "yiweb-arch",
+      "dependsOn": [
+        { "directory": "yiweb-arch-layers", "relation": "informs" },
+        { "directory": "yiweb-arch-modules", "relation": "informs" }
+      ],
+      "children": []
+    },
+    {
+      "name": "系统架构-安全边界",
+      "directory": "yiweb-arch-security",
+      "type": "sub",
+      "priority": "P0",
+      "fpLabel": "FP4",
+      "parent": "yiweb-arch",
+      "dependsOn": [
+        { "directory": "yiweb-arch-layers", "relation": "informs" },
+        { "directory": "yiweb-arch-modules", "relation": "informs" }
+      ],
+      "children": []
+    },
+    {
+      "name": "系统架构-依赖矩阵",
+      "directory": "yiweb-arch-deps",
+      "type": "sub",
+      "priority": "P1",
+      "fpLabel": "FP5",
+      "parent": "yiweb-arch",
+      "dependsOn": [
+        { "directory": "yiweb-arch-layers", "relation": "informs" },
+        { "directory": "yiweb-arch-modules", "relation": "informs" }
+      ],
+      "children": []
+    },
+    {
+      "name": "YiWeb 自主测试方案",
+      "directory": "yiweb-self-test",
+      "type": "independent",
+      "priority": "P0",
+      "fpLabel": null,
+      "dependsOn": [
+        { "directory": "yiweb-arch", "relation": "references" }
+      ],
+      "children": []
+    }
+  ]
+}

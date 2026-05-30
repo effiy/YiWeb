@@ -69,3 +69,12 @@ export {
     BusinessScenarioAnalyzer,
     businessScenarioAnalyzer
 } from './business/businessScenarioAnalyzer.js';
+
+// 从documentEnrichService.js导出
+export {
+    enrichDocumentPageDescription,
+    batchEnrichDocuments,
+    needsEnrichment,
+    buildEnrichPrompt,
+    DocumentEnrichService
+} from './modules/documentEnrichService.js';

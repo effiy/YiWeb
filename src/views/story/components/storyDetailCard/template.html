@@ -38,6 +38,33 @@
         </div>
     </div>
 
+    <div v-if="depInfo" class="sp-detail-section">
+        <h3 class="sp-section-title">故事依赖</h3>
+        <div v-if="depInfo.dependsOn.length > 0" class="sp-dep-group">
+            <span class="sp-dep-label">依赖的故事</span>
+            <span v-for="d in depInfo.dependsOn" :key="d.directory" class="sp-dep-tag sp-dep-tag--depends" @click="onDepClick(d.directory)" :title="d.name">
+                {{ d.name || d.directory }}
+                <span class="sp-dep-rel">({{ relationLabel(d.relation) }})</span>
+            </span>
+        </div>
+        <div v-if="depInfo.dependedBy.length > 0" class="sp-dep-group">
+            <span class="sp-dep-label">被依赖</span>
+            <span v-for="d in depInfo.dependedBy" :key="d.directory" class="sp-dep-tag sp-dep-tag--depended" @click="onDepClick(d.directory)" :title="d.name">
+                {{ d.name || d.directory }}
+            </span>
+        </div>
+        <div v-if="depInfo.children && depInfo.children.length > 0" class="sp-dep-group">
+            <span class="sp-dep-label">子故事</span>
+            <span v-for="child in depInfo.children" :key="child" class="sp-dep-tag sp-dep-tag--child" @click="onDepClick(child)">
+                {{ child }}
+            </span>
+        </div>
+        <div v-if="depInfo.parent" class="sp-dep-group">
+            <span class="sp-dep-label">父故事</span>
+            <span class="sp-dep-tag sp-dep-tag--parent" @click="onDepClick(depInfo.parent)">{{ depInfo.parent }}</span>
+        </div>
+    </div>
+
     <div class="sp-detail-section">
         <h3 class="sp-section-title">文件清单</h3>
         <div v-for="group in fileGroups" :key="group.prefix" class="sp-file-group">
