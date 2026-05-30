@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-05-30",
+  "version": "2.0.0",
+  "generatedAt": "2026-05-30T17:00:00Z",
   "stories": [
     {
       "name": "YiWeb 系统架构",
@@ -45,8 +45,14 @@
       "fpLabel": "FP3",
       "parent": "yiweb-arch",
       "dependsOn": [
-        { "directory": "yiweb-arch-layers", "relation": "informs" },
-        { "directory": "yiweb-arch-modules", "relation": "informs" }
+        {
+          "directory": "yiweb-arch-layers",
+          "relation": "informs"
+        },
+        {
+          "directory": "yiweb-arch-modules",
+          "relation": "informs"
+        }
       ],
       "children": []
     },
@@ -58,8 +64,14 @@
       "fpLabel": "FP4",
       "parent": "yiweb-arch",
       "dependsOn": [
-        { "directory": "yiweb-arch-layers", "relation": "informs" },
-        { "directory": "yiweb-arch-modules", "relation": "informs" }
+        {
+          "directory": "yiweb-arch-layers",
+          "relation": "informs"
+        },
+        {
+          "directory": "yiweb-arch-modules",
+          "relation": "informs"
+        }
       ],
       "children": []
     },
@@ -71,8 +83,14 @@
       "fpLabel": "FP5",
       "parent": "yiweb-arch",
       "dependsOn": [
-        { "directory": "yiweb-arch-layers", "relation": "informs" },
-        { "directory": "yiweb-arch-modules", "relation": "informs" }
+        {
+          "directory": "yiweb-arch-layers",
+          "relation": "informs"
+        },
+        {
+          "directory": "yiweb-arch-modules",
+          "relation": "informs"
+        }
       ],
       "children": []
     },
@@ -83,9 +101,183 @@
       "priority": "P0",
       "fpLabel": null,
       "dependsOn": [
-        { "directory": "yiweb-arch", "relation": "references" }
+        {
+          "directory": "yiweb-arch",
+          "relation": "references"
+        }
       ],
       "children": []
     }
-  ]
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "yiweb-arch",
+        "label": "YiWeb 系统架构",
+        "type": "parent",
+        "group": "父故事",
+        "file": "docs/故事任务面板/yiweb-arch/knowledge-graph.json",
+        "description": "P0 · parent",
+        "priority": "P0",
+        "mdFiles": [
+          {
+            "file": "yiweb-arch/故事任务.md",
+            "section": "故事任务",
+            "scenario": "YiWeb 系统架构"
+          }
+        ],
+        "children": [
+          "yiweb-arch-layers",
+          "yiweb-arch-modules",
+          "yiweb-arch-dataflow",
+          "yiweb-arch-security",
+          "yiweb-arch-deps"
+        ]
+      },
+      {
+        "id": "yiweb-arch-layers",
+        "label": "系统架构-分层结构",
+        "type": "sub",
+        "group": "P0 子故事",
+        "file": "docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json",
+        "description": "P0 · sub",
+        "priority": "P0",
+        "mdFiles": [
+          {
+            "file": "yiweb-arch-layers/故事任务.md",
+            "section": "故事任务",
+            "scenario": "系统架构-分层结构"
+          }
+        ]
+      },
+      {
+        "id": "yiweb-arch-modules",
+        "label": "系统架构-模块地图",
+        "type": "sub",
+        "group": "P0 子故事",
+        "file": "docs/故事任务面板/yiweb-arch-modules/knowledge-graph.json",
+        "description": "P0 · sub",
+        "priority": "P0",
+        "mdFiles": [
+          {
+            "file": "yiweb-arch-modules/故事任务.md",
+            "section": "故事任务",
+            "scenario": "系统架构-模块地图"
+          }
+        ]
+      },
+      {
+        "id": "yiweb-arch-dataflow",
+        "label": "系统架构-数据流",
+        "type": "sub",
+        "group": "P1 子故事",
+        "file": "docs/故事任务面板/yiweb-arch-dataflow/knowledge-graph.json",
+        "description": "P1 · sub",
+        "priority": "P1",
+        "mdFiles": [
+          {
+            "file": "yiweb-arch-dataflow/故事任务.md",
+            "section": "故事任务",
+            "scenario": "系统架构-数据流"
+          }
+        ]
+      },
+      {
+        "id": "yiweb-arch-security",
+        "label": "系统架构-安全边界",
+        "type": "sub",
+        "group": "P0 子故事",
+        "file": "docs/故事任务面板/yiweb-arch-security/knowledge-graph.json",
+        "description": "P0 · sub",
+        "priority": "P0",
+        "mdFiles": [
+          {
+            "file": "yiweb-arch-security/故事任务.md",
+            "section": "故事任务",
+            "scenario": "系统架构-安全边界"
+          }
+        ]
+      },
+      {
+        "id": "yiweb-arch-deps",
+        "label": "系统架构-依赖矩阵",
+        "type": "sub",
+        "group": "P1 子故事",
+        "file": "docs/故事任务面板/yiweb-arch-deps/knowledge-graph.json",
+        "description": "P1 · sub",
+        "priority": "P1",
+        "mdFiles": [
+          {
+            "file": "yiweb-arch-deps/故事任务.md",
+            "section": "故事任务",
+            "scenario": "系统架构-依赖矩阵"
+          }
+        ]
+      },
+      {
+        "id": "yiweb-self-test",
+        "label": "YiWeb 自主测试方案",
+        "type": "independent",
+        "group": "独立故事",
+        "file": "docs/故事任务面板/yiweb-self-test/knowledge-graph.json",
+        "description": "P0 · independent",
+        "priority": "P0",
+        "mdFiles": [
+          {
+            "file": "yiweb-self-test/故事任务.md",
+            "section": "故事任务",
+            "scenario": "YiWeb 自主测试方案"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-dataflow",
+        "relation": "informs",
+        "label": "informs"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-dataflow",
+        "relation": "informs",
+        "label": "informs"
+      },
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-security",
+        "relation": "informs",
+        "label": "informs"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-security",
+        "relation": "informs",
+        "label": "informs"
+      },
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-deps",
+        "relation": "informs",
+        "label": "informs"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-deps",
+        "relation": "informs",
+        "label": "informs"
+      },
+      {
+        "source": "yiweb-arch",
+        "target": "yiweb-self-test",
+        "relation": "references",
+        "label": "references"
+      }
+    ]
+  },
+  "story": {
+    "name": "YiWeb 故事依赖关系图",
+    "description": "7个故事之间的拓扑依赖关系。每个节点可在知识图谱模式下点击查看详情，点击MD文件可高亮相关节点。"
+  }
 }

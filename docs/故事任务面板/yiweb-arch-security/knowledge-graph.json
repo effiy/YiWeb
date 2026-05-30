@@ -1,14 +1,28 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-05-29T12:51:41Z",
+  "version": "3.0.0",
+  "generatedAt": "2026-05-30T18:00:00Z",
   "projectRoot": "docs/故事任务面板/yiweb-arch-security/",
   "story": {
     "name": "YiWeb-系统架构-安全边界 · 故事任务",
-    "description": "",
+    "description": "五面安全审计：输入面→接口面→存储面→认证面→渲染面的防护措施检查",
     "scenarios": [
       {
         "name": "场景1 · 安全审计 — 逐面检查防护措施",
         "description": "检查输入面(地址栏参数/文件上传/文本输入/数据加载) → 检查接口面(请求凭证/认证头/401拦截) → 检查存储面(本地存储内容审计) → 检查认证面(凭证生命周期管理) → 检查渲染面(SanitizePlugin启用状态) → 汇总审计发现",
+        "graphNodes": [
+          "config",
+          "projectZipMethods",
+          "inputMethods",
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "config-test",
+          "requestHelper-test",
+          "authUtils-test"
+        ],
         "sourceFiles": [
           {
             "type": "开发",
@@ -89,6 +103,21 @@
       {
         "name": "场景2 · 安全自查 — 新功能上线前自我检查",
         "description": "新功能涉及用户输入?(确认输入有校验或清洗) → 新功能涉及请求发送?(确认使用封装的请求方法) → 新功能涉及本地存储?(确认仅存非敏感数据) → 新功能涉及动态内容渲染?(确认经过 SanitizePlugin) → 安全自查通过可提交",
+        "graphNodes": [
+          "config",
+          "projectZipMethods",
+          "inputMethods",
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "config-test",
+          "requestHelper-test",
+          "authUtils-test",
+          "manage"
+        ],
         "sourceFiles": [
           {
             "type": "开发",
@@ -115,6 +144,13 @@
       {
         "name": "场景3 · 认证排查 — 追踪凭证链路",
         "description": "检查本地存储凭证是否存在 → 凭证存在? → 检查请求头凭证是否正确注入 → 认证头存在? → 检查响应是否收到 401 → 收到 401? → 检查 authErrorHandler 是否触发登录弹窗 / 问题在后端联系后端排查",
+        "graphNodes": [
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "requestHelper-test",
+          "authUtils-test"
+        ],
         "sourceFiles": [
           {
             "type": "开发",
@@ -154,6 +190,12 @@
       {
         "name": "场景4 · XSS 评估 — 检查内容清洗安全性",
         "description": "检查 SanitizePlugin 是否启用 → 插件已启用? → 检查插件在链中的排序是否为第一位 → 排序正确? → 检查输入面是否有未校验的输入点 → 检查是否有绕过清洗插件的渲染路径 → 汇总风险评估结果",
+        "graphNodes": [
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "inputMethods"
+        ],
         "sourceFiles": [
           {
             "type": "开发",
@@ -184,6 +226,296 @@
             "code": "/**\n * 输入处理方法模块\n * author: YiWeb\n * 说明：处理消息输入、输入法事件等\n */\n\nimport { safeExecute } from '/cdn/utils/core/error.js';\n\n/**\n * 创建输入处理方法\n * @param {Object} deps - 依赖注入对象\n * @returns {Object} 输入处理方法集合\n */\nexport const createInputMethods = () => {\n    /**\n     * 处理消息输入键盘事件\n     * @param {Event} event - 键盘事件\n     */\n    const handleMessageInput = async (event) => {\n        return safeExecute(() => {\n        }, '消息输入键盘事件处理');\n    };\n\n    /**\n     * 处理输入法开始事件"
           }
         ]
+      }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "config",
+        "label": "config.js",
+        "type": "utility",
+        "group": "L2-Config",
+        "file": "src/core/config.js",
+        "description": "输入面·地址栏",
+        "keyFunctions": [
+          "URLSearchParams",
+          "解析"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+        ],
+        "relatedNodes": [
+          "projectZipMethods",
+          "inputMethods",
+          "config-test"
+        ]
+      },
+      {
+        "id": "projectZipMethods",
+        "label": "projectZipMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/projectZipMethods.js",
+        "description": "输入面·文件上传",
+        "keyFunctions": [
+          "文件上传预检"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+        ],
+        "relatedNodes": [
+          "config",
+          "inputMethods"
+        ]
+      },
+      {
+        "id": "inputMethods",
+        "label": "inputMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/methods/inputMethods.js",
+        "description": "输入面·文本输入",
+        "keyFunctions": [
+          "输入处理"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+        ],
+        "relatedNodes": [
+          "config",
+          "projectZipMethods",
+          "SanitizePlugin"
+        ]
+      },
+      {
+        "id": "requestHelper",
+        "label": "requestHelper.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/requestHelper.js",
+        "description": "接口面·凭证隔离",
+        "keyFunctions": [
+          "credentials:",
+          "'omit'"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+        ],
+        "relatedNodes": [
+          "authUtils",
+          "authErrorHandler",
+          "requestHelper-test"
+        ]
+      },
+      {
+        "id": "authUtils",
+        "label": "authUtils.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authUtils.js",
+        "description": "接口面·认证注入",
+        "keyFunctions": [
+          "getAuthHeaders()",
+          "X-Token"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+        ],
+        "relatedNodes": [
+          "requestHelper",
+          "authErrorHandler",
+          "authUtils-test"
+        ]
+      },
+      {
+        "id": "authErrorHandler",
+        "label": "authErrorHandler.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authErrorHandler.js",
+        "description": "接口面·401拦截",
+        "keyFunctions": [
+          "handle401Error()"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+        ],
+        "relatedNodes": [
+          "requestHelper",
+          "authUtils"
+        ]
+      },
+      {
+        "id": "SanitizePlugin",
+        "label": "SanitizePlugin.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/markdown/plugins/SanitizePlugin.js",
+        "description": "渲染面·安全清洗",
+        "keyFunctions": [
+          "DOMPurify"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+        ],
+        "relatedNodes": [
+          "PluginSystem",
+          "MarkdownRenderer",
+          "inputMethods"
+        ]
+      },
+      {
+        "id": "PluginSystem",
+        "label": "PluginSystem.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/markdown/core/PluginSystem.js",
+        "description": "渲染面·首位检查",
+        "keyFunctions": [
+          "插件注册顺序"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+        ],
+        "relatedNodes": [
+          "SanitizePlugin",
+          "MarkdownRenderer"
+        ]
+      },
+      {
+        "id": "config-test",
+        "label": "config.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/core/config.test.js",
+        "description": "验证环境切换",
+        "keyFunctions": [
+          "配置测试"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+        ],
+        "relatedNodes": [
+          "config"
+        ]
+      },
+      {
+        "id": "requestHelper-test",
+        "label": "requestHelper.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/requestHelper.test.js",
+        "description": "验证 credentials",
+        "keyFunctions": [
+          "请求封装测试"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+        ],
+        "relatedNodes": [
+          "requestHelper"
+        ]
+      },
+      {
+        "id": "authUtils-test",
+        "label": "authUtils.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/authUtils.test.js",
+        "description": "验证 token 生命周期",
+        "keyFunctions": [
+          "认证测试"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+        ],
+        "relatedNodes": [
+          "authUtils"
+        ]
+      },
+      {
+        "id": "manage",
+        "label": "五类信任面防护清单",
+        "type": "documentation",
+        "group": "Other",
+        "file": "五类信任面防护清单",
+        "description": "每次变更前逐项检查",
+        "keyFunctions": [
+          "自查对照表"
+        ],
+        "mdFiles": [
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+        ],
+        "relatedNodes": [
+          "requestHelper",
+          "SanitizePlugin"
+        ]
+      },
+      {
+        "id": "MarkdownRenderer",
+        "label": "MarkdownRenderer.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/markdown/core/MarkdownRenderer.js",
+        "description": "渲染入口",
+        "keyFunctions": [
+          "renderMarkdownHtml()"
+        ],
+        "mdFiles": [
+          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
+          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
+          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+        ],
+        "relatedNodes": [
+          "SanitizePlugin",
+          "PluginSystem"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "requestHelper",
+        "target": "authUtils",
+        "relation": "imports",
+        "label": "authUtils?v=1"
+      },
+      {
+        "source": "requestHelper",
+        "target": "authErrorHandler",
+        "relation": "imports",
+        "label": "authErrorHandler"
+      },
+      {
+        "source": "authErrorHandler",
+        "target": "authUtils",
+        "relation": "imports",
+        "label": "authUtils"
+      },
+      {
+        "source": "MarkdownRenderer",
+        "target": "PluginSystem",
+        "relation": "imports",
+        "label": "PluginSystem"
       }
     ]
   }

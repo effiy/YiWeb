@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-05-29T12:51:41Z",
+  "version": "2.0.0",
+  "generatedAt": "2026-05-30T17:00:00Z",
   "projectRoot": "docs/故事任务面板/yiweb-arch-deps/",
   "story": {
     "name": "YiWeb-系统架构-依赖矩阵 · 故事任务",
@@ -57,6 +57,15 @@
             "keyContent": "视图工厂测试",
             "description": "验证高风险模块"
           }
+        ],
+        "graphNodes": [
+          "baseView",
+          "baseView-test",
+          "crud",
+          "crud-test",
+          "error",
+          "filterHelpers",
+          "requestHelper"
         ]
       },
       {
@@ -84,6 +93,11 @@
             "description": "应迁移",
             "code": "/**\n * AICR 模块常量配置\n * 集中管理魔法字符串、魔法数字和配置项\n */\n\n// 标签相关常量\nexport const TAGS = {\n    KNOWLEDGE: 'knowledge'\n};\n\n// 时间相关常量（毫秒）\nexport const TIMEOUTS = {\n    IMMEDIATE: 0,\n    SHORT_DELAY: 50,\n    DEFAULT_DELAY: 100,\n    MODERATE_DELAY: 200,\n    LONG_DELAY: 300,\n    UI_FEEDBACK_DELAY: 500,\n    ONE_SECOND: 1000,\n    HIGHLIGHT_DURATION: 2000\n};\n\n// 视图模式\nexport const VIEW_MODES = {\n    TREE: 'tree',"
           }
+        ],
+        "graphNodes": [
+          "filterHelpers",
+          "index",
+          "sessionSyncService"
         ]
       },
       {
@@ -102,6 +116,10 @@
             "keyContent": "四层拓扑模型",
             "description": "层级归属判定"
           }
+        ],
+        "graphNodes": [
+          "-------",
+          "--------yiweb-arch-layers-"
         ]
       },
       {
@@ -128,7 +146,359 @@
             "keyContent": "CRUD 测试",
             "description": "拆分后需更新"
           }
+        ],
+        "graphNodes": [
+          "aiSearchMethods",
+          "crud",
+          "crud-test"
         ]
+      }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "crud",
+        "label": "crud.js",
+        "type": "service",
+        "group": "L2-DataOps",
+        "file": "src/core/services/modules/crud.js",
+        "description": "🔴 最高风险",
+        "keyFunctions": [
+          "getData()",
+          "postData()",
+          "streamPrompt()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "error",
+          "requestHelper"
+        ]
+      },
+      {
+        "id": "baseView",
+        "label": "baseView.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/baseView.js",
+        "description": "🔴 全部视图依赖",
+        "keyFunctions": [
+          "createBaseView()",
+          "mountApp()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "error"
+        ]
+      },
+      {
+        "id": "requestHelper",
+        "label": "requestHelper.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/requestHelper.js",
+        "description": "请求封装核心",
+        "keyFunctions": [
+          "sendRequest()",
+          "retryRequest()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "aiSearchMethods",
+          "crud",
+          "error",
+          "sessionSyncService"
+        ]
+      },
+      {
+        "id": "filterHelpers",
+        "label": "filterHelpers.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/utils/filterHelpers.js",
+        "description": "🟡 跨视图依赖",
+        "keyFunctions": [
+          "getFirstLevelNames()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "error",
+        "label": "error.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/core/error.js",
+        "description": "🟡 多模块依赖",
+        "keyFunctions": [
+          "safeExecute()",
+          "createError()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "aiSearchMethods",
+          "baseView",
+          "crud",
+          "requestHelper",
+          "sessionSyncService"
+        ]
+      },
+      {
+        "id": "crud-test",
+        "label": "crud.test.js",
+        "type": "service",
+        "group": "Other",
+        "file": "tests/services/crud.test.js",
+        "description": "验证高风险模块",
+        "keyFunctions": [
+          "CRUD",
+          "测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "baseView-test",
+        "label": "baseView.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/baseView.test.js",
+        "description": "验证高风险模块",
+        "keyFunctions": [
+          "视图工厂测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "sessionSyncService",
+        "label": "sessionSyncService.js",
+        "type": "service",
+        "group": "L2-Sync",
+        "file": "src/core/services/aicr/sessionSyncService.js",
+        "description": "⚠️ 需修复",
+        "keyFunctions": [
+          "L2→L1",
+          "违规"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "error",
+          "index",
+          "requestHelper"
+        ]
+      },
+      {
+        "id": "index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/constants/index.js",
+        "description": "应迁移",
+        "keyFunctions": [
+          "被",
+          "sessionSyncService",
+          "引用"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "aiSearchMethods",
+          "sessionSyncService"
+        ]
+      },
+      {
+        "id": "-------",
+        "label": "依赖方向约束表",
+        "type": "utility",
+        "group": "Other",
+        "file": "依赖方向约束表",
+        "description": "新增依赖判定依据",
+        "keyFunctions": [
+          "6",
+          "条规则"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "--------yiweb-arch-layers-",
+        "label": "分层边界定义 (yiweb-arch-layers)",
+        "type": "utility",
+        "group": "Other",
+        "file": "分层边界定义 (yiweb-arch-layers)",
+        "description": "层级归属判定",
+        "keyFunctions": [
+          "四层拓扑模型"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "aiSearchMethods",
+        "label": "aiSearchMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/methods/aiSearchMethods.js",
+        "description": "拆分后需适配",
+        "keyFunctions": [
+          "SSE",
+          "流式消费者"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "error",
+          "index",
+          "requestHelper"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "crud",
+        "target": "requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "crud",
+        "target": "error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "baseView",
+        "target": "error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "requestHelper",
+        "target": "error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "sessionSyncService",
+        "target": "requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "sessionSyncService",
+        "target": "index",
+        "relation": "imports",
+        "label": "index"
+      },
+      {
+        "source": "sessionSyncService",
+        "target": "error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "aiSearchMethods",
+        "target": "error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "aiSearchMethods",
+        "target": "requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "aiSearchMethods",
+        "target": "index",
+        "relation": "imports",
+        "label": "index"
       }
     ]
   }

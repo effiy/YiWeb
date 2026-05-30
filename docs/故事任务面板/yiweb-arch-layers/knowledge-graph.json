@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-05-29T12:51:41Z",
+  "version": "2.0.0",
+  "generatedAt": "2026-05-30T17:00:00Z",
   "projectRoot": "docs/故事任务面板/yiweb-arch-layers/",
   "story": {
     "name": "YiWeb-系统架构-分层结构 · 故事任务",
@@ -49,6 +49,15 @@
             "keyContent": "配置测试",
             "description": "验证 env 切换 + URL params"
           }
+        ],
+        "graphNodes": [
+          "baseView",
+          "tests-cdn-baseView-test",
+          "componentLoader",
+          "tests-cdn-componentLoader-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "claude-index"
         ]
       },
       {
@@ -94,6 +103,15 @@
             "keyContent": "Claude 面板测试",
             "description": "验证会话管理流程"
           }
+        ],
+        "graphNodes": [
+          "tests-views-test",
+          "baseView",
+          "tests-views-claude-test",
+          "componentLoader",
+          "src-core-config",
+          "claude-index",
+          "tests-views-story-test"
         ]
       },
       {
@@ -139,6 +157,18 @@
             "keyContent": "认证工具测试",
             "description": "验证 Token 生命周期"
           }
+        ],
+        "graphNodes": [
+          "svc-authUtils",
+          "tests-authUtils-test",
+          "baseView",
+          "componentLoader",
+          "src-core-config",
+          "claude-index",
+          "svc-requestHelper",
+          "tests-requestHelper-test",
+          "storeFactory",
+          "tests-state-storeFactory-test"
         ]
       },
       {
@@ -171,7 +201,515 @@
             "keyContent": "视图工厂测试",
             "description": "验证迁移后功能正常"
           }
+        ],
+        "graphNodes": [
+          "baseView",
+          "tests-cdn-baseView-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "svc-requestHelper"
         ]
+      }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "baseView",
+        "label": "baseView.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/baseView.js",
+        "description": "L3 视图工厂 — 新人必读",
+        "keyFunctions": [
+          "createBaseView()",
+          "createVueApp()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          },
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          },
+          {
+            "file": "场景4-层级变更-模块跨层迁移.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移"
+          }
+        ],
+        "relatedNodes": [
+          "componentLoader",
+          "index"
+        ]
+      },
+      {
+        "id": "componentLoader",
+        "label": "componentLoader.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/componentLoader.js",
+        "description": "L3 组件加载器",
+        "keyFunctions": [
+          "registerGlobalComponent()",
+          "loadCSS()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          },
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": [
+          "baseView"
+        ]
+      },
+      {
+        "id": "src-core-config",
+        "label": "config.js",
+        "type": "utility",
+        "group": "L2-Config",
+        "file": "src/core/config.js",
+        "description": "L2 环境配置",
+        "keyFunctions": [
+          "setEnv()",
+          "config"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          },
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          },
+          {
+            "file": "场景4-层级变更-模块跨层迁移.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-cdn-baseView-test",
+        "label": "baseView.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/baseView.test.js",
+        "description": "验证 createBaseView 生命周期",
+        "keyFunctions": [
+          "视图工厂测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景4-层级变更-模块跨层迁移.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-cdn-componentLoader-test",
+        "label": "componentLoader.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/componentLoader.test.js",
+        "description": "验证三件套加载流程",
+        "keyFunctions": [
+          "组件加载测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-core-config-test",
+        "label": "config.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/core/config.test.js",
+        "description": "验证 env 切换 + URL params",
+        "keyFunctions": [
+          "配置测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景4-层级变更-模块跨层迁移.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/index.js",
+        "description": "L1 AICR 视图入口",
+        "keyFunctions": [
+          "initAICRApp()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          },
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "storeFactory"
+        ]
+      },
+      {
+        "id": "story-index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-Story",
+        "file": "src/views/story/index.js",
+        "description": "L1 故事面板入口",
+        "keyFunctions": [
+          "initStoryPanelApp()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          },
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "storeFactory"
+        ]
+      },
+      {
+        "id": "claude-index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-Claude",
+        "file": "src/views/claude/index.js",
+        "description": "L1 Claude 视图入口",
+        "keyFunctions": [
+          "initClaudeApp()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景1-新人上手-分层认知.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 新人上手 — 建立分层认知"
+          },
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          },
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "storeFactory"
+        ]
+      },
+      {
+        "id": "tests-views-test",
+        "label": "aicr.test.js",
+        "type": "view",
+        "group": "Other",
+        "file": "tests/views/aicr.test.js",
+        "description": "验证视图加载+组件注册",
+        "keyFunctions": [
+          "AI",
+          "审查面板测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-views-story-test",
+        "label": "story.test.js",
+        "type": "view",
+        "group": "Other",
+        "file": "tests/views/story.test.js",
+        "description": "验证三视图切换",
+        "keyFunctions": [
+          "故事面板测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-views-claude-test",
+        "label": "claude.test.js",
+        "type": "view",
+        "group": "Other",
+        "file": "tests/views/claude.test.js",
+        "description": "验证会话管理流程",
+        "keyFunctions": [
+          "Claude",
+          "面板测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景2-功能归属-判断放哪层.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "storeFactory",
+        "label": "storeFactory.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/state/storeFactory.js",
+        "description": "L2 Store 工厂",
+        "keyFunctions": [
+          "createStore()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": [
+          "index",
+          "svc-requestHelper"
+        ]
+      },
+      {
+        "id": "svc-requestHelper",
+        "label": "requestHelper.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/requestHelper.js",
+        "description": "L2 API 请求",
+        "keyFunctions": [
+          "class",
+          "RequestClient",
+          "requestInterceptor()",
+          "responseInterceptor()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          },
+          {
+            "file": "场景4-层级变更-模块跨层迁移.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authUtils",
+          "storeFactory"
+        ]
+      },
+      {
+        "id": "svc-authUtils",
+        "label": "authUtils.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authUtils.js",
+        "description": "L2 认证工具",
+        "keyFunctions": [
+          "getAuthHeaders()",
+          "authErrorHandler()"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": [
+          "svc-requestHelper"
+        ]
+      },
+      {
+        "id": "tests-state-storeFactory-test",
+        "label": "storeFactory.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/state/storeFactory.test.js",
+        "description": "验证 state+methods 组合",
+        "keyFunctions": [
+          "Store",
+          "组合测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-requestHelper-test",
+        "label": "requestHelper.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/requestHelper.test.js",
+        "description": "验证 X-Token 注入+401",
+        "keyFunctions": [
+          "请求拦截器测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-authUtils-test",
+        "label": "authUtils.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/authUtils.test.js",
+        "description": "验证 Token 生命周期",
+        "keyFunctions": [
+          "认证工具测试"
+        ],
+        "mdFiles": [
+          {
+            "file": "场景3-架构评审-检查层级依赖.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
+          }
+        ],
+        "relatedNodes": []
+      }
+    ],
+    "edges": [
+      {
+        "source": "baseView",
+        "target": "componentLoader",
+        "relation": "imports",
+        "label": "componentLoader"
+      },
+      {
+        "source": "claude-index",
+        "target": "baseView",
+        "relation": "imports",
+        "label": "baseView"
+      },
+      {
+        "source": "claude-index",
+        "target": "storeFactory",
+        "relation": "imports",
+        "label": "storeFactory"
+      },
+      {
+        "source": "storeFactory",
+        "target": "svc-requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "storeFactory",
+        "target": "claude-index",
+        "relation": "imports",
+        "label": "index"
+      },
+      {
+        "source": "svc-requestHelper",
+        "target": "svc-authUtils",
+        "relation": "imports",
+        "label": "authUtils?v=1"
       }
     ]
   }

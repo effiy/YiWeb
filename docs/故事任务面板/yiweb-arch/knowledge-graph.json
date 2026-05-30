@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-05-29T12:51:41Z",
+  "version": "2.0.0",
+  "generatedAt": "2026-05-30T17:00:00Z",
   "projectRoot": "docs/故事任务面板/yiweb-arch/",
   "story": {
     "name": "YiWeb-系统架构 · 故事任务",
@@ -90,6 +90,17 @@
             "keyContent": "CRUD 测试",
             "description": "验证数据操作完整性"
           }
+        ],
+        "graphNodes": [
+          "baseView",
+          "tests-cdn-baseView-test",
+          "componentLoader",
+          "tests-cdn-componentLoader-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "svc-crud",
+          "tests-services-crud-test",
+          "story-index"
         ]
       },
       {
@@ -185,6 +196,21 @@
             "keyContent": "认证工具测试",
             "description": "验证 token 生命周期"
           }
+        ],
+        "graphNodes": [
+          "svc-authErrorHandler",
+          "svc-authUtils",
+          "tests-authUtils-test",
+          "svc-checkStatus",
+          "svc-crud",
+          "core-error",
+          "inputMethods",
+          "core-log",
+          "svc-requestHelper",
+          "tests-requestHelper-test",
+          "storeState",
+          "useComputed",
+          "hooks-useMethods"
         ]
       },
       {
@@ -257,6 +283,16 @@
             "keyContent": "配置测试",
             "description": "验证 env 切换"
           }
+        ],
+        "graphNodes": [
+          "CLAUDE",
+          "baseView",
+          "tests-cdn-baseView-test",
+          "componentLoader",
+          "tests-cdn-componentLoader-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "story-index"
         ]
       },
       {
@@ -330,7 +366,986 @@
             "keyContent": "认证工具测试",
             "description": "验证高风险模块"
           }
+        ],
+        "graphNodes": [
+          "svc-authUtils",
+          "tests-authUtils-test",
+          "baseView",
+          "tests-cdn-baseView-test",
+          "svc-crud",
+          "tests-services-crud-test",
+          "core-error",
+          "utils-filterHelpers",
+          "svc-requestHelper",
+          "svc-sessionSyncService"
         ]
+      }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "baseView",
+        "label": "baseView.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/baseView.js",
+        "description": "L3 视图工厂 — 全部视图入口",
+        "keyFunctions": [
+          "createBaseView()",
+          "createVueApp()",
+          "mountApp()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "componentLoader",
+          "core-error",
+          "svc-index",
+          "core-log"
+        ]
+      },
+      {
+        "id": "componentLoader",
+        "label": "componentLoader.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/componentLoader.js",
+        "description": "L3 组件加载器",
+        "keyFunctions": [
+          "registerGlobalComponent()",
+          "loadCSS()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "core-error"
+        ]
+      },
+      {
+        "id": "src-core-config",
+        "label": "config.js",
+        "type": "utility",
+        "group": "L2-Config",
+        "file": "src/core/config.js",
+        "description": "L2 环境配置",
+        "keyFunctions": [
+          "setEnv()",
+          "config",
+          "ENDPOINTS"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "svc-index",
+        "label": "index.js",
+        "type": "service",
+        "group": "L2-Services",
+        "file": "src/core/services/index.js",
+        "description": "L2 服务入口",
+        "keyFunctions": [
+          "聚合",
+          "re-export"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "svc-checkStatus",
+          "core-error",
+          "utils-filterHelpers",
+          "core-log",
+          "svc-sessionSyncService",
+          "useComputed",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "svc-crud",
+        "label": "crud.js",
+        "type": "service",
+        "group": "L2-DataOps",
+        "file": "src/core/services/modules/crud.js",
+        "description": "L2 数据操作",
+        "keyFunctions": [
+          "getData()",
+          "postData()",
+          "streamPrompt()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authErrorHandler",
+          "svc-authUtils",
+          "core-error",
+          "core-log",
+          "svc-requestHelper"
+        ]
+      },
+      {
+        "id": "index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/index.js",
+        "description": "L1 aicr 视图入口",
+        "keyFunctions": [
+          "createStore()",
+          "createBaseView()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "svc-checkStatus",
+          "core-error",
+          "utils-filterHelpers",
+          "core-log",
+          "svc-sessionSyncService",
+          "useComputed",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "claude-index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-Claude",
+        "file": "src/views/claude/index.js",
+        "description": "L1 claude 视图入口",
+        "keyFunctions": [
+          "createStore()",
+          "createBaseView()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "svc-checkStatus",
+          "core-error",
+          "utils-filterHelpers",
+          "core-log",
+          "svc-sessionSyncService",
+          "useComputed",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "story-index",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-Story",
+        "file": "src/views/story/index.js",
+        "description": "L1 story 视图入口",
+        "keyFunctions": [
+          "createStore()",
+          "createBaseView()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "svc-checkStatus",
+          "core-error",
+          "utils-filterHelpers",
+          "core-log",
+          "svc-sessionSyncService",
+          "useComputed",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "tests-cdn-baseView-test",
+        "label": "baseView.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/baseView.test.js",
+        "description": "验证 createBaseView 生命周期",
+        "keyFunctions": [
+          "视图工厂测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-cdn-componentLoader-test",
+        "label": "componentLoader.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/componentLoader.test.js",
+        "description": "验证三件套加载流程",
+        "keyFunctions": [
+          "组件加载测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-core-config-test",
+        "label": "config.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/core/config.test.js",
+        "description": "验证 env 切换 + URL params",
+        "keyFunctions": [
+          "配置测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-services-crud-test",
+        "label": "crud.test.js",
+        "type": "service",
+        "group": "Other",
+        "file": "tests/services/crud.test.js",
+        "description": "验证数据操作完整性",
+        "keyFunctions": [
+          "CRUD",
+          "测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 模块定位 — 快速找到功能归属",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "inputMethods",
+        "label": "inputMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/methods/inputMethods.js",
+        "description": "① 用户事件入口",
+        "keyFunctions": [
+          "handleMessageInput()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "core-error"
+        ]
+      },
+      {
+        "id": "hooks-useMethods",
+        "label": "useMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/useMethods.js",
+        "description": "② 操作方法聚合",
+        "keyFunctions": [
+          "useMethods(store)"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authUtils",
+          "core-error",
+          "svc-index",
+          "svc-requestHelper",
+          "svc-sessionSyncService"
+        ]
+      },
+      {
+        "id": "storeState",
+        "label": "storeState.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/state/storeState.js",
+        "description": "③ 状态定义",
+        "keyFunctions": [
+          "createAicrStoreState()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-sessionSyncService"
+        ]
+      },
+      {
+        "id": "useComputed",
+        "label": "useComputed.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/computed/useComputed.js",
+        "description": "④ 计算属性",
+        "keyFunctions": [
+          "useComputed(store)"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-index"
+        ]
+      },
+      {
+        "id": "svc-requestHelper",
+        "label": "requestHelper.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/requestHelper.js",
+        "description": "⑥ 请求封装+缓存",
+        "keyFunctions": [
+          "sendRequest()",
+          "requestInterceptor()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authErrorHandler",
+          "svc-authUtils",
+          "svc-checkStatus",
+          "svc-crud",
+          "core-error",
+          "core-log",
+          "svc-sessionSyncService",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "svc-authUtils",
+        "label": "authUtils.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authUtils.js",
+        "description": "⑦ 认证管理",
+        "keyFunctions": [
+          "getAuthHeaders()",
+          "getStoredToken()",
+          "saveToken()",
+          "openAuth()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authErrorHandler",
+          "svc-crud",
+          "svc-requestHelper",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "svc-authErrorHandler",
+        "label": "authErrorHandler.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authErrorHandler.js",
+        "description": "⑧ 401 拦截",
+        "keyFunctions": [
+          "handle401Error()",
+          "reset401Handler()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authUtils",
+          "svc-checkStatus",
+          "svc-crud",
+          "svc-requestHelper"
+        ]
+      },
+      {
+        "id": "svc-checkStatus",
+        "label": "checkStatus.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/checkStatus.js",
+        "description": "⑨ 响应校验",
+        "keyFunctions": [
+          "checkStatus()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authErrorHandler",
+          "svc-index",
+          "core-log",
+          "svc-requestHelper"
+        ]
+      },
+      {
+        "id": "core-log",
+        "label": "log.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/core/log.js",
+        "description": "日志记录",
+        "keyFunctions": [
+          "logInfo()",
+          "logWarn()",
+          "logError()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "svc-checkStatus",
+          "svc-crud",
+          "svc-index",
+          "svc-requestHelper"
+        ]
+      },
+      {
+        "id": "core-error",
+        "label": "error.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/core/error.js",
+        "description": "错误包装",
+        "keyFunctions": [
+          "safeExecute()",
+          "createError()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "componentLoader",
+          "svc-crud",
+          "svc-index",
+          "inputMethods",
+          "svc-requestHelper",
+          "svc-sessionSyncService",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "tests-requestHelper-test",
+        "label": "requestHelper.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/requestHelper.test.js",
+        "description": "验证 fetch 封装+缓存",
+        "keyFunctions": [
+          "请求封装测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "tests-authUtils-test",
+        "label": "authUtils.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/authUtils.test.js",
+        "description": "验证 token 生命周期",
+        "keyFunctions": [
+          "认证工具测试"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码"
+          },
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "index-html",
+        "label": "index.html",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "index.html",
+        "description": "浏览器 ESM 入口",
+        "keyFunctions": [
+          "<script",
+          "type=\"module\">"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "svc-checkStatus",
+          "core-error",
+          "utils-filterHelpers",
+          "core-log",
+          "svc-sessionSyncService",
+          "useComputed",
+          "hooks-useMethods"
+        ]
+      },
+      {
+        "id": "CLAUDE",
+        "label": "CLAUDE.md",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "CLAUDE.md",
+        "description": "项目说明书 — 新人必读",
+        "keyFunctions": [
+          "项目画像+约束+执行准则+安全面"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "utils-filterHelpers",
+        "label": "filterHelpers.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/utils/filterHelpers.js",
+        "description": "🟡 跨视图依赖",
+        "keyFunctions": [
+          "getFirstLevelNames()",
+          "extractStoryNames()"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "svc-index"
+        ]
+      },
+      {
+        "id": "svc-sessionSyncService",
+        "label": "sessionSyncService.js",
+        "type": "service",
+        "group": "L2-Sync",
+        "file": "src/core/services/aicr/sessionSyncService.js",
+        "description": "⚠️ 含 L2→L1 违规",
+        "keyFunctions": [
+          "SessionSyncService"
+        ],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码"
+          }
+        ],
+        "relatedNodes": [
+          "core-error",
+          "svc-index",
+          "svc-requestHelper",
+          "storeState",
+          "hooks-useMethods"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "baseView",
+        "target": "componentLoader",
+        "relation": "imports",
+        "label": "componentLoader"
+      },
+      {
+        "source": "baseView",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "baseView",
+        "target": "core-log",
+        "relation": "imports",
+        "label": "log"
+      },
+      {
+        "source": "componentLoader",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "svc-index",
+        "target": "svc-checkStatus",
+        "relation": "imports",
+        "label": "checkStatus"
+      },
+      {
+        "source": "svc-index",
+        "target": "core-log",
+        "relation": "imports",
+        "label": "log"
+      },
+      {
+        "source": "svc-crud",
+        "target": "svc-requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "svc-crud",
+        "target": "core-log",
+        "relation": "imports",
+        "label": "log"
+      },
+      {
+        "source": "svc-crud",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "svc-crud",
+        "target": "svc-authUtils",
+        "relation": "imports",
+        "label": "authUtils?v=1"
+      },
+      {
+        "source": "svc-crud",
+        "target": "svc-authErrorHandler",
+        "relation": "imports",
+        "label": "authErrorHandler"
+      },
+      {
+        "source": "svc-index",
+        "target": "hooks-useMethods",
+        "relation": "imports",
+        "label": "useMethods"
+      },
+      {
+        "source": "svc-index",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "svc-index",
+        "target": "utils-filterHelpers",
+        "relation": "imports",
+        "label": "filterHelpers"
+      },
+      {
+        "source": "svc-index",
+        "target": "baseView",
+        "relation": "imports",
+        "label": "baseView"
+      },
+      {
+        "source": "svc-index",
+        "target": "useComputed",
+        "relation": "imports",
+        "label": "useComputed"
+      },
+      {
+        "source": "inputMethods",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "hooks-useMethods",
+        "target": "svc-requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "hooks-useMethods",
+        "target": "svc-index",
+        "relation": "imports",
+        "label": "index"
+      },
+      {
+        "source": "hooks-useMethods",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "hooks-useMethods",
+        "target": "svc-authUtils",
+        "relation": "imports",
+        "label": "authUtils?v=1"
+      },
+      {
+        "source": "hooks-useMethods",
+        "target": "svc-sessionSyncService",
+        "relation": "imports",
+        "label": "sessionSyncService"
+      },
+      {
+        "source": "storeState",
+        "target": "svc-sessionSyncService",
+        "relation": "imports",
+        "label": "sessionSyncService"
+      },
+      {
+        "source": "svc-requestHelper",
+        "target": "core-log",
+        "relation": "imports",
+        "label": "log"
+      },
+      {
+        "source": "svc-requestHelper",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
+      },
+      {
+        "source": "svc-requestHelper",
+        "target": "svc-checkStatus",
+        "relation": "imports",
+        "label": "checkStatus"
+      },
+      {
+        "source": "svc-requestHelper",
+        "target": "svc-authUtils",
+        "relation": "imports",
+        "label": "authUtils?v=1"
+      },
+      {
+        "source": "svc-requestHelper",
+        "target": "svc-authErrorHandler",
+        "relation": "imports",
+        "label": "authErrorHandler"
+      },
+      {
+        "source": "svc-authErrorHandler",
+        "target": "svc-authUtils",
+        "relation": "imports",
+        "label": "authUtils"
+      },
+      {
+        "source": "svc-checkStatus",
+        "target": "svc-authErrorHandler",
+        "relation": "imports",
+        "label": "authErrorHandler"
+      },
+      {
+        "source": "svc-checkStatus",
+        "target": "core-log",
+        "relation": "imports",
+        "label": "log"
+      },
+      {
+        "source": "svc-sessionSyncService",
+        "target": "svc-requestHelper",
+        "relation": "imports",
+        "label": "requestHelper"
+      },
+      {
+        "source": "svc-sessionSyncService",
+        "target": "svc-index",
+        "relation": "imports",
+        "label": "index"
+      },
+      {
+        "source": "svc-sessionSyncService",
+        "target": "core-error",
+        "relation": "imports",
+        "label": "error"
       }
     ]
   }

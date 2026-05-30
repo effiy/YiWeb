@@ -1,10 +1,10 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-05-29T12:51:41Z",
+  "version": "2.1.0",
+  "generatedAt": "2026-05-30T17:00:00Z",
   "projectRoot": "docs/故事任务面板/yiweb-arch-dataflow/",
   "story": {
     "name": "YiWeb-系统架构-数据流 · 故事任务",
-    "description": "",
+    "description": "命令流(用户操作→界面更新)和查询流(状态变更→重新渲染)的完整链路追踪",
     "scenarios": [
       {
         "name": "场景1 · 命令流排查 — 从用户操作到界面更新",
@@ -98,6 +98,21 @@
             "keyContent": "认证工具测试",
             "description": "验证 token 生命周期"
           }
+        ],
+        "graphNodes": [
+          "aicr-test",
+          "authErrorHandler",
+          "authUtils",
+          "authUtils-test",
+          "checkStatus",
+          "crud",
+          "inputMethods",
+          "requestHelper",
+          "requestHelper-test",
+          "storeFactory",
+          "storeState",
+          "useComputed",
+          "useMethods"
         ]
       },
       {
@@ -172,6 +187,18 @@
             "keyContent": "组件加载测试",
             "description": "验证加载流程"
           }
+        ],
+        "graphNodes": [
+          "baseView",
+          "baseView-test",
+          "componentLoader",
+          "componentLoader-test",
+          "index-html",
+          "index-js",
+          "storeFactory",
+          "storeState",
+          "useComputed",
+          "useMethods"
         ]
       },
       {
@@ -202,13 +229,373 @@
             "keyContent": "`sync(workspace=true)`",
             "description": "批量同步"
           }
+        ],
+        "graphNodes": [
+          "import-doc",
+          "rui",
+          "rui-story",
+          "sync"
         ]
       },
       {
         "name": "场景4 · 新增数据流 — 扩展系统链路",
         "description": "分析新链路的起点和终点 → 识别链路经过的中间节点 → 标注每个节点的处理逻辑 → 与现有三条流对比是否有可复用的节点 → 绘制新流 mermaid 图 → 标注每节点的入口文件 → 补充到数据流文档",
-        "sourceFiles": []
+        "sourceFiles": [],
+        "graphNodes": []
       }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "inputMethods",
+        "label": "inputMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/methods/inputMethods.js",
+        "description": "① 用户事件入口",
+        "keyFunctions": ["handleMessageInput()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "useMethods",
+        "label": "useMethods.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/useMethods.js",
+        "description": "② 操作方法聚合",
+        "keyFunctions": ["useMethods(store)"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["requestHelper", "index-js", "authUtils"]
+      },
+      {
+        "id": "storeState",
+        "label": "storeState.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/state/storeState.js",
+        "description": "③ 响应式状态定义",
+        "keyFunctions": ["createAicrStoreState()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["storeFactory"]
+      },
+      {
+        "id": "storeFactory",
+        "label": "storeFactory.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/state/storeFactory.js",
+        "description": "Store 组装工厂",
+        "keyFunctions": ["createAicrStore()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["storeState", "requestHelper", "index-js"]
+      },
+      {
+        "id": "useComputed",
+        "label": "useComputed.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/hooks/computed/useComputed.js",
+        "description": "④ 计算属性",
+        "keyFunctions": ["useComputed(store)"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["index-js"]
+      },
+      {
+        "id": "crud",
+        "label": "crud.js",
+        "type": "service",
+        "group": "L2-DataOps",
+        "file": "src/core/services/modules/crud.js",
+        "description": "⑤ 数据操作",
+        "keyFunctions": ["getData()", "postData()", "streamPrompt()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["requestHelper", "authUtils", "authErrorHandler"]
+      },
+      {
+        "id": "requestHelper",
+        "label": "requestHelper.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/requestHelper.js",
+        "description": "⑥ fetch 封装+缓存",
+        "keyFunctions": ["sendRequest()", "retryRequest()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["useMethods", "storeFactory", "crud", "checkStatus", "authUtils", "authErrorHandler"]
+      },
+      {
+        "id": "authUtils",
+        "label": "authUtils.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authUtils.js",
+        "description": "⑦ 认证头注入",
+        "keyFunctions": ["getAuthHeaders()", "getStoredToken()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["useMethods", "crud", "requestHelper", "authErrorHandler"]
+      },
+      {
+        "id": "authErrorHandler",
+        "label": "authErrorHandler.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/authErrorHandler.js",
+        "description": "⑧ 401 拦截",
+        "keyFunctions": ["handle401Error()", "reset401Handler()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["crud", "requestHelper", "checkStatus", "authUtils"]
+      },
+      {
+        "id": "checkStatus",
+        "label": "checkStatus.js",
+        "type": "service",
+        "group": "L2-Helpers",
+        "file": "src/core/services/helper/checkStatus.js",
+        "description": "HTTP 状态校验",
+        "keyFunctions": ["checkStatus()"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["requestHelper", "authErrorHandler"]
+      },
+      {
+        "id": "aicr-test",
+        "label": "aicr.test.js",
+        "type": "view",
+        "group": "Other",
+        "file": "tests/views/aicr.test.js",
+        "description": "验证 useMethods 聚合",
+        "keyFunctions": ["视图测试"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "requestHelper-test",
+        "label": "requestHelper.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/requestHelper.test.js",
+        "description": "验证 fetch 封装",
+        "keyFunctions": ["请求封装测试"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "authUtils-test",
+        "label": "authUtils.test.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "tests/helper/authUtils.test.js",
+        "description": "验证 token 生命周期",
+        "keyFunctions": ["认证工具测试"],
+        "mdFiles": [
+          { "file": "场景1-命令流排查.md", "section": "§7 关联源码", "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "index-html",
+        "label": "index.html",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/index.html",
+        "description": "① 浏览器 ESM 入口",
+        "keyFunctions": ["<script", "type=\"module\">"],
+        "mdFiles": [
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "index-js",
+        "label": "index.js",
+        "type": "view",
+        "group": "L1-AICR",
+        "file": "src/views/aicr/index.js",
+        "description": "② 视图装配入口",
+        "keyFunctions": ["createBaseView(config)"],
+        "mdFiles": [
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["useMethods", "baseView", "useComputed"]
+      },
+      {
+        "id": "baseView",
+        "label": "baseView.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/baseView.js",
+        "description": "③⑦⑧⑨ 视图工厂",
+        "keyFunctions": ["createBaseView()", "createVueApp()", "registerComponents()", "mountApp()"],
+        "mdFiles": [
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["index-js", "componentLoader"]
+      },
+      {
+        "id": "componentLoader",
+        "label": "componentLoader.js",
+        "type": "utility",
+        "group": "Other",
+        "file": "cdn/utils/view/componentLoader.js",
+        "description": "组件动态加载",
+        "keyFunctions": ["loadCSS()", "registerGlobalComponent()"],
+        "mdFiles": [
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": ["baseView"]
+      },
+      {
+        "id": "baseView-test",
+        "label": "baseView.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/baseView.test.js",
+        "description": "验证生命周期",
+        "keyFunctions": ["视图工厂测试"],
+        "mdFiles": [
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "componentLoader-test",
+        "label": "componentLoader.test.js",
+        "type": "framework",
+        "group": "Other",
+        "file": "tests/cdn/componentLoader.test.js",
+        "description": "验证加载流程",
+        "keyFunctions": ["组件加载测试"],
+        "mdFiles": [
+          { "file": "场景2-加载流排查.md", "section": "§7 关联源码", "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "rui",
+        "label": "rui.mjs",
+        "type": "utility",
+        "group": "Other",
+        "file": "skills/rui/rui.mjs",
+        "description": "全流程编排",
+        "keyFunctions": ["SDLC", "编排入口"],
+        "mdFiles": [
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "rui-story",
+        "label": "rui-story.mjs",
+        "type": "utility",
+        "group": "Other",
+        "file": "skills/rui-story/rui-story.mjs",
+        "description": "故事创建与管理",
+        "keyFunctions": ["CLI", "入口"],
+        "mdFiles": [
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "import-doc",
+        "label": "import-doc.mjs",
+        "type": "utility",
+        "group": "Other",
+        "file": "skills/rui/import-doc.mjs",
+        "description": "单文件远端导入",
+        "keyFunctions": ["importDoc(filePath)"],
+        "mdFiles": [
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      },
+      {
+        "id": "sync",
+        "label": "sync.mjs",
+        "type": "utility",
+        "group": "Other",
+        "file": "skills/rui-import/sync.mjs",
+        "description": "批量同步",
+        "keyFunctions": ["sync(workspace=true)"],
+        "mdFiles": [
+          { "file": "场景3-文档管线流.md", "section": "§7 关联源码", "scenario": "场景3 · 文档管线流 — 从需求到远端存储" },
+          { "file": "场景4-新增数据流.md", "section": "§7 关联源码", "scenario": "场景4 · 新增数据流 — 扩展系统链路" }
+        ],
+        "relatedNodes": []
+      }
+    ],
+    "edges": [
+      { "source": "useMethods", "target": "requestHelper", "relation": "imports", "label": "requestHelper" },
+      { "source": "useMethods", "target": "index-js", "relation": "imports", "label": "index" },
+      { "source": "useMethods", "target": "authUtils", "relation": "imports", "label": "authUtils?v=1" },
+      { "source": "storeFactory", "target": "storeState", "relation": "imports", "label": "storeState" },
+      { "source": "storeFactory", "target": "requestHelper", "relation": "imports", "label": "requestHelper" },
+      { "source": "storeFactory", "target": "index-js", "relation": "imports", "label": "index" },
+      { "source": "crud", "target": "requestHelper", "relation": "imports", "label": "requestHelper" },
+      { "source": "crud", "target": "authUtils", "relation": "imports", "label": "authUtils?v=1" },
+      { "source": "crud", "target": "authErrorHandler", "relation": "imports", "label": "authErrorHandler" },
+      { "source": "requestHelper", "target": "checkStatus", "relation": "imports", "label": "checkStatus" },
+      { "source": "requestHelper", "target": "authUtils", "relation": "imports", "label": "authUtils?v=1" },
+      { "source": "requestHelper", "target": "authErrorHandler", "relation": "imports", "label": "authErrorHandler" },
+      { "source": "authErrorHandler", "target": "authUtils", "relation": "imports", "label": "authUtils" },
+      { "source": "checkStatus", "target": "authErrorHandler", "relation": "imports", "label": "authErrorHandler" },
+      { "source": "index-js", "target": "useMethods", "relation": "imports", "label": "useMethods" },
+      { "source": "index-js", "target": "baseView", "relation": "imports", "label": "baseView" },
+      { "source": "index-js", "target": "useComputed", "relation": "imports", "label": "useComputed" },
+      { "source": "baseView", "target": "componentLoader", "relation": "imports", "label": "componentLoader" }
     ]
   }
 }
