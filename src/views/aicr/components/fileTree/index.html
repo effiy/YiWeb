@@ -128,60 +128,173 @@
 
         <!-- 知识图谱视图 -->
         <div v-else-if="viewMode === 'graph'" class="file-graph-view-wrapper">
-            <div class="file-graph-canvas" ref="ftGraphContainer"></div>
-            <!-- 节点详情面板 -->
-            <div v-if="ftSelectedNode" class="file-graph-detail">
-                <div class="file-graph-detail-header">
-                    <div class="file-graph-detail-header-left">
-                        <span class="file-graph-detail-dot" :style="{background: ftSelectedNode._color || '#94A3B8'}"></span>
-                        <span class="file-graph-detail-label">{{ ftSelectedNode._label }}</span>
+            <!-- 头部：标题 + 统计 + 操作 -->
+            <div class="file-graph-header">
+                <span class="file-graph-title">{{ ftGraphTitle }}</span>
+                <span class="file-graph-stats">{{ ftGraphStatsText }}</span>
+                <div class="file-graph-actions">
+                    <button type="button" class="file-graph-btn" @click="ftFitGraph" title="适应视图">⊞</button>
+                    <button type="button" class="file-graph-btn" @click="ftResetGraph" title="重置布局">↻</button>
+                </div>
+            </div>
+
+            <!-- 主体：画布 + 侧面板 -->
+            <div class="file-graph-body">
+                <div class="file-graph-canvas" ref="ftGraphContainer"></div>
+
+                <!-- 图谱总览（未选中节点时） -->
+                <div v-if="!ftSelectedNode && ftGraphOverview" class="file-graph-detail">
+                    <div class="file-graph-detail-header">
+                        <span class="file-graph-detail-label">{{ ftGraphOverview.title || '文件图谱' }}</span>
                     </div>
-                    <button class="file-graph-detail-close" @click="ftSelectedNode = null" title="关闭">✕</button>
-                </div>
 
-                <!-- 元数据 -->
-                <div class="file-graph-detail-meta">
-                    <span class="file-graph-detail-badge kind">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
-                    <span v-if="ftSelectedNode._kind === 'file' && ftSelectedNode._ext" class="file-graph-detail-badge type">{{ ftSelectedNode._ext }}</span>
-                    <span v-if="ftSelectedNode._childCount != null" class="file-graph-detail-badge children">{{ ftSelectedNode._childCount }} 子项</span>
-                    <span v-if="ftSelectedNode._connections" class="file-graph-detail-badge conn">{{ ftSelectedNode._connections }} 关联</span>
-                </div>
+                    <!-- 统计卡片 -->
+                    <div class="file-graph-detail-section">
+                        <div class="file-graph-detail-section-title">图谱统计</div>
+                        <div class="file-graph-overview-stats">
+                            <div class="file-graph-overview-stat">
+                                <span class="file-graph-overview-stat-num">{{ ftGraphOverview.totalNodes }}</span>
+                                <span class="file-graph-overview-stat-label">节点</span>
+                            </div>
+                            <div class="file-graph-overview-stat">
+                                <span class="file-graph-overview-stat-num">{{ ftGraphOverview.totalEdges }}</span>
+                                <span class="file-graph-overview-stat-label">边</span>
+                            </div>
+                            <div class="file-graph-overview-stat">
+                                <span class="file-graph-overview-stat-num">{{ ftGraphOverview.folderCount }}</span>
+                                <span class="file-graph-overview-stat-label">目录</span>
+                            </div>
+                            <div class="file-graph-overview-stat">
+                                <span class="file-graph-overview-stat-num">{{ ftGraphOverview.fileCount }}</span>
+                                <span class="file-graph-overview-stat-label">文件</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- 文件路径 -->
-                <div v-if="ftSelectedNode._key" class="file-graph-detail-section">
-                    <div class="file-graph-detail-section-title">路径</div>
-                    <code class="file-graph-detail-path">{{ ftSelectedNode._key }}</code>
-                </div>
+                    <!-- 文件类型分布 -->
+                    <div class="file-graph-detail-section" v-if="ftGraphOverview.topExtensions && ftGraphOverview.topExtensions.length">
+                        <div class="file-graph-detail-section-title">文件类型分布</div>
+                        <div class="file-graph-overview-bars">
+                            <div v-for="ext in ftGraphOverview.topExtensions" :key="ext.name" class="file-graph-overview-bar">
+                                <span class="file-graph-overview-bar-label">{{ ext.name || '(无扩展名)' }}</span>
+                                <span class="file-graph-overview-bar-count">{{ ext.count }}</span>
+                                <div class="file-graph-overview-bar-track">
+                                    <div class="file-graph-overview-bar-fill" :style="{width: (ext.count / ftGraphOverview.fileCount * 100) + '%'}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- 操作 -->
-                <div v-if="ftSelectedNode._kind === 'file'" class="file-graph-detail-actions">
-                    <button class="file-graph-detail-action" @click="handleTagClick(ftSelectedNode._key)" title="打开文件">
-                        <yi-icon name="file-code"></yi-icon> 打开文件
-                    </button>
-                </div>
+                    <!-- 顶层目录 -->
+                    <div class="file-graph-detail-section" v-if="ftGraphOverview.topFolders && ftGraphOverview.topFolders.length">
+                        <div class="file-graph-detail-section-title">顶层目录</div>
+                        <div class="file-graph-overview-folders">
+                            <div v-for="f in ftGraphOverview.topFolders" :key="f.name" class="file-graph-overview-folder">
+                                <span class="file-graph-overview-folder-icon">📁</span>
+                                <span class="file-graph-overview-folder-name">{{ f.name }}</span>
+                                <span class="file-graph-overview-folder-count">{{ f.childCount }} 项</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- 邻居节点 -->
-                <div v-if="ftSelectedNode._neighbors && ftSelectedNode._neighbors.length" class="file-graph-detail-section">
-                    <div class="file-graph-detail-section-title">关联节点 ({{ ftSelectedNode._neighbors.length }}) <span class="file-graph-detail-hint">点击定位</span></div>
-                    <div class="file-graph-detail-neighbors">
-                        <span v-for="nb in ftSelectedNode._neighbors" :key="nb.id"
-                            class="file-graph-detail-neighbor-tag"
-                            :style="{borderColor: nb.color}"
-                            @click="ftFocusGraphNode(nb.id)"
-                            :title="'定位: ' + nb.label">
-                            <span class="file-graph-detail-neighbor-dot" :style="{background: nb.color}"></span>
-                            {{ nb.label }}
-                        </span>
+                    <!-- 操作提示 -->
+                    <div class="file-graph-detail-section tips">
+                        <div class="file-graph-detail-section-title">操作</div>
+                        <div class="file-graph-detail-tips">
+                            <span>🖱️ 滚轮缩放 · 拖拽平移</span>
+                            <span>👆 单击节点查看详情</span>
+                            <span>👆👆 双击节点聚焦邻域</span>
+                            <span>⌨️ ⊞ 适应视图 · ↻ 重置布局</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 操作提示 -->
-                <div class="file-graph-detail-section tips">
-                    <div class="file-graph-detail-section-title">操作</div>
-                    <div class="file-graph-detail-tips">
-                        <span>🖱️ 滚轮缩放</span>
-                        <span>👆 单击查看详情</span>
-                        <span>🖐️ 拖拽平移</span>
+                <!-- 节点详情（选中节点时） -->
+                <div v-if="ftSelectedNode" class="file-graph-detail">
+                    <div class="file-graph-detail-header">
+                        <div class="file-graph-detail-header-left">
+                            <span class="file-graph-detail-dot" :style="{background: ftSelectedNode._color || '#94A3B8'}"></span>
+                            <span class="file-graph-detail-label">{{ ftSelectedNode._label }}</span>
+                        </div>
+                        <button class="file-graph-detail-close" @click="ftSelectedNode = null" title="关闭（Esc）">✕</button>
+                    </div>
+
+                    <!-- 元数据徽章 -->
+                    <div class="file-graph-detail-meta">
+                        <span v-if="ftSelectedNode._isDrilled" class="file-graph-badge drill" title="双击空白退出聚焦">🔍 已聚焦</span>
+                        <span class="file-graph-badge kind">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
+                        <span v-if="ftSelectedNode._kind === 'file' && ftSelectedNode._ext" class="file-graph-badge type">{{ ftSelectedNode._ext }}</span>
+                        <span v-if="ftSelectedNode._connections != null" class="file-graph-badge degree">{{ ftSelectedNode._connections }} 关联</span>
+                        <span v-if="ftSelectedNode._childCount != null" class="file-graph-badge children">{{ ftSelectedNode._childCount }} 子项</span>
+                        <span v-if="ftSelectedNode._depth != null" class="file-graph-badge depth">L{{ ftSelectedNode._depth }}</span>
+                    </div>
+
+                    <!-- 架构角色 -->
+                    <div class="file-graph-detail-section" v-if="ftSelectedNode._roleSummary">
+                        <div class="file-graph-detail-section-title">架构角色</div>
+                        <p class="file-graph-detail-role">{{ ftSelectedNode._roleSummary }}</p>
+                    </div>
+
+                    <!-- 依赖关系摘要 -->
+                    <div class="file-graph-detail-section" v-if="ftSelectedNode._depText">
+                        <div class="file-graph-detail-section-title">依赖关系</div>
+                        <div class="file-graph-detail-depstats">
+                            <span v-if="ftSelectedNode._outgoing > 0" class="file-graph-depstat outgoing">↑ 包含 {{ ftSelectedNode._outgoing }} 个子项</span>
+                            <span v-if="ftSelectedNode._incoming > 0" class="file-graph-depstat incoming">↓ 属于 {{ ftSelectedNode._incoming }} 个父级</span>
+                            <span v-if="!ftSelectedNode._outgoing && !ftSelectedNode._incoming" class="file-graph-depstat none">无直接关联</span>
+                        </div>
+                    </div>
+
+                    <!-- 文件路径 -->
+                    <div v-if="ftSelectedNode._key" class="file-graph-detail-section">
+                        <div class="file-graph-detail-section-title">路径</div>
+                        <code class="file-graph-detail-path">{{ ftSelectedNode._key }}</code>
+                    </div>
+
+                    <!-- 关联边（点击高亮） -->
+                    <div v-if="ftSelectedNode._edges && ftSelectedNode._edges.length" class="file-graph-detail-section">
+                        <div class="file-graph-detail-section-title">关联关系 ({{ ftSelectedNode._edges.length }}) <span class="file-graph-detail-hint">点击高亮</span></div>
+                        <div class="file-graph-detail-edges">
+                            <span v-for="edge in ftSelectedNode._edges" :key="edge.edgeId"
+                                class="file-graph-detail-edge-tag"
+                                @click="ftHighlightEdge(edge.edgeId)"
+                                :title="'高亮: ' + edge.targetLabel">
+                                <span class="file-graph-detail-edge-dir">{{ edge.direction }}</span>
+                                {{ edge.targetLabel }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 邻居节点（点击定位） -->
+                    <div v-if="ftSelectedNode._neighbors && ftSelectedNode._neighbors.length" class="file-graph-detail-section">
+                        <div class="file-graph-detail-section-title">相邻节点 ({{ ftSelectedNode._neighbors.length }}) <span class="file-graph-detail-hint">点击定位</span></div>
+                        <div class="file-graph-detail-neighbors">
+                            <span v-for="nb in ftSelectedNode._neighbors" :key="nb.id"
+                                class="file-graph-detail-neighbor-tag"
+                                :style="{borderColor: nb.color}"
+                                @click="ftFocusGraphNode(nb.id)"
+                                :title="'定位: ' + nb.label">
+                                <span class="file-graph-detail-neighbor-dot" :style="{background: nb.color}"></span>
+                                {{ nb.label }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 操作 -->
+                    <div v-if="ftSelectedNode._kind === 'file'" class="file-graph-detail-actions">
+                        <button class="file-graph-detail-action" @click="handleTagClick(ftSelectedNode._key)" title="在代码视图中打开文件">
+                            <yi-icon name="file-code"></yi-icon> 打开文件
+                        </button>
+                    </div>
+
+                    <!-- 操作提示 -->
+                    <div class="file-graph-detail-section tips">
+                        <div class="file-graph-detail-section-title">操作</div>
+                        <div class="file-graph-detail-tips">
+                            <span>🖱️ 滚轮缩放</span>
+                            <span>👆 单击查看详情</span>
+                            <span>🖐️ 拖拽平移</span>
+                        </div>
                     </div>
                 </div>
             </div>

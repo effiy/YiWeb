@@ -392,7 +392,10 @@ const fileTreeMethods = {
             return;
         }
 
+        // 清理旧实例
         if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
+        if (this._ftResizeObserver) { this._ftResizeObserver.disconnect(); this._ftResizeObserver = null; }
+        this._ftDrillNodeId = null;
 
         const { nodes, edges } = this._buildFileTreeGraphData();
         if (!nodes.length) {
@@ -400,35 +403,35 @@ const fileTreeMethods = {
             return;
         }
 
-        const colors = {
-            folder: '#F59E0B', file: '#64748B', md: '#3B82F6', json: '#10B981',
-            js: '#F59E0B', css: '#06B6D4', html: '#EF4444', other: '#8B5CF6',
-        };
-        function nodeColor(n) {
-            if (n.kind === 'folder') return colors.folder;
-            if (n.kind === 'file') {
-                const ext = (n.label || '').split('.').pop();
-                return colors[ext] || colors.other;
-            }
-            return colors.other;
-        }
+        // 计算度分布用于自适应 sizing
+        const degree = {};
+        for (const e of edges) { degree[e.source] = (degree[e.source] || 0) + 1; degree[e.target] = (degree[e.target] || 0) + 1; }
+        const maxDeg = Math.max(1, ...Object.values(degree));
 
         const elements = [];
         for (const n of nodes) {
-            const deg = (n._deg || 0);
+            const d = degree[n.id] || 0;
+            const size = 16 + (d / maxDeg) * 20;
             elements.push({
                 group: 'nodes',
                 data: {
                     id: n.id, label: n.label,
-                    color: nodeColor(n), kind: n.kind,
-                    key: n.key || '', file: n.file || '', weight: 18 + Math.min(deg * 4, 18),
+                    color: n.color, kind: n.kind,
+                    key: n.key || '', file: n.file || '',
+                    ext: n.ext || '', depth: n.depth || 0,
+                    childCount: n.childCount || 0,
+                    degree: d, size: size,
                 },
             });
         }
         for (const e of edges) {
             elements.push({
                 group: 'edges',
-                data: { id: `${e.source}_${e.target}`, source: e.source, target: e.target },
+                data: {
+                    id: `${e.source}_${e.target}`,
+                    source: e.source, target: e.target,
+                    label: e.label || '', relation: e.relation || '',
+                },
             });
         }
 
@@ -437,102 +440,182 @@ const fileTreeMethods = {
             style: [
                 { selector: 'node', style: {
                     'background-color': 'data(color)', 'label': 'data(label)',
-                    'color': '#E2E8F0', 'font-size': '9px', 'text-valign': 'bottom',
-                    'text-halign': 'center', 'text-margin-y': 5, 'text-max-width': '100px',
-                    'width': 'data(weight)', 'height': 'data(weight)',
-                    'border-width': 1.5, 'border-color': 'data(color)', 'border-opacity': 0.3,
+                    'color': '#E2E8F0', 'font-size': '10px', 'font-weight': '500',
+                    'text-valign': 'bottom', 'text-halign': 'center',
+                    'text-margin-y': 6, 'text-max-width': '120px',
+                    'text-wrap': 'ellipsis',
+                    'width': 'data(size)', 'height': 'data(size)',
+                    'border-width': 2, 'border-color': 'data(color)', 'border-opacity': 0.35,
                     'shape': 'ellipse',
+                    'transition-property': 'border-color, border-width, opacity',
+                    'transition-duration': 150,
                 }},
-                { selector: 'node:selected', style: { 'border-width': 2, 'border-color': '#FFF', 'border-opacity': 0.8 }},
+                { selector: 'node:selected', style: {
+                    'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.95,
+                    'shadow-blur': 12, 'shadow-color': 'data(color)', 'shadow-opacity': 0.4,
+                }},
+                { selector: 'node.highlighted', style: {
+                    'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9,
+                }},
                 { selector: 'node.dimmed', style: { 'opacity': 0.12 }},
-                { selector: 'node.highlighted', style: { 'border-width': 2.5, 'border-color': '#FFF', 'border-opacity': 0.8 }},
-                { selector: 'edge', style: { 'width': 0.8, 'line-color': '#334155', 'opacity': 0.4, 'curve-style': 'bezier' }},
-                { selector: 'edge.highlighted', style: { 'width': 2, 'line-color': '#94A3B8', 'opacity': 0.7 }},
-                { selector: 'edge.dimmed', style: { 'opacity': 0.03 }},
+                { selector: 'edge', style: {
+                    'width': 1.2, 'line-color': '#334155', 'target-arrow-color': '#475569',
+                    'target-arrow-shape': 'triangle', 'arrow-scale': 0.7,
+                    'curve-style': 'bezier', 'label': 'data(label)',
+                    'color': '#64748B', 'font-size': '8px',
+                    'text-rotation': 'autorotate', 'opacity': 0.45,
+                }},
+                { selector: 'edge.highlighted', style: {
+                    'width': 2.5, 'line-color': '#E2E8F0', 'target-arrow-color': '#E2E8F0',
+                    'opacity': 0.85,
+                }},
+                { selector: 'edge.dimmed', style: { 'opacity': 0.04 }},
             ],
             layout: { name: 'preset' },
-            minZoom: 0.05, maxZoom: 3, wheelSensitivity: 0.3,
+            minZoom: 0.06, maxZoom: 3.5, wheelSensitivity: 0.25,
         });
 
         this._ftCy = cy;
 
-        // Hover
+        // ── 交互：Hover ──
         cy.on('mouseover', 'node', (evt) => {
-            const n = evt.target;
-            cy.nodes().not(n).addClass('dimmed');
-            cy.edges().addClass('dimmed');
-            n.connectedEdges().removeClass('dimmed').addClass('highlighted');
-            n.connectedEdges().connectedNodes().removeClass('dimmed');
-            n.addClass('highlighted');
-        });
-        cy.on('mouseout', 'node', () => cy.elements().removeClass('highlighted dimmed'));
-
-        // Click → 展示节点详情
-        cy.on('tap', 'node', (evt) => {
             const node = evt.target;
-            const nd = node.data();
-            const connected = node.connectedEdges();
-            const neighborIds = new Set();
-            const neighbors = [];
-            connected.forEach(e => {
-                const src = e.source().data();
-                const tgt = e.target().data();
-                const other = src.id === nd.id ? tgt : src;
-                if (!neighborIds.has(other.id)) {
-                    neighborIds.add(other.id);
-                    neighbors.push({ id: other.id, label: other.label, color: other.color, kind: other.kind });
-                }
-            });
-            // 子节点数（仅目录）
-            const childEdges = connected.filter(e => {
-                const src = e.source().data();
-                return src.id === nd.id;
-            });
-            this.ftSelectedNode = {
-                _label: nd.label,
-                _color: nd.color,
-                _kind: nd.kind,
-                _key: nd.key || nd.file || '',
-                _ext: (nd.label || '').split('.').pop(),
-                _connections: connected.length,
-                _childCount: nd.kind === 'folder' ? childEdges.length : null,
-                _neighbors: neighbors.slice(0, 20),
-            };
+            cy.nodes().not(node).addClass('dimmed');
+            cy.edges().addClass('dimmed');
+            node.connectedEdges().removeClass('dimmed').addClass('highlighted');
+            node.connectedEdges().connectedNodes().removeClass('dimmed');
+            node.addClass('highlighted');
+            container.style.cursor = 'pointer';
+        });
+        cy.on('mouseout', 'node', () => {
+            cy.elements().removeClass('highlighted dimmed');
+            container.style.cursor = '';
         });
 
-        // Tap background → 关闭详情
+        // ── 交互：单击 → 选中并展示详情 ──
+        cy.on('tap', 'node', (evt) => {
+            this._selectFtNodeDetail(evt.target, cy);
+        });
+
+        // ── 交互：单击空白 → 取消选中（若处于下钻则退出） ──
         cy.on('tap', (evt) => {
             if (evt.target === cy) {
+                if (this._ftDrillNodeId) {
+                    this._ftDrillNodeId = null;
+                    cy.elements().removeClass('highlighted dimmed');
+                    cy.fit(undefined, 40);
+                }
                 this.ftSelectedNode = null;
             }
         });
 
-        // Layout
+        // ── 交互：双击节点 → 下钻聚焦邻域 ──
+        cy.on('dbltap', 'node', (evt) => {
+            const node = evt.target;
+            const nd = node.data();
+            this._ftDrillNodeId = nd.id;
+
+            // 脉冲动画
+            node.style({
+                'border-width': 6, 'border-color': '#FFFFFF', 'border-opacity': 1,
+                'transition-duration': 100,
+            });
+            setTimeout(() => {
+                if (!node.removed()) {
+                    node.style({
+                        'border-width': 3, 'border-color': '#FBBF24', 'border-opacity': 0.9,
+                    });
+                }
+            }, 300);
+
+            // 下钻视图
+            cy.elements().removeClass('highlighted dimmed');
+            const neighbors = node.closedNeighborhood();
+            cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+            cy.edges().not(neighbors.edges()).addClass('dimmed');
+            node.addClass('highlighted');
+            neighbors.nodes().removeClass('dimmed');
+            neighbors.edges().removeClass('dimmed').addClass('highlighted');
+            cy.fit(neighbors.nodes(), 50);
+            this._selectFtNodeDetail(node, cy);
+        });
+
+        // ── 交互：双击空白 → 退出下钻 ──
+        cy.on('dbltap', (evt) => {
+            if (evt.target !== cy) return;
+            this._ftDrillNodeId = null;
+            cy.elements().removeClass('highlighted dimmed');
+            cy.fit(undefined, 40);
+            this.ftSelectedNode = null;
+        });
+
+        // ── 布局（多策略 fallback） ──
         const layouts = [
-            { name: 'cose', animate: false, fit: true, padding: 20, nodeRepulsion: 4000, idealEdgeLength: 60 },
-            { name: 'breadthfirst', directed: false, spacingFactor: 1.2, animate: false, fit: true, padding: 20 },
-            { name: 'grid', animate: false, fit: true, padding: 20 },
+            { name: 'dagre', rankDir: 'TB', spacingFactor: 1.35, nodeDimensionsIncludeLabels: true, animate: true, animationDuration: 400, fit: true, padding: 40 },
+            { name: 'breadthfirst', directed: true, spacingFactor: 1.25, animate: true, fit: true, padding: 40 },
+            { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 40, nodeRepulsion: 5000, idealEdgeLength: 90 },
+            { name: 'grid', animate: false, fit: true, padding: 40 },
         ];
         for (const opts of layouts) {
             try { cy.layout(opts).run(); break; } catch (_) {}
         }
+
+        // ── 标题 / 统计 ──
+        const topLevelName = (Array.isArray(this.tree) && this.tree.length === 1 && this.tree[0].type === 'folder')
+            ? this.tree[0].name
+            : '';
+        this.ftGraphTitle = topLevelName ? `📁 ${topLevelName}` : '文件图谱';
+        this.ftGraphStatsText = `${nodes.length} 节点 · ${edges.length} 边`;
+
+        // ── 构建总览数据 ──
+        this.ftGraphOverview = this._buildFtGraphOverview(nodes, edges);
+
+        // ── 自适应视图：ResizeObserver ──
+        this._ftResizeObserver = new ResizeObserver(() => {
+            if (this._ftCy) {
+                this._ftCy.resize();
+                this._ftCy.fit(undefined, 30);
+            }
+        });
+        this._ftResizeObserver.observe(container);
+
+        // ── 键盘：Esc 取消选中 / 退出下钻 ──
+        this._onFtGraphKeydown = (e) => {
+            if (!e || e.key !== 'Escape') return;
+            if (!this._ftCy) return;
+            if (this._ftDrillNodeId) {
+                e.preventDefault();
+                this._ftDrillNodeId = null;
+                this._ftCy.elements().removeClass('highlighted dimmed');
+                this._ftCy.fit(undefined, 40);
+                this.ftSelectedNode = null;
+            } else if (this.ftSelectedNode) {
+                e.preventDefault();
+                this.ftSelectedNode = null;
+            }
+        };
+        document.addEventListener('keydown', this._onFtGraphKeydown, true);
     },
 
-    ftFocusGraphNode(nodeId) {
-        if (!this._ftCy || !nodeId) return;
-        const target = this._ftCy.getElementById(nodeId);
-        if (!target.length) return;
-        this._ftCy.animate({ center: { eles: target }, zoom: 1.3 }, { duration: 300 });
-        target.emit('tap');
-    },
-
+    /* ── 构建图谱数据 ── */
     _buildFileTreeGraphData() {
-        // 仅项目标签参与图谱过滤（skill/template/rule/agent 标签粒度太细，无法映射到目录节点）
         const activeProjectTags = new Set();
         if (Array.isArray(this.selectedTags)) {
             this.selectedTags.forEach(t => activeProjectTags.add(t));
         }
         const hasTagFilter = activeProjectTags.size > 0;
+
+        // 节点配色：按文件类型分层
+        const EXT_COLORS = {
+            md: '#3B82F6', json: '#10B981', js: '#F59E0B', ts: '#6366F1',
+            css: '#06B6D4', html: '#EF4444', vue: '#8B5CF6',
+            py: '#3B82F6', go: '#06B6D4', java: '#F97316',
+            yaml: '#EC4899', yml: '#EC4899', toml: '#A855F7',
+            xml: '#F59E0B', sh: '#10B981', svg: '#F97316',
+            png: '#06B6D4', jpg: '#06B6D4', jpeg: '#06B6D4', gif: '#06B6D4', webp: '#06B6D4',
+        };
+        const FOLDER_COLOR = '#F59E0B';
+        const DEFAULT_COLOR = '#64748B';
 
         const nodes = [];
         const edges = [];
@@ -543,25 +626,29 @@ const fileTreeMethods = {
             if (!Array.isArray(items)) return;
             for (const item of items) {
                 const name = item.name || item.fileName || item.key || '';
-                // 项目标签过滤：仅顶层目录受筛选影响，选中项目标签时只展示对应项目
+                // 顶层目录受标签筛选影响
                 if (depth === 0 && hasTagFilter) {
                     if (!activeProjectTags.has(name)) continue;
                 }
                 const id = `n${++idCounter}`;
                 const isFolder = item.type === 'folder' || (item.children && item.children.length > 0);
-                const ext = name.split('.').pop() || '';
+                const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+                const color = isFolder ? FOLDER_COLOR : (EXT_COLORS[ext] || DEFAULT_COLOR);
 
                 const node = {
-                    id, label: name.length > 28 ? name.substring(0, 26) + '…' : name,
+                    id, label: name.length > 30 ? name.substring(0, 28) + '…' : name,
                     kind: isFolder ? 'folder' : 'file',
                     key: normalizeFilePath(item.key || item.path || name),
                     file: item.key || item.path || name,
+                    color, ext, depth,
+                    childCount: isFolder && Array.isArray(item.children) ? item.children.length : 0,
                 };
                 nodeMap.set(item.key || item.path || id, id);
                 nodes.push(node);
 
                 if (parentId) {
-                    edges.push({ source: parentId, target: id });
+                    const relLabel = isFolder ? '' : '∈';
+                    edges.push({ source: parentId, target: id, label: relLabel, relation: 'contains' });
                 }
 
                 if (isFolder && item.children) {
@@ -572,16 +659,213 @@ const fileTreeMethods = {
 
         walk(this.tree || [], null);
 
-        // Calculate degree for sizing
-        const deg = {};
-        for (const e of edges) { deg[e.source] = (deg[e.source] || 0) + 1; deg[e.target] = (deg[e.target] || 0) + 1; }
-        for (const n of nodes) { n._deg = deg[n.id] || 0; }
-
         return { nodes, edges };
     },
 
+    /* ── 构建图谱总览 ── */
+    _buildFtGraphOverview(nodes, edges) {
+        const extCounts = {};
+        let folderCount = 0;
+        let fileCount = 0;
+        const topFolders = [];
+
+        for (const n of nodes) {
+            if (n.kind === 'folder') {
+                folderCount++;
+                if (n.depth === 0) {
+                    topFolders.push({ name: n.label, childCount: n.childCount || 0 });
+                }
+            } else {
+                fileCount++;
+                const ext = n.ext || '(无扩展名)';
+                extCounts[ext] = (extCounts[ext] || 0) + 1;
+            }
+        }
+
+        const topExtensions = Object.entries(extCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([name, count]) => ({ name, count }));
+
+        const title = (Array.isArray(this.tree) && this.tree.length === 1 && this.tree[0].type === 'folder')
+            ? this.tree[0].name
+            : '';
+
+        return {
+            title,
+            totalNodes: nodes.length,
+            totalEdges: edges.length,
+            folderCount,
+            fileCount,
+            topExtensions,
+            topFolders,
+        };
+    },
+
+    /* ── 选中节点详情 ── */
+    _selectFtNodeDetail(node, cy) {
+        const nd = node.data();
+
+        // 下钻模式中保持 dim 状态
+        if (this._ftDrillNodeId) {
+            const drillNode = cy.getElementById(this._ftDrillNodeId);
+            if (drillNode.length && drillNode.id() !== nd.id) {
+                cy.elements().removeClass('highlighted');
+                const neighbors = node.closedNeighborhood();
+                neighbors.nodes().removeClass('dimmed');
+                neighbors.edges().removeClass('dimmed').addClass('highlighted');
+                node.addClass('highlighted');
+            }
+        } else {
+            cy.elements().removeClass('highlighted dimmed');
+            node.addClass('highlighted');
+            node.connectedEdges().addClass('highlighted');
+            node.connectedEdges().connectedNodes().removeClass('dimmed');
+        }
+
+        // 收集关联边（带 edgeId 支持面板点击高亮）
+        const connectedEdges = node.connectedEdges();
+        const connected = connectedEdges.map(e => {
+            const src = e.source().data();
+            const tgt = e.target().data();
+            const isOut = src.id === nd.id;
+            return {
+                edgeId: e.id(),
+                label: e.data('label'),
+                relation: e.data('relation'),
+                sourceId: src.id,
+                targetId: isOut ? tgt.id : src.id,
+                targetLabel: isOut ? tgt.label : src.label,
+                direction: isOut ? '→' : '←',
+            };
+        });
+
+        // 收集邻居节点
+        const neighborIds = new Set(connected.map(c => c.targetId));
+        const neighbors = cy.nodes()
+            .filter(n => neighborIds.has(n.data('id')))
+            .map(n => ({
+                id: n.data('id'), label: n.data('label'), color: n.data('color'), kind: n.data('kind'),
+            }));
+
+        // 子节点数（仅目录）
+        const childEdges = connectedEdges.filter(e => e.source().id() === nd.id);
+
+        // 架构角色描述
+        const kindLabel = nd.kind === 'folder' ? '📁 目录' : '📄 文件';
+        const depthLabel = nd.depth != null ? `深度 L${nd.depth}` : '';
+        const sizeLabel = nd.degree != null ? `${nd.degree} 个关联` : '';
+        const roleParts = [kindLabel, depthLabel, sizeLabel].filter(Boolean);
+        const roleSummary = roleParts.length ? roleParts.join(' · ') : '';
+
+        // 依赖关系文本
+        const outgoing = connected.filter(c => c.direction === '→').length;
+        const incoming = connected.length - outgoing;
+        const depParts = [];
+        if (outgoing > 0) depParts.push(`包含 ${outgoing} 个子项`);
+        if (incoming > 0) depParts.push(`属于 ${incoming} 个父级`);
+        const depText = depParts.length ? depParts.join('，') : '';
+
+        this.ftSelectedNode = {
+            _label: nd.label,
+            _color: nd.color,
+            _kind: nd.kind,
+            _key: nd.key || nd.file || '',
+            _ext: nd.ext || '',
+            _depth: nd.depth,
+            _connections: connected.length,
+            _childCount: nd.kind === 'folder' ? childEdges.length : null,
+            _isDrilled: !!this._ftDrillNodeId,
+            _roleSummary: roleSummary,
+            _depText: depText,
+            _outgoing: outgoing,
+            _incoming: incoming,
+            _edges: connected.slice(0, 20),
+            _neighbors: neighbors.slice(0, 20),
+        };
+    },
+
+    /* ── 外部调用：定位节点 ── */
+    ftFocusGraphNode(nodeId) {
+        if (!this._ftCy || !nodeId) return;
+        const cy = this._ftCy;
+        const target = cy.getElementById(nodeId);
+        if (!target.length) return;
+
+        // 清除旧状态
+        cy.elements().removeClass('highlighted dimmed');
+        target.addClass('highlighted');
+        target.connectedEdges().addClass('highlighted');
+
+        // 动画聚焦
+        cy.animate({ center: { eles: target }, zoom: 1.4 }, { duration: 400 });
+        this._selectFtNodeDetail(target, cy);
+    },
+
+    /* ── 详情面板：点击关联边 → 脉冲高亮 ── */
+    ftHighlightEdge(edgeId) {
+        if (!this._ftCy || !edgeId) return;
+        const cy = this._ftCy;
+        const edge = cy.getElementById(edgeId);
+        if (!edge.length) return;
+
+        cy.elements().removeClass('highlighted');
+        edge.addClass('highlighted');
+        edge.style({
+            'line-color': '#FBBF24', 'target-arrow-color': '#FBBF24',
+            'width': 3, 'opacity': 1, 'transition-duration': 150,
+        });
+        edge.connectedNodes().addClass('highlighted');
+        cy.animate({ center: { eles: edge }, zoom: cy.zoom() }, { duration: 300 });
+
+        setTimeout(() => {
+            if (!edge.removed()) {
+                edge.style({
+                    'line-color': '#334155', 'target-arrow-color': '#475569',
+                    'width': 1.2, 'opacity': 0.45,
+                });
+            }
+        }, 1500);
+    },
+
+    /* ── 适应视图 ── */
+    ftFitGraph() {
+        if (this._ftCy) {
+            this._ftDrillNodeId = null;
+            this.ftSelectedNode = null;
+            this._ftCy.elements().removeClass('highlighted dimmed');
+            this._ftCy.fit(undefined, 30);
+        }
+    },
+
+    /* ── 重置布局 ── */
+    ftResetGraph() {
+        if (!this._ftCy) return;
+        this._ftDrillNodeId = null;
+        this.ftSelectedNode = null;
+        this._ftCy.elements().removeClass('highlighted dimmed');
+        const layouts = [
+            { name: 'dagre', rankDir: 'TB', spacingFactor: 1.35, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 40 },
+            { name: 'breadthfirst', directed: true, spacingFactor: 1.25, animate: true, fit: true, padding: 40 },
+            { name: 'cose', animate: true, fit: true, padding: 40, nodeRepulsion: 5000, idealEdgeLength: 90 },
+        ];
+        for (const opts of layouts) {
+            try { this._ftCy.layout(opts).run(); return; } catch (_) {}
+        }
+    },
+
+    /* ── 销毁 ── */
     _destroyFtCy() {
+        if (this._ftResizeObserver) {
+            this._ftResizeObserver.disconnect();
+            this._ftResizeObserver = null;
+        }
+        if (this._onFtGraphKeydown) {
+            document.removeEventListener('keydown', this._onFtGraphKeydown, true);
+            this._onFtGraphKeydown = null;
+        }
         if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
+        this._ftDrillNodeId = null;
     },
 };
 

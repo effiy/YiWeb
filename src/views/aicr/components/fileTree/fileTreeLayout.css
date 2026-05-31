@@ -431,32 +431,94 @@
     flex-wrap: wrap;
 }
 
-/* ── 图谱视图 + 详情面板 ── */
+/* ── 图谱视图 + 详情面板（参考 graph-reader 优化） ── */
 .file-graph-view-wrapper {
     flex: 1;
     display: flex;
+    flex-direction: column;
     min-height: 0;
     height: 100%;
+    background: #0B1121;
+    overflow: hidden;
+}
+
+/* 头部 */
+.file-graph-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #1E293B;
+    flex-shrink: 0;
+}
+
+.file-graph-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E2E8F0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-graph-stats {
+    font-size: 12px;
+    color: #94A3B8;
+    white-space: nowrap;
+}
+
+.file-graph-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.file-graph-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #94A3B8;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.file-graph-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: #E2E8F0;
+    border-color: #334155;
+}
+
+/* 主体：画布 + 侧面板 */
+.file-graph-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .file-graph-canvas {
     flex: 1;
-    min-height: 300px;
+    min-height: 0;
     min-width: 0;
-    background: #0B1121;
-    position: relative;
 }
 
+/* 详情面板 */
 .file-graph-detail {
-    width: 280px;
+    width: 300px;
     flex-shrink: 0;
     border-left: 1px solid #1E293B;
     background: #111827;
-    padding: 12px;
+    padding: 14px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .file-graph-detail-header {
@@ -482,7 +544,7 @@
 }
 
 .file-graph-detail-label {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: #E2E8F0;
     word-break: break-all;
@@ -505,13 +567,14 @@
 }
 .file-graph-detail-close:hover { color: #E2E8F0; background: rgba(255,255,255,0.06); }
 
+/* 元数据徽章 */
 .file-graph-detail-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
 }
 
-.file-graph-detail-badge {
+.file-graph-badge {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 10px;
@@ -519,18 +582,50 @@
     background: rgba(255,255,255,0.08);
     color: #94A3B8;
 }
-.file-graph-detail-badge.type { background: rgba(59,130,246,0.15); color: #60A5FA; }
-.file-graph-detail-badge.conn { background: rgba(245,158,11,0.15); color: #FBBF24; }
+.file-graph-badge.type { background: rgba(59,130,246,0.15); color: #60A5FA; }
+.file-graph-badge.degree { background: rgba(245,158,11,0.15); color: #FBBF24; }
+.file-graph-badge.children { background: rgba(16,185,129,0.12); color: #34D399; }
+.file-graph-badge.depth { background: rgba(139,92,246,0.12); color: #A78BFA; }
+.file-graph-badge.drill {
+    background: rgba(245,158,11,0.18);
+    color: #FBBF24;
+    font-weight: 600;
+    animation: ft-drill-pulse 2s ease-in-out infinite;
+}
+.file-graph-badge.kind { background: rgba(255,255,255,0.08); color: #94A3B8; }
 
-.file-graph-detail-desc {
-    font-size: 11px;
-    color: #94A3B8;
-    line-height: 1.5;
-    padding: 6px 8px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 4px;
+@keyframes ft-drill-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
 }
 
+/* 架构角色 */
+.file-graph-detail-role {
+    font-size: 12px;
+    color: #94A3B8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* 依赖关系 */
+.file-graph-detail-depstats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.file-graph-depstat {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: #94A3B8;
+}
+.file-graph-depstat.outgoing { color: #60A5FA; background: rgba(59,130,246,0.08); }
+.file-graph-depstat.incoming { color: #34D399; background: rgba(16,185,129,0.08); }
+.file-graph-depstat.none { color: #64748B; }
+
+/* 路径 */
 .file-graph-detail-path {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -542,6 +637,7 @@
     line-height: 1.4;
 }
 
+/* 打开文件按钮 */
 .file-graph-detail-actions {
     display: flex;
     gap: 6px;
@@ -566,10 +662,11 @@
     color: #93C5FD;
 }
 
+/* 详情分区 */
 .file-graph-detail-section {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
 }
 
 .file-graph-detail-section.tips {
@@ -595,12 +692,14 @@
 
 .file-graph-detail-tips {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
     font-size: 10px;
     color: #475569;
+    line-height: 1.5;
 }
 
+/* 邻居节点标签 */
 .file-graph-detail-neighbors {
     display: flex;
     flex-wrap: wrap;
@@ -637,5 +736,147 @@
     flex-shrink: 0;
 }
 
-.file-graph-detail-badge.kind { background: rgba(255,255,255,0.08); color: #94A3B8; }
-.file-graph-detail-badge.children { background: rgba(16,185,129,0.12); color: #34D399; }
+/* 关联边标签 */
+.file-graph-detail-edges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.file-graph-detail-edge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: #94A3B8;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #334155;
+    cursor: pointer;
+    transition: all 0.12s;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-graph-detail-edge-tag:hover {
+    color: #FBBF24;
+    background: rgba(245,158,11,0.1);
+    border-color: rgba(245,158,11,0.3);
+    transform: translateY(-1px);
+}
+
+.file-graph-detail-edge-dir {
+    font-size: 9px;
+    color: #F59E0B;
+    flex-shrink: 0;
+}
+
+/* ── 总览面板 ── */
+.file-graph-overview-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.file-graph-overview-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #1E293B;
+}
+
+.file-graph-overview-stat-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: #E2E8F0;
+}
+
+.file-graph-overview-stat-label {
+    font-size: 10px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+/* 文件类型分布 */
+.file-graph-overview-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-graph-overview-bar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 1px 8px;
+    align-items: center;
+}
+
+.file-graph-overview-bar-label {
+    font-size: 11px;
+    color: #94A3B8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-graph-overview-bar-count {
+    font-size: 10px;
+    color: #64748B;
+    font-weight: 600;
+}
+
+.file-graph-overview-bar-track {
+    grid-column: 1 / -1;
+    height: 4px;
+    border-radius: 2px;
+    background: #1E293B;
+    overflow: hidden;
+}
+
+.file-graph-overview-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: #3B82F6;
+    transition: width 0.3s ease;
+}
+
+/* 顶层目录 */
+.file-graph-overview-folders {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-graph-overview-folder {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.02);
+    font-size: 11px;
+    color: #94A3B8;
+}
+
+.file-graph-overview-folder-icon {
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+.file-graph-overview-folder-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-graph-overview-folder-count {
+    font-size: 10px;
+    color: #64748B;
+}

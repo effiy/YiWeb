@@ -97,18 +97,25 @@ const componentOptions = {
             editingCardDesc: '',
             cardSaving: false,
             _ftCy: null,
-            ftSelectedNode: null
+            _ftDrillNodeId: null,
+            _ftResizeObserver: null,
+            ftSelectedNode: null,
+            ftGraphOverview: null,
+            ftGraphTitle: '文件图谱',
+            ftGraphStatsText: ''
         };
     },
     watch: {
         viewMode(newMode) {
             if (newMode === 'graph') {
                 this.$nextTick(() => this.initFileTreeGraph());
-            } else if (this._ftCy) {
-                this._ftCy.destroy();
-                this._ftCy = null;
+            } else {
+                this._destroyFtCy();
             }
         }
+    },
+    beforeUnmount() {
+        this._destroyFtCy();
     },
     methods: fileTreeMethods
 };
