@@ -50,17 +50,6 @@
           v-if="!isEditingFile"
           type="button"
           class="action-button"
-          @click="downloadCurrentFile"
-          :disabled="!file"
-          title="下载文件"
-          aria-label="下载文件"
-        >
-          <yi-icon name="download"></yi-icon>
-        </button>
-        <button
-          v-if="!isEditingFile"
-          type="button"
-          class="action-button"
           @click="copyEntireFile"
           :disabled="!file"
           title="复制代码"
@@ -80,15 +69,16 @@
           <yi-icon name="crosshairs"></yi-icon>
         </button>
         <button
-          v-if="!isEditingFile && !shouldShowImagePreview"
+          v-if="!isEditingFile && canShowKnowledgeGraph"
           type="button"
           class="action-button"
-          @click="toggleSearchBar"
+          :class="{ active: showKnowledgeGraph }"
+          @click="toggleKnowledgeGraph"
           :disabled="!file"
-          :title="showSearchBar ? '关闭搜索' : '在文件中搜索'"
-          aria-label="在文件中搜索"
+          :title="showKnowledgeGraph ? '关闭知识图谱' : '查看知识图谱'"
+          aria-label="查看知识图谱"
         >
-          <yi-icon name="search"></yi-icon>
+          <yi-icon name="share"></yi-icon>
         </button>
         <button
           v-if="!isEditingFile"
@@ -204,6 +194,27 @@
           <p>无法加载图片</p>
         </div>
       </div>
+    </div>
+
+    <div v-else-if="showKnowledgeGraph && kgGraphData" class="graph-reader" ref="graphReader">
+      <div class="graph-reader-header">
+        <span class="graph-reader-title">{{ kgTitle }}</span>
+        <span class="graph-reader-stats">{{ kgGraphData.nodes.length }} 节点 · {{ kgGraphData.edges.length }} 边</span>
+        <div class="graph-reader-actions">
+          <button type="button" class="graph-reader-btn" @click="fitKgGraph" title="适应视图">⊞</button>
+          <button type="button" class="graph-reader-btn" @click="resetKgGraph" title="重置布局">↻</button>
+          <button type="button" class="graph-reader-btn" @click="closeKnowledgeGraph" title="关闭">✕</button>
+        </div>
+      </div>
+      <div class="graph-reader-canvas" ref="kgCanvas"></div>
+    </div>
+
+    <div v-else-if="showKnowledgeGraph && kgLoading" class="graph-reader">
+      <yi-loading text="加载知识图谱..."></yi-loading>
+    </div>
+
+    <div v-else-if="showKnowledgeGraph && kgError" class="graph-reader">
+      <yi-error-state :message="kgError" icon-class="warning"></yi-error-state>
     </div>
 
     <div v-else class="code-reader">

@@ -161,7 +161,13 @@ const componentOptions = {
             fontSizeMax: 18,
             hoveredLine: null,
             isFullscreen: false,
-            showSearchBar: false
+            showSearchBar: false,
+            showKnowledgeGraph: false,
+            kgLoading: false,
+            kgError: '',
+            kgGraphData: null,
+            kgTitle: '',
+            kgAllNodes: null
         };
     },
     computed: {
@@ -271,6 +277,38 @@ const componentOptions = {
             return {
                 '--code-font-size': `${this.fontSize}px`
             };
+        },
+        canShowKnowledgeGraph() {
+            if (!this.file) return false;
+            const name = (this.displayFileName || this.fullFilePath || '').toLowerCase();
+            // MD files: show KG if they're under 故事任务面板
+            if (name.endsWith('.md') || this.languageType === 'markdown') {
+                return (this.fullFilePath || '').includes('故事任务面板');
+            }
+            // knowledge-graph.json files
+            if (name.endsWith('knowledge-graph.json') || name.includes('knowledge-graph')) {
+                return true;
+            }
+            // story-deps.json
+            if (name.includes('story-deps.json')) {
+                return true;
+            }
+            return false;
+        },
+        graphReaderHeight() {
+            // Match code-reader height
+            return this.isFullscreen ? window.innerHeight - 120 : 0;
+        },
+        kgSourceStoryDir() {
+            // Extract story directory from file path
+            const fp = this.fullFilePath || '';
+            const m = fp.match(/故事任务面板\/([^/]+)\//);
+            return m ? m[1] : '';
+        },
+        kgSourceFileName() {
+            const fp = this.fullFilePath || '';
+            const parts = fp.split('/');
+            return parts[parts.length - 1] || '';
         }
     },
     watch: {
@@ -284,6 +322,11 @@ const componentOptions = {
                 this.editingFileContent = '';
                 this.saveError = '';
             }
+            // 重置知识图谱状态
+            this.showKnowledgeGraph = false;
+            this.kgGraphData = null;
+            this.kgError = '';
+            this.kgLoading = false;
             // 加载 URL 中的高亮行
             this.loadHighlightFromURL();
         },
@@ -293,6 +336,14 @@ const componentOptions = {
         highlightedLines() {
             // 当高亮行改变时，更新 URL
             this.updateURLWithHighlight();
+        },
+        showKnowledgeGraph(val) {
+            if (val && this.kgGraphData) {
+                this.$nextTick(() => this.renderKgGraph());
+            }
+            if (!val) {
+                this._destroyCyGraph();
+            }
         }
     },
     mounted() {
@@ -365,6 +416,7 @@ const componentOptions = {
         if (this._onOpenMarkdownFile) {
             window.removeEventListener('open-markdown-file', this._onOpenMarkdownFile);
         }
+        this._destroyCyGraph();
     },
     methods: {
         emitCreateSession() {
@@ -1272,6 +1324,303 @@ const componentOptions = {
 
                 if (window.showSuccess) window.showSuccess('开始下载图片');
             }, '下载图片');
+        },
+
+        /* ── 知识图谱 ── */
+
+        toggleKnowledgeGraph() {
+            if (this.showKnowledgeGraph) {
+                this.closeKnowledgeGraph();
+                return;
+            }
+            this.showKnowledgeGraph = true;
+            this.kgError = '';
+            if (!this.kgGraphData) {
+                this.loadKnowledgeGraph();
+            }
+        },
+
+        closeKnowledgeGraph() {
+            this.showKnowledgeGraph = false;
+        },
+
+        async loadKnowledgeGraph() {
+            if (this.kgLoading) return;
+            this.kgLoading = true;
+            this.kgError = '';
+
+            try {
+                const langType = this.languageType;
+                const filePath = this.fullFilePath || '';
+                const fileName = this.kgSourceFileName;
+
+                // Case 1: File is already a knowledge-graph.json → parse from loaded content
+                if (langType === 'json' && (fileName === 'knowledge-graph.json' || filePath.includes('knowledge-graph.json'))) {
+                    const raw = String(this.rawContent || '');
+                    if (!raw) throw new Error('文件内容为空');
+                    const data = JSON.parse(raw);
+                    this.kgGraphData = data.graph || { nodes: [], edges: [] };
+                    this.kgTitle = (data.story && data.story.name) || fileName;
+                    this.kgAllNodes = data.graph?.nodes || [];
+                    return;
+                }
+
+                // Case 2: File is story-deps.json → parse from loaded content
+                if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
+                    const raw = String(this.rawContent || '');
+                    if (!raw) throw new Error('文件内容为空');
+                    const data = JSON.parse(raw);
+                    this.kgGraphData = data.graph || { nodes: [], edges: [] };
+                    this.kgTitle = (data.story && data.story.name) || '故事依赖关系图';
+                    this.kgAllNodes = data.graph?.nodes || [];
+                    return;
+                }
+
+                // Case 3: MD file under 故事任务面板 → find story dir and load KG via API
+                const storyDir = this.kgSourceStoryDir;
+                if (!storyDir) {
+                    this.kgError = '无法确定故事目录';
+                    return;
+                }
+
+                const kgFilePath = `docs/故事任务面板/${storyDir}/knowledge-graph.json`;
+                const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                    ? String(window.API_URL).replace(/\/+$/, '')
+                    : '';
+                if (!apiBase) throw new Error('API 地址未配置');
+
+                const resp = await fetch(`${apiBase}/read-file`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_file: kgFilePath })
+                });
+                if (!resp.ok) throw new Error(`无法加载知识图谱: HTTP ${resp.status}`);
+
+                const json = await resp.json().catch(() => ({}));
+                if (!json || (json.code !== 200 && json.code !== 0) || !json.data) {
+                    throw new Error(json?.message || '读取知识图谱失败');
+                }
+                const data = JSON.parse(json.data.content);
+                const allNodes = data.graph?.nodes || [];
+                const allEdges = data.graph?.edges || [];
+                this.kgAllNodes = allNodes;
+
+                // Find nodes related to this MD file
+                const relatedNodeIds = new Set();
+                const fileBase = fileName.replace(/\.md$/i, '');
+
+                // Strategy A: Search node.mdFiles for matching file name
+                for (const node of allNodes) {
+                    const mdFiles = node.mdFiles || [];
+                    for (const mf of mdFiles) {
+                        const mfFile = (mf.file || '').replace(/\\/g, '/');
+                        const mfBase = mfFile.split('/').pop() || '';
+                        if (mfFile === fileName ||
+                            mfBase === fileName ||
+                            mfFile.endsWith('/' + fileName) ||
+                            mfFile.includes(fileName) ||
+                            fileName.includes(mfBase)) {
+                            relatedNodeIds.add(node.id);
+                        }
+                    }
+                }
+
+                // Strategy B: Search scenario.graphNodes by matching scenario name to file
+                const scenarios = data.story?.scenarios || [];
+                for (let si = 0; si < scenarios.length; si++) {
+                    const scenario = scenarios[si];
+                    const sn = (scenario.name || '');
+                    // Normalize separators: · and — to -
+                    const snNorm = sn.replace(/[·•—–]\s*/g, '-').replace(/\s+/g, '');
+                    const fbNorm = fileBase.replace(/[·•—–]\s*/g, '-').replace(/\s+/g, '');
+                    // Also extract just the scene number prefix for matching
+                    const sceneNum = sn.match(/^场景(\d+)/);
+                    const fileNum = fileBase.match(/^场景(\d+)/);
+                    if (snNorm.includes(fbNorm) ||
+                        fbNorm.includes(snNorm.split('-')[0] || '') ||
+                        (sceneNum && fileNum && sceneNum[1] === fileNum[1])) {
+                        for (const nid of (scenario.graphNodes || [])) {
+                            relatedNodeIds.add(nid);
+                        }
+                    }
+                }
+
+                // Strategy C: Keyword-based matching from file name
+                if (relatedNodeIds.size === 0) {
+                    const keywords = fileBase.split(/[-·•\s]+/).filter(k => k.length > 1);
+                    for (const node of allNodes) {
+                        const searchText = `${node.file || ''} ${node.label || ''} ${node.description || ''} ${(node.keyFunctions || []).join(' ')}`;
+                        if (keywords.some(kw => searchText.includes(kw))) {
+                            relatedNodeIds.add(node.id);
+                        }
+                    }
+                }
+
+                // Filter to related nodes + 1-hop neighbors
+                const expandedIds = new Set(relatedNodeIds);
+                for (const edge of allEdges) {
+                    if (relatedNodeIds.has(edge.source)) expandedIds.add(edge.target);
+                    if (relatedNodeIds.has(edge.target)) expandedIds.add(edge.source);
+                }
+
+                const filteredNodes = allNodes.filter(n => expandedIds.has(n.id));
+                const filteredEdges = allEdges.filter(e =>
+                    expandedIds.has(e.source) && expandedIds.has(e.target)
+                );
+
+                const hasMatches = relatedNodeIds.size > 0;
+                this.kgGraphData = {
+                    nodes: hasMatches ? filteredNodes : allNodes,
+                    edges: hasMatches ? filteredEdges : allEdges
+                };
+                this.kgTitle = hasMatches
+                    ? `${(data.story && data.story.name) || storyDir} · ${fileName.replace(/\.md$/i, '')}`
+                    : `${(data.story && data.story.name) || storyDir} (全部节点)`;
+
+            } catch (err) {
+                console.error('[CodeView] 加载知识图谱失败:', err);
+                this.kgError = err.message || '加载知识图谱失败';
+                this.kgGraphData = null;
+            } finally {
+                this.kgLoading = false;
+                if (this.kgGraphData) {
+                    this.$nextTick(() => this.renderKgGraph());
+                }
+            }
+        },
+
+        closeKnowledgeGraph() {
+            this.showKnowledgeGraph = false;
+            this._destroyCyGraph();
+        },
+
+        onKgNodeClick(node) {
+            if (!node || !node.file) return;
+            const fileKey = normalizePath(node.file);
+            if (!fileKey) return;
+            const setSelectedKey = this.viewContext?.setSelectedKey;
+            const loadFileByKey = this.viewContext?.loadFileByKey;
+            if (typeof setSelectedKey === 'function') setSelectedKey(fileKey);
+            if (typeof loadFileByKey === 'function') loadFileByKey(null, fileKey);
+        },
+
+        /* ── 图谱渲染 ── */
+
+        renderKgGraph() {
+            if (typeof cytoscape === 'undefined') {
+                this.kgError = 'Cytoscape.js 未加载';
+                return;
+            }
+            this.$nextTick(() => {
+                const container = this.$refs.kgCanvas;
+                if (!container || !this.kgGraphData) return;
+                this._initCyGraph(container);
+            });
+        },
+
+        _initCyGraph(container) {
+            if (this._cy) { this._cy.destroy(); this._cy = null; }
+
+            const data = this.kgGraphData;
+            if (!data || !data.nodes || !data.nodes.length) return;
+
+            const GROUP_COLORS = {
+                'L1-Views': '#3B82F6', 'L2-Services': '#F59E0B', 'L3-Framework': '#8B5CF6',
+                'Tests': '#EF4444', 'Documentation': '#6B7280', 'External': '#9CA3AF',
+                'L0-Entry': '#10B981', '视图工厂': '#8B5CF6', '组件系统': '#8B5CF6',
+                '基础设施': '#8B5CF6', '配置': '#F59E0B', '服务聚合': '#F59E0B',
+                '数据操作': '#F59E0B', '请求工具': '#F59E0B', '认证': '#F59E0B',
+                '同步服务': '#F59E0B', '视图入口': '#3B82F6', '共享工具': '#3B82F6',
+                '通用组件': '#06B6D4', '业务组件': '#06B6D4', '渲染系统': '#06B6D4',
+                '🔴 高风险': '#EF4444', '🟡 中风险': '#F59E0B', '🟢 低风险': '#10B981',
+                '⚠️ 违规': '#DC2626', '消费者': '#3B82F6',
+            };
+
+            const elements = [];
+            for (const n of data.nodes) {
+                elements.push({
+                    group: 'nodes',
+                    data: {
+                        id: n.id, label: n.label || n.id,
+                        color: GROUP_COLORS[n.group] || GROUP_COLORS[n.type] || '#94A3B8',
+                        file: n.file || '', description: n.description || '',
+                    },
+                });
+            }
+            for (const e of data.edges) {
+                elements.push({
+                    group: 'edges',
+                    data: {
+                        id: `${e.source}_${e.relation}_${e.target}`,
+                        source: e.source, target: e.target,
+                        label: e.label || '', relation: e.relation || '',
+                    },
+                });
+            }
+
+            const cy = cytoscape({
+                container,
+                elements,
+                style: [
+                    { selector: 'node', style: {
+                        'background-color': 'data(color)', 'label': 'data(label)',
+                        'color': '#E2E8F0', 'font-size': '10px', 'text-valign': 'bottom',
+                        'text-halign': 'center', 'text-margin-y': 6, 'text-max-width': '120px',
+                        'width': 28, 'height': 28, 'border-width': 2, 'border-color': 'data(color)',
+                        'border-opacity': 0.4, 'shape': 'ellipse',
+                    }},
+                    { selector: 'node:selected', style: {
+                        'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9,
+                    }},
+                    { selector: 'edge', style: {
+                        'width': 1.2, 'line-color': '#475569', 'target-arrow-color': '#475569',
+                        'target-arrow-shape': 'triangle', 'arrow-scale': 0.7, 'curve-style': 'bezier',
+                        'label': 'data(label)', 'color': '#64748B', 'font-size': '8px',
+                        'text-rotation': 'autorotate', 'opacity': 0.6,
+                    }},
+                ],
+                layout: { name: 'preset' },
+                minZoom: 0.1, maxZoom: 3, wheelSensitivity: 0.3,
+            });
+
+            this._cy = cy;
+
+            // Run layout
+            const layouts = [
+                { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, animate: true, fit: true, padding: 30 },
+                { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 30 },
+                { name: 'cose', animate: true, fit: true, padding: 30 },
+                { name: 'grid', animate: false, fit: true, padding: 30 },
+            ];
+            for (const opts of layouts) {
+                try { cy.layout(opts).run(); return; } catch (_) {}
+            }
+
+            // Node click → open file
+            cy.on('tap', 'node', (evt) => {
+                const nd = evt.target.data();
+                if (nd.file) this.onKgNodeClick({ file: nd.file, label: nd.label, id: nd.id });
+            });
+        },
+
+        fitKgGraph() {
+            if (this._cy) this._cy.fit(undefined, 30);
+        },
+
+        resetKgGraph() {
+            if (this._cy) {
+                const layouts = [
+                    { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, animate: true, fit: true, padding: 30 },
+                    { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 30 },
+                ];
+                for (const opts of layouts) {
+                    try { this._cy.layout(opts).run(); return; } catch (_) {}
+                }
+            }
+        },
+
+        _destroyCyGraph() {
+            if (this._cy) { this._cy.destroy(); this._cy = null; }
         },
 
         handleOpenMarkdownFile(detail) {

@@ -1,0 +1,338 @@
+/* ══════════════════════════════════════════
+   KnowledgeGraphViewer — Cytoscape.js
+   对标 Understand-Anything 暗色视觉风格
+   ══════════════════════════════════════════ */
+
+.kg-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #0B1121;
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    position: relative;
+}
+
+/* ── 头部工具栏 ── */
+.kg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #111827;
+    border-bottom: 1px solid #1E293B;
+    flex-shrink: 0;
+    gap: 12px;
+    z-index: 10;
+}
+
+.kg-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.kg-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #F1F5F9;
+    white-space: nowrap;
+}
+
+.kg-stats {
+    display: flex;
+    gap: 6px;
+}
+
+.kg-stat {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #94A3B8;
+    background: #1E293B;
+    border: 1px solid #334155;
+    white-space: nowrap;
+}
+
+.kg-stat--nodes { border-color: rgba(59,130,246,0.4); color: #60A5FA; }
+.kg-stat--edges { border-color: rgba(245,158,11,0.4); color: #FBBF24; }
+
+/* ── 搜索框 ── */
+.kg-header-center {
+    flex: 1;
+    max-width: 320px;
+    min-width: 140px;
+}
+
+.kg-search {
+    display: flex;
+    align-items: center;
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 5px 10px;
+    gap: 6px;
+    transition: border-color 0.15s;
+}
+
+.kg-search:focus-within {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.kg-search-icon {
+    color: #64748B;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.kg-search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #E2E8F0;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+}
+
+.kg-search-input::placeholder {
+    color: #475569;
+}
+
+.kg-search-clear {
+    background: none;
+    border: none;
+    color: #64748B;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    line-height: 1;
+}
+.kg-search-clear:hover { color: #E2E8F0; }
+
+/* ── 头按钮 ── */
+.kg-header-right {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.kg-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #334155;
+    border-radius: 7px;
+    background: transparent;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+}
+
+.kg-btn:hover {
+    background: #1E293B;
+    color: #E2E8F0;
+    border-color: #475569;
+}
+
+.kg-btn--active {
+    background: rgba(59,130,246,0.15);
+    border-color: #3B82F6;
+    color: #60A5FA;
+}
+
+.kg-btn--close:hover {
+    background: rgba(239,68,68,0.15);
+    border-color: #EF4444;
+    color: #FCA5A5;
+}
+
+/* ── Cytoscape 容器 ── */
+.kg-cy-container {
+    flex: 1;
+    min-height: 300px;
+    position: relative;
+    background:
+        radial-gradient(circle at 30% 40%, rgba(59,130,246,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 70% 60%, rgba(139,92,246,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(16,185,129,0.02) 0%, transparent 40%),
+        #0B1121;
+}
+
+.kg-cy-container canvas {
+    display: block;
+}
+
+/* ── 缩放控件 ── */
+.kg-zoom-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    background: rgba(17,24,39,0.94);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.kg-zoom-btn {
+    width: 32px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: #94A3B8;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.kg-zoom-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: #E2E8F0;
+}
+
+.kg-zoom-btn--fit {
+    font-size: 14px;
+}
+
+.kg-zoom-divider {
+    width: 20px;
+    height: 1px;
+    background: #334155;
+    margin: 1px 0;
+}
+
+/* ── 图例 ── */
+.kg-legend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 7px 16px;
+    background: #111827;
+    border-top: 1px solid #1E293B;
+    flex-shrink: 0;
+}
+
+.kg-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: #64748B;
+}
+
+.kg-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* ── 详情面板 ── */
+.kg-detail-panel {
+    border-top: 1px solid #1E293B;
+    background: #111827;
+    flex-shrink: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    animation: kg-slide-up 0.2s ease;
+}
+
+@keyframes kg-slide-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.kg-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #1E293B;
+    position: sticky;
+    top: 0;
+    background: #111827;
+}
+
+.kg-detail-type-badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #FFF;
+    letter-spacing: 0.3px;
+}
+
+.kg-detail-header strong {
+    font-size: 14px;
+    color: #F1F5F9;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kg-detail-close {
+    background: none;
+    border: none;
+    color: #64748B;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px;
+    border-radius: 4px;
+}
+.kg-detail-close:hover { color: #F1F5F9; background: #1E293B; }
+
+.kg-detail-body {
+    padding: 10px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.kg-detail-row {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.kg-detail-label {
+    color: #475569;
+    min-width: 56px;
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.kg-detail-row span:last-child {
+    color: #CBD5E1;
+}
+
+.kg-detail-row code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #60A5FA;
+    word-break: break-all;
+}

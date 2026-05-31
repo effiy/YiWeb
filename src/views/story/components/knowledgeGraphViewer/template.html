@@ -1,0 +1,60 @@
+<div class="kg-viewer">
+    <!-- 头部工具栏 -->
+    <div class="kg-header">
+        <div class="kg-header-left">
+            <h3 class="kg-title">{{ title }}</h3>
+            <span class="kg-stats">
+                <span class="kg-stat kg-stat--nodes">{{ graphData.nodes.length }} 节点</span>
+                <span class="kg-stat kg-stat--edges">{{ graphData.edges.length }} 连线</span>
+            </span>
+        </div>
+        <div class="kg-header-center">
+            <div class="kg-search">
+                <yi-icon name="search" class-name="kg-search-icon"></yi-icon>
+                <input
+                    type="text"
+                    class="kg-search-input"
+                    placeholder="搜索节点..."
+                    v-model="searchQuery"
+                    @input="onSearch"
+                />
+                <button v-if="searchQuery" class="kg-search-clear" @click="clearSearch">×</button>
+            </div>
+        </div>
+        <div class="kg-header-right">
+            <button class="kg-btn" @click="fitGraph" title="适配窗口">
+                <yi-icon name="expand"></yi-icon>
+            </button>
+            <button class="kg-btn" @click="resetLayout" title="重置布局">
+                <yi-icon name="refresh"></yi-icon>
+            </button>
+            <button class="kg-btn" @click="toggleLabels" :class="{ 'kg-btn--active': showLabels }" title="切换标签">
+                <yi-icon name="font"></yi-icon>
+            </button>
+            <button class="kg-btn kg-btn--close" @click="$emit('close')" title="关闭">
+                <yi-icon name="close"></yi-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- 图谱容器 -->
+    <div class="kg-cy-container" ref="cyContainer"></div>
+
+    <!-- 缩放控件 -->
+    <div class="kg-zoom-controls">
+        <button class="kg-zoom-btn" @click="zoomIn" title="放大">+</button>
+        <span class="kg-zoom-divider"></span>
+        <button class="kg-zoom-btn" @click="zoomOut" title="缩小">−</button>
+        <span class="kg-zoom-divider"></span>
+        <button class="kg-zoom-btn kg-zoom-btn--fit" @click="fitGraph" title="适配窗口">⊡</button>
+    </div>
+
+    <!-- 图例 -->
+    <div class="kg-legend-bar">
+        <span class="kg-legend-item" v-for="group in legendGroups" :key="group.name">
+            <span class="kg-legend-dot" :style="{ background: group.color }"></span>
+            {{ group.name }}
+        </span>
+    </div>
+
+</div>

@@ -159,6 +159,82 @@
     font-size: 14px;
 }
 
+/* 知识图谱阅读器 */
+.graph-reader {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--yi-dark-surface, #0f1117);
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+.graph-reader-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--yi-border, #2d3340);
+    flex-shrink: 0;
+}
+
+.graph-reader-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--yi-text-primary, #e2e8f0);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.graph-reader-stats {
+    font-size: 12px;
+    color: var(--yi-text-secondary, #94a3b8);
+    white-space: nowrap;
+}
+
+.graph-reader-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.graph-reader-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--yi-text-secondary, #94a3b8);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.graph-reader-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--yi-text-primary, #e2e8f0);
+    border-color: var(--yi-border, #2d3340);
+}
+
+.graph-reader-canvas {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+/* 图谱按钮激活态 */
+.code-header .action-button.active {
+    color: var(--yi-primary, #3B82F6);
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
 /* 尊重用户减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
     .image-preview-img {
