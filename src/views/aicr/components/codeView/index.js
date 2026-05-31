@@ -1653,10 +1653,29 @@ const componentOptions = {
                 node.addClass('highlighted');
                 node.connectedEdges().addClass('highlighted');
                 node.connectedEdges().connectedNodes().removeClass('dimmed');
+                const connected = node.connectedEdges().map(e => {
+                    const src = e.source().data();
+                    const tgt = e.target().data();
+                    const isOut = src.id === nd.id;
+                    return {
+                        label: e.data('label'),
+                        relation: e.data('relation'),
+                        targetId: isOut ? tgt.id : src.id,
+                        targetLabel: isOut ? tgt.label : src.label,
+                        direction: isOut ? '→' : '←',
+                    };
+                });
+                const neighborIds = new Set(connected.map(c => c.targetId));
+                const neighbors = cy.nodes().filter(n => neighborIds.has(n.data('id'))).map(n => ({
+                    id: n.data('id'), label: n.data('label'), color: n.data('color'),
+                }));
                 this.kgSelectedNode = {
                     label: nd.label, type: nd.type, group: nd.group,
                     description: nd.description, file: nd.file,
                     functions: nd.functions, degree: nd.degree,
+                    id: nd.id, size: Math.round(nd.size || 0),
+                    edges: connected.slice(0, 20),
+                    neighbors: neighbors.slice(0, 15),
                 };
             });
 

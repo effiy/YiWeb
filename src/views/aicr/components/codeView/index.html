@@ -210,18 +210,49 @@
         <div class="graph-reader-canvas" ref="kgCanvas"></div>
         <div v-if="kgSelectedNode" class="graph-node-detail">
           <div class="graph-node-detail-header">
-            <span class="graph-node-detail-label">{{ kgSelectedNode.label }}</span>
+            <div class="graph-node-detail-header-left">
+              <span class="graph-node-detail-dot" :style="{background: kgSelectedNode.color || '#94A3B8'}"></span>
+              <span class="graph-node-detail-label">{{ kgSelectedNode.label }}</span>
+            </div>
             <button class="graph-reader-btn" @click="kgSelectedNode = null" title="关闭">✕</button>
           </div>
           <div class="graph-node-detail-meta">
             <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.type }}</span>
             <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
             <span v-if="kgSelectedNode.degree" class="graph-node-badge degree">{{ kgSelectedNode.degree }} 连接</span>
+            <span v-if="kgSelectedNode.size" class="graph-node-badge size">半径 {{ kgSelectedNode.size }}px</span>
           </div>
-          <p v-if="kgSelectedNode.description" class="graph-node-detail-desc">{{ kgSelectedNode.description }}</p>
-          <p v-if="kgSelectedNode.functions" class="graph-node-detail-funcs">{{ kgSelectedNode.functions }}</p>
-          <div v-if="kgSelectedNode.file" class="graph-node-detail-file" @click="onKgNodeClick({ file: kgSelectedNode.file, label: kgSelectedNode.label })" title="点击打开文件">
-            {{ kgSelectedNode.file }}
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.description">
+            <div class="graph-node-detail-section-title">描述</div>
+            <p class="graph-node-detail-desc">{{ kgSelectedNode.description }}</p>
+          </div>
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.functions">
+            <div class="graph-node-detail-section-title">关键函数</div>
+            <p class="graph-node-detail-funcs">{{ kgSelectedNode.functions }}</p>
+          </div>
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.file">
+            <div class="graph-node-detail-section-title">文件路径</div>
+            <div class="graph-node-detail-file" @click="onKgNodeClick({ file: kgSelectedNode.file, label: kgSelectedNode.label })" title="点击打开文件">
+              {{ kgSelectedNode.file }}
+            </div>
+          </div>
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.edges && kgSelectedNode.edges.length">
+            <div class="graph-node-detail-section-title">关联边 ({{ kgSelectedNode.edges.length }})</div>
+            <div class="graph-node-detail-edges">
+              <div v-for="(edge, i) in kgSelectedNode.edges" :key="i" class="graph-node-edge">
+                <span class="graph-node-edge-dir">{{ edge.direction }}</span>
+                <span class="graph-node-edge-label">{{ edge.label || edge.relation }}</span>
+                <span class="graph-node-edge-target">{{ edge.targetLabel }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.neighbors && kgSelectedNode.neighbors.length">
+            <div class="graph-node-detail-section-title">邻居节点 ({{ kgSelectedNode.neighbors.length }})</div>
+            <div class="graph-node-detail-neighbors">
+              <span v-for="n in kgSelectedNode.neighbors" :key="n.id" class="graph-node-neighbor-tag" :style="{borderColor: n.color}">
+                {{ n.label }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
