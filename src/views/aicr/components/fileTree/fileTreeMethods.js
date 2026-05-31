@@ -467,11 +467,10 @@ const fileTreeMethods = {
         });
         cy.on('mouseout', 'node', () => cy.elements().removeClass('highlighted dimmed'));
 
-        // Click → 展示节点详情 + 选中文件
+        // Click → 展示节点详情
         cy.on('tap', 'node', (evt) => {
             const node = evt.target;
             const nd = node.data();
-            // 构建详情
             const connected = node.connectedEdges();
             const neighborIds = new Set();
             const neighbors = [];
@@ -481,22 +480,24 @@ const fileTreeMethods = {
                 const other = src.id === nd.id ? tgt : src;
                 if (!neighborIds.has(other.id)) {
                     neighborIds.add(other.id);
-                    neighbors.push({ id: other.id, label: other.label, color: other.color });
+                    neighbors.push({ id: other.id, label: other.label, color: other.color, kind: other.kind });
                 }
+            });
+            // 子节点数（仅目录）
+            const childEdges = connected.filter(e => {
+                const src = e.source().data();
+                return src.id === nd.id;
             });
             this.ftSelectedNode = {
                 _label: nd.label,
                 _color: nd.color,
                 _kind: nd.kind,
+                _key: nd.key || nd.file || '',
                 _ext: (nd.label || '').split('.').pop(),
                 _connections: connected.length,
-                _description: nd.description || (nd.kind === 'folder' ? `目录: ${nd.label}` : `文件: ${nd.key || nd.label}`),
-                _neighbors: neighbors.slice(0, 15),
+                _childCount: nd.kind === 'folder' ? childEdges.length : null,
+                _neighbors: neighbors.slice(0, 20),
             };
-            // 如果是文件，触发打开
-            if (nd.kind === 'file' && nd.key) {
-                this.handleTagClick(nd.key);
-            }
         });
 
         // Tap background → 关闭详情
@@ -526,15 +527,12 @@ const fileTreeMethods = {
     },
 
     _buildFileTreeGraphData() {
-        // 收集激活的标签筛选
-        const activeTags = new Set();
-        const addTags = (arr) => { if (Array.isArray(arr)) arr.forEach(t => activeTags.add(t)); };
-        addTags(this.selectedTags);
-        addTags(this.selectedSkillTags);
-        addTags(this.selectedTemplateTags);
-        addTags(this.selectedRuleTags);
-        addTags(this.selectedAgentTags);
-        const hasTagFilter = activeTags.size > 0;
+        // 仅项目标签参与图谱过滤（skill/template/rule/agent 标签粒度太细，无法映射到目录节点）
+        const activeProjectTags = new Set();
+        if (Array.isArray(this.selectedTags)) {
+            this.selectedTags.forEach(t => activeProjectTags.add(t));
+        }
+        const hasTagFilter = activeProjectTags.size > 0;
 
         const nodes = [];
         const edges = [];
@@ -545,9 +543,9 @@ const fileTreeMethods = {
             if (!Array.isArray(items)) return;
             for (const item of items) {
                 const name = item.name || item.fileName || item.key || '';
-                // 标签过滤：仅顶层目录受标签筛选影响
+                // 项目标签过滤：仅顶层目录受筛选影响，选中项目标签时只展示对应项目
                 if (depth === 0 && hasTagFilter) {
-                    if (!activeTags.has(name)) continue;
+                    if (!activeProjectTags.has(name)) continue;
                 }
                 const id = `n${++idCounter}`;
                 const isFolder = item.type === 'folder' || (item.children && item.children.length > 0);

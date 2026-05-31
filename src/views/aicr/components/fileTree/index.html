@@ -138,16 +138,50 @@
                     </div>
                     <button class="file-graph-detail-close" @click="ftSelectedNode = null" title="关闭">✕</button>
                 </div>
+
+                <!-- 元数据 -->
                 <div class="file-graph-detail-meta">
-                    <span class="file-graph-detail-badge">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
-                    <span v-if="ftSelectedNode._kind === 'file'" class="file-graph-detail-badge type">{{ ftSelectedNode._ext || 'file' }}</span>
-                    <span v-if="ftSelectedNode._connections" class="file-graph-detail-badge conn">{{ ftSelectedNode._connections }} 连接</span>
+                    <span class="file-graph-detail-badge kind">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
+                    <span v-if="ftSelectedNode._kind === 'file' && ftSelectedNode._ext" class="file-graph-detail-badge type">{{ ftSelectedNode._ext }}</span>
+                    <span v-if="ftSelectedNode._childCount != null" class="file-graph-detail-badge children">{{ ftSelectedNode._childCount }} 子项</span>
+                    <span v-if="ftSelectedNode._connections" class="file-graph-detail-badge conn">{{ ftSelectedNode._connections }} 关联</span>
                 </div>
-                <div v-if="ftSelectedNode._description" class="file-graph-detail-desc">{{ ftSelectedNode._description }}</div>
+
+                <!-- 文件路径 -->
+                <div v-if="ftSelectedNode._key" class="file-graph-detail-section">
+                    <div class="file-graph-detail-section-title">路径</div>
+                    <code class="file-graph-detail-path">{{ ftSelectedNode._key }}</code>
+                </div>
+
+                <!-- 操作 -->
+                <div v-if="ftSelectedNode._kind === 'file'" class="file-graph-detail-actions">
+                    <button class="file-graph-detail-action" @click="handleTagClick(ftSelectedNode._key)" title="打开文件">
+                        <yi-icon name="file-code"></yi-icon> 打开文件
+                    </button>
+                </div>
+
+                <!-- 邻居节点 -->
                 <div v-if="ftSelectedNode._neighbors && ftSelectedNode._neighbors.length" class="file-graph-detail-section">
-                    <div class="file-graph-detail-section-title">邻居节点 ({{ ftSelectedNode._neighbors.length }})</div>
+                    <div class="file-graph-detail-section-title">关联节点 ({{ ftSelectedNode._neighbors.length }}) <span class="file-graph-detail-hint">点击定位</span></div>
                     <div class="file-graph-detail-neighbors">
-                        <span v-for="nb in ftSelectedNode._neighbors" :key="nb.id" class="file-graph-detail-neighbor-tag" :style="{borderColor: nb.color}" @click="ftFocusGraphNode(nb.id)">{{ nb.label }}</span>
+                        <span v-for="nb in ftSelectedNode._neighbors" :key="nb.id"
+                            class="file-graph-detail-neighbor-tag"
+                            :style="{borderColor: nb.color}"
+                            @click="ftFocusGraphNode(nb.id)"
+                            :title="'定位: ' + nb.label">
+                            <span class="file-graph-detail-neighbor-dot" :style="{background: nb.color}"></span>
+                            {{ nb.label }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 操作提示 -->
+                <div class="file-graph-detail-section tips">
+                    <div class="file-graph-detail-section-title">操作</div>
+                    <div class="file-graph-detail-tips">
+                        <span>🖱️ 滚轮缩放</span>
+                        <span>👆 单击查看详情</span>
+                        <span>🖐️ 拖拽平移</span>
                     </div>
                 </div>
             </div>

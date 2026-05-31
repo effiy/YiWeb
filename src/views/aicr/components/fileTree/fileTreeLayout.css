@@ -531,10 +531,51 @@
     border-radius: 4px;
 }
 
+.file-graph-detail-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #60A5FA;
+    padding: 5px 8px;
+    background: rgba(59,130,246,0.08);
+    border-radius: 4px;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.file-graph-detail-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.file-graph-detail-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 6px;
+    background: rgba(59,130,246,0.1);
+    color: #60A5FA;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.file-graph-detail-action:hover {
+    background: rgba(59,130,246,0.2);
+    border-color: #3B82F6;
+    color: #93C5FD;
+}
+
 .file-graph-detail-section {
     display: flex;
     flex-direction: column;
     gap: 5px;
+}
+
+.file-graph-detail-section.tips {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #1E293B;
 }
 
 .file-graph-detail-section-title {
@@ -545,6 +586,21 @@
     letter-spacing: 0.3px;
 }
 
+.file-graph-detail-hint {
+    font-size: 9px;
+    font-weight: 400;
+    color: #475569;
+    text-transform: none;
+}
+
+.file-graph-detail-tips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 10px;
+    color: #475569;
+}
+
 .file-graph-detail-neighbors {
     display: flex;
     flex-wrap: wrap;
@@ -552,8 +608,10 @@
 }
 
 .file-graph-detail-neighbor-tag {
-    display: inline-block;
-    padding: 2px 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
     border-radius: 4px;
     font-size: 10px;
     border: 1px solid;
@@ -561,7 +619,7 @@
     background: rgba(255,255,255,0.03);
     cursor: pointer;
     transition: all 0.12s;
-    max-width: 140px;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -571,3 +629,13 @@
     background: rgba(59,130,246,0.12);
     transform: translateY(-1px);
 }
+
+.file-graph-detail-neighbor-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.file-graph-detail-badge.kind { background: rgba(255,255,255,0.08); color: #94A3B8; }
+.file-graph-detail-badge.children { background: rgba(16,185,129,0.12); color: #34D399; }
