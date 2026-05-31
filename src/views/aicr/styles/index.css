@@ -60,6 +60,13 @@ html, body {
     overflow-x: hidden;
     width: 100%;
     position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 图谱视图：取消滚动让画布撑满 */
+.sidebar-scroll-container:has(.file-graph-view-wrapper) {
+    overflow: hidden;
 }
 
 .aicr-sidebar:hover {

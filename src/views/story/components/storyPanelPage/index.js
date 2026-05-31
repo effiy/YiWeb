@@ -37,6 +37,8 @@ registerGlobalComponent({
         sortDirection:         { type: String, default: 'desc' },
         storyDeps:             { type: Array, default: () => [] },
         saving:                { type: Boolean, default: false },
+        filteredGraphData:     { type: Object, default: null },
+        graphTitle:            { type: String, default: '知识图谱' },
     },
     emits: [
         'select-story', 'back',
@@ -46,13 +48,56 @@ registerGlobalComponent({
         'set-view', 'toggle-sort', 'open-detail', 'close-panel',
         'handle-tags-scroll', 'clear-cache',
         'update-story', 'add-dep', 'remove-dep',
+        'load-graph-data',
     ],
     data() {
         return {
             tagsScrollLeft: 0,
             tagsScrollAtEnd: true,
             filterBarCollapsed: false,
+            _graphData: null,
+            _graphTitle: '知识图谱',
+            _graphLoading: false,
         };
+    },
+    computed: {
+        graphHeight() {
+            return typeof window !== 'undefined' ? window.innerHeight - 200 : 600;
+        },
+        displayGraphData() {
+            // Use prop if provided, otherwise use internal _graphData
+            if (this.filteredGraphData) return this.filteredGraphData;
+            return this._graphData;
+        },
+        displayGraphTitle() {
+            return this.graphTitle || this._graphTitle;
+        },
+        // 根据选中的项目标签过滤图谱节点
+        tagFilteredGraphData() {
+            const raw = this.filteredGraphData || this._graphData;
+            if (!raw || !raw.nodes) return raw;
+            // 没有标签筛选 → 显示全部
+            if (!this.selectedProjectTags || this.selectedProjectTags.length === 0) return raw;
+            // 有标签筛选 → 只显示标签匹配的故事目录下的节点
+            const selectedSet = new Set(this.selectedProjectTags);
+            const filteredNodes = raw.nodes.filter(n => {
+                // 节点关联的故事目录标签与筛选标签匹配
+                const mdFiles = n.mdFiles || [];
+                return mdFiles.some(mf => {
+                    const file = mf.file || '';
+                    // 通过 file 路径推断所属故事目录
+                    return this.stories.some(s =>
+                        selectedSet.has(s.name) && s.directory && file.includes(s.directory)
+                    );
+                });
+            });
+            if (filteredNodes.length === 0) return raw; // 无匹配时显示全部
+            const filteredIds = new Set(filteredNodes.map(n => n.id));
+            const filteredEdges = (raw.edges || []).filter(e =>
+                filteredIds.has(e.source) && filteredIds.has(e.target)
+            );
+            return { nodes: filteredNodes, edges: filteredEdges };
+        },
     },
     methods: {
         /* ---- event emitters ---- */
@@ -71,9 +116,6 @@ registerGlobalComponent({
         },
         onClearMissingTags() {
             this.$emit('clear-missing-tags');
-        },
-        onSetView(mode) {
-            this.$emit('set-view', mode);
         },
         onToggleSort(field) {
             this.$emit('toggle-sort', field);
@@ -115,6 +157,50 @@ registerGlobalComponent({
             const el = event.target;
             this.tagsScrollLeft = el.scrollLeft;
             this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+        },
+
+        /* ---- graph view ---- */
+
+        onGraphNodeClick(node) {
+            // 点击图谱节点 → 打开对应的故事详情
+            if (node && node.file) {
+                const story = (this.stories || []).find(s =>
+                    s.directory && node.file.includes(s.directory)
+                );
+                if (story) {
+                    this.onOpenDetail(story);
+                }
+            }
+        },
+
+        onSetView(mode) {
+            this.$emit('set-view', mode);
+            if (mode === 'graph' && !this._graphData) {
+                this.loadGraphData();
+            }
+        },
+
+        async loadGraphData() {
+            if (this._graphLoading) return;
+            this._graphLoading = true;
+            try {
+                // 加载全局故事依赖图
+                const resp = await fetch('/docs/故事任务面板/story-deps.json', { credentials: 'omit' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this._graphData = data.graph || { nodes: [], edges: [] };
+                    this._graphTitle = (data.story && data.story.name) || '故事依赖关系图';
+                } else {
+                    // 回退：尝试合并所有故事目录的知识图谱
+                    this._graphData = { nodes: [], edges: [] };
+                    this._graphTitle = '知识图谱（无数据）';
+                }
+            } catch (_) {
+                this._graphData = { nodes: [], edges: [] };
+                this._graphTitle = '知识图谱加载失败';
+            } finally {
+                this._graphLoading = false;
+            }
         },
         onKeydown(e) {
             if (e.key === 'Escape') {

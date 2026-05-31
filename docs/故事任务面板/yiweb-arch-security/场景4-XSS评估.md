@@ -61,6 +61,15 @@ flowchart LR
 | 目录生成 | TocPlugin 生成目录 | `TocPlugin.js` | 第 2+ 位 |
 | 界面输出 | 清洗后内容渲染到 DOM | `MarkdownRenderer.js` | — |
 
+
+```mermaid
+flowchart LR
+    INPUT["原始内容"] --> SAN["SanitizePlugin\n第1位 · DOMPurify"]
+    SAN -->|"安全内容"| MM["MermaidPlugin\n第2位"]
+    MM --> TOC["TocPlugin\n第3位"]
+    TOC --> DOM["DOM 输出"]
+    SAN -.->|"拦截"| BLOCK["❌ 恶意标签过滤"]
+```
 ## §3 测试设计
 
 | AC# | Given | When | Then | 门禁 |

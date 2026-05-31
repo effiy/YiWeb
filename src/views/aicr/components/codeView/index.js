@@ -1823,6 +1823,56 @@ const componentOptions = {
             }
         },
 
+        /* ── 详情面板交互：点击关联边 / 邻居节点 → 图谱高亮 ── */
+
+        highlightKgEdge(edgeId) {
+            if (!this._cy || !edgeId) return;
+            const cy = this._cy;
+            const edge = cy.getElementById(edgeId);
+            if (!edge.length) return;
+            // 脉冲高亮边
+            cy.elements().removeClass('highlighted');
+            edge.addClass('highlighted');
+            edge.style({
+                'line-color': '#FBBF24',
+                'target-arrow-color': '#FBBF24',
+                'width': 3,
+                'opacity': 1,
+                'transition-duration': 150,
+            });
+            // 高亮两端节点
+            edge.connectedNodes().addClass('highlighted');
+            // 动画居中
+            cy.animate({ center: { eles: edge }, zoom: cy.zoom() }, { duration: 300 });
+            // 短暂脉冲后恢复
+            setTimeout(() => {
+                if (!edge.removed()) {
+                    edge.style({
+                        'line-color': '#475569',
+                        'target-arrow-color': '#64748B',
+                        'width': 1.4,
+                        'opacity': 0.5,
+                    });
+                }
+            }, 1500);
+        },
+
+        focusKgNode(nodeId) {
+            if (!this._cy || !nodeId) return;
+            const cy = this._cy;
+            const target = cy.getElementById(nodeId);
+            if (!target.length) return;
+            // 清除旧状态，高亮目标节点
+            cy.elements().removeClass('highlighted dimmed');
+            target.addClass('highlighted');
+            // 高亮关联边
+            target.connectedEdges().addClass('highlighted');
+            // 动画聚焦
+            cy.animate({ center: { eles: target }, zoom: 1.3 }, { duration: 400 });
+            // 选中并展示详情
+            this._selectKgNodeDetail(target, cy);
+        },
+
         /* ── 节点详情提取（单击/双击共用）── */
         _selectKgNodeDetail(node, cy) {
             const nd = node.data();
@@ -1850,14 +1900,16 @@ const componentOptions = {
                 }
             }
 
-            // 构建详情数据
+            // 构建详情数据 — 关联边（带 edgeId 支持点击高亮）
             const connected = node.connectedEdges().map(e => {
                 const src = e.source().data();
                 const tgt = e.target().data();
                 const isOut = src.id === nd.id;
                 return {
+                    edgeId: e.id(),
                     label: e.data('label'),
                     relation: e.data('relation'),
+                    sourceId: src.id,
                     targetId: isOut ? tgt.id : src.id,
                     targetLabel: isOut ? tgt.label : src.label,
                     direction: isOut ? '→' : '←',
@@ -1878,7 +1930,7 @@ const componentOptions = {
                 }
             } catch (_) { mdFiles = []; }
 
-            // 生成架构角色描述
+            // ── 架构角色描述 ──
             const typeLabels = { view: '视图', service: '服务', utility: '工具', component: '组件', config: '配置', doc: '文档', framework: '框架', test: '测试', entry: '入口', external: '外部' };
             const typeLabel = typeLabels[nd.type] || nd.type || '';
             const roleParts = [];
@@ -1887,13 +1939,12 @@ const componentOptions = {
             if (nd.degree != null) roleParts.push(`${nd.degree} 个关联`);
             const roleSummary = roleParts.join(' · ');
 
-            // 场景来源汇总 — 附带场景描述
+            // ── 场景来源汇总 — 附带场景描述 ──
             const scenarios = this.kgSourceScenarios || [];
             const sceneDescMap = {};
             for (const sc of scenarios) {
                 sceneDescMap[sc.name || ''] = sc.description || '';
             }
-            // 丰富 mdFiles：附加场景描述
             const enrichedMdFiles = mdFiles.map(mf => ({
                 ...mf,
                 _desc: sceneDescMap[mf.scenario || ''] || '',
@@ -1901,6 +1952,23 @@ const componentOptions = {
             const sceneSourceText = enrichedMdFiles.length
                 ? `被 ${enrichedMdFiles.length} 个场景文档引用`
                 : '暂无关联场景文档';
+
+            // ── 架构关系说明（叙事化描述）──
+            const connectedEdges = node.connectedEdges();
+            const outgoing = connectedEdges.filter(e => e.source().id() === nd.id).length;
+            const incoming = connectedEdges.length - outgoing;
+            const depParts = [];
+            if (outgoing > 0) depParts.push(`依赖 ${outgoing} 个模块`);
+            if (incoming > 0) depParts.push(`被 ${incoming} 个模块依赖`);
+            const depText = depParts.length ? depParts.join('，') : '无直接依赖关系';
+
+            const sceneNames = enrichedMdFiles.map(m => m.scenario || '').filter(Boolean);
+            const relNarrative = [
+                `**模块类型**：${typeLabel || '未分类'}`,
+                `**依赖关系**：${depText}`,
+                sceneNames.length ? `**场景溯源**：此模块在 ${sceneNames.length} 个场景文档的 §7 关联源码中被引用，作为关键实现文件出现` : '',
+                nd.description ? `**功能描述**：${nd.description}` : '',
+            ].filter(Boolean).join('\n\n');
 
             this.kgSelectedNode = {
                 label: nd.label, type: nd.type, group: nd.group,
@@ -1914,6 +1982,10 @@ const componentOptions = {
                 mdFiles: enrichedMdFiles,
                 roleSummary: roleSummary,
                 sceneSourceText: sceneSourceText,
+                depText: depText,
+                outgoing: outgoing,
+                incoming: incoming,
+                relNarrative: relNarrative,
             };
         },
 
@@ -1996,6 +2068,20 @@ const componentOptions = {
                     nodes: nodeList.slice(0, 12),
                 }));
 
+            // 构建 节点 → 场景来源 一览（每个节点被哪些场景引用）
+            const nodeSceneList = nodes
+                .filter(n => nodeSceneMap[n.id] && nodeSceneMap[n.id].length > 0)
+                .map(n => ({
+                    id: n.id,
+                    label: n.label || n.id,
+                    file: n.file || '',
+                    description: n.description || '',
+                    group: n.group || n.type || '',
+                    sceneCount: nodeSceneMap[n.id].length,
+                    scenes: nodeSceneMap[n.id] || [],
+                }))
+                .sort((a, b) => b.sceneCount - a.sceneCount);
+
             return {
                 storyName: (data.story && data.story.name) || '',
                 description: storyDesc,
@@ -2007,7 +2093,7 @@ const componentOptions = {
                 topRelations,
                 hasFilter,
                 sceneNodes,
-                nodeSceneMap,
+                nodeSceneList,
             };
         },
 

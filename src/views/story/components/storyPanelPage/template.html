@@ -162,6 +162,23 @@
             </div>
         </div>
 
+        <!-- Graph View -->
+        <div v-if="viewMode === 'graph'" class="sp-graph-view">
+            <knowledge-graph-viewer
+                v-if="displayGraphData && displayGraphData.nodes && displayGraphData.nodes.length"
+                :graph-data="tagFilteredGraphData"
+                :title="displayGraphTitle"
+                :height="graphHeight"
+                @close="onSetView('cards')"
+                @node-click="onGraphNodeClick"
+            ></knowledge-graph-viewer>
+            <div v-else class="sp-graph-empty">
+                <yi-icon name="share"></yi-icon>
+                <p v-if="_graphLoading">加载图谱中...</p>
+                <p v-else>暂无图谱数据，请确认 story-deps.json 存在</p>
+            </div>
+        </div>
+
         <!-- List View -->
         <div v-if="viewMode === 'list'" class="sp-list-view">
             <template v-for="group in groupedStories" :key="group.label">

@@ -96,7 +96,8 @@ const componentOptions = {
             editingCardKey: null,
             editingCardDesc: '',
             cardSaving: false,
-            _ftCy: null
+            _ftCy: null,
+            ftSelectedNode: null
         };
     },
     watch: {

@@ -104,6 +104,10 @@ import '/cdn/utils/ui/tooltipPortal.js';
                 filterSummaryPills: computedRefs.filterSummaryPills,
                 panelVisible: computedRefs.panelVisible,
                 viewModes: computedRefs.viewModes,
+
+                // 图谱视图
+                filteredGraphData: null,
+                graphTitle: '知识图谱',
             },
             onMounted: () => {
                 logInfo('[故事面板] 应用已挂载');

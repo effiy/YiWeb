@@ -328,6 +328,7 @@ export function useComputed(store) {
     const viewModes = computed(() => [
         { value: 'cards', label: '卡片', icon: 'grid' },
         { value: 'list', label: '列表', icon: 'list' },
+        { value: 'graph', label: '图谱', icon: 'share' },
     ]);
 
     /* ---- 工具函数暴露（供组件内使用） ---- */

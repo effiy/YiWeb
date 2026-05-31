@@ -127,7 +127,31 @@
         </div>
 
         <!-- 知识图谱视图 -->
-        <div v-else-if="viewMode === 'graph'" class="file-graph-view" ref="ftGraphContainer"></div>
+        <div v-else-if="viewMode === 'graph'" class="file-graph-view-wrapper">
+            <div class="file-graph-canvas" ref="ftGraphContainer"></div>
+            <!-- 节点详情面板 -->
+            <div v-if="ftSelectedNode" class="file-graph-detail">
+                <div class="file-graph-detail-header">
+                    <div class="file-graph-detail-header-left">
+                        <span class="file-graph-detail-dot" :style="{background: ftSelectedNode._color || '#94A3B8'}"></span>
+                        <span class="file-graph-detail-label">{{ ftSelectedNode._label }}</span>
+                    </div>
+                    <button class="file-graph-detail-close" @click="ftSelectedNode = null" title="关闭">✕</button>
+                </div>
+                <div class="file-graph-detail-meta">
+                    <span class="file-graph-detail-badge">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
+                    <span v-if="ftSelectedNode._kind === 'file'" class="file-graph-detail-badge type">{{ ftSelectedNode._ext || 'file' }}</span>
+                    <span v-if="ftSelectedNode._connections" class="file-graph-detail-badge conn">{{ ftSelectedNode._connections }} 连接</span>
+                </div>
+                <div v-if="ftSelectedNode._description" class="file-graph-detail-desc">{{ ftSelectedNode._description }}</div>
+                <div v-if="ftSelectedNode._neighbors && ftSelectedNode._neighbors.length" class="file-graph-detail-section">
+                    <div class="file-graph-detail-section-title">邻居节点 ({{ ftSelectedNode._neighbors.length }})</div>
+                    <div class="file-graph-detail-neighbors">
+                        <span v-for="nb in ftSelectedNode._neighbors" :key="nb.id" class="file-graph-detail-neighbor-tag" :style="{borderColor: nb.color}" @click="ftFocusGraphNode(nb.id)">{{ nb.label }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 

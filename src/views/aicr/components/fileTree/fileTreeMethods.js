@@ -382,14 +382,23 @@ const fileTreeMethods = {
     /* ====== 知识图谱视图 (Cytoscape) ====== */
 
     initFileTreeGraph() {
-        if (typeof cytoscape === 'undefined') return;
+        if (typeof cytoscape === 'undefined') {
+            console.warn('[FileTree] Cytoscape.js 未加载');
+            return;
+        }
         const container = this.$refs.ftGraphContainer;
-        if (!container) return;
+        if (!container) {
+            console.warn('[FileTree] 图谱容器未找到');
+            return;
+        }
 
         if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
 
         const { nodes, edges } = this._buildFileTreeGraphData();
-        if (!nodes.length) return;
+        if (!nodes.length) {
+            console.warn('[FileTree] 图谱无数据: tree=', this.tree?.length, 'nodes=0');
+            return;
+        }
 
         const colors = {
             folder: '#F59E0B', file: '#64748B', md: '#3B82F6', json: '#10B981',
@@ -458,11 +467,42 @@ const fileTreeMethods = {
         });
         cy.on('mouseout', 'node', () => cy.elements().removeClass('highlighted dimmed'));
 
-        // Click → select file
+        // Click → 展示节点详情 + 选中文件
         cy.on('tap', 'node', (evt) => {
-            const nd = evt.target.data();
+            const node = evt.target;
+            const nd = node.data();
+            // 构建详情
+            const connected = node.connectedEdges();
+            const neighborIds = new Set();
+            const neighbors = [];
+            connected.forEach(e => {
+                const src = e.source().data();
+                const tgt = e.target().data();
+                const other = src.id === nd.id ? tgt : src;
+                if (!neighborIds.has(other.id)) {
+                    neighborIds.add(other.id);
+                    neighbors.push({ id: other.id, label: other.label, color: other.color });
+                }
+            });
+            this.ftSelectedNode = {
+                _label: nd.label,
+                _color: nd.color,
+                _kind: nd.kind,
+                _ext: (nd.label || '').split('.').pop(),
+                _connections: connected.length,
+                _description: nd.description || (nd.kind === 'folder' ? `目录: ${nd.label}` : `文件: ${nd.key || nd.label}`),
+                _neighbors: neighbors.slice(0, 15),
+            };
+            // 如果是文件，触发打开
             if (nd.kind === 'file' && nd.key) {
                 this.handleTagClick(nd.key);
+            }
+        });
+
+        // Tap background → 关闭详情
+        cy.on('tap', (evt) => {
+            if (evt.target === cy) {
+                this.ftSelectedNode = null;
             }
         });
 
@@ -477,18 +517,40 @@ const fileTreeMethods = {
         }
     },
 
+    ftFocusGraphNode(nodeId) {
+        if (!this._ftCy || !nodeId) return;
+        const target = this._ftCy.getElementById(nodeId);
+        if (!target.length) return;
+        this._ftCy.animate({ center: { eles: target }, zoom: 1.3 }, { duration: 300 });
+        target.emit('tap');
+    },
+
     _buildFileTreeGraphData() {
+        // 收集激活的标签筛选
+        const activeTags = new Set();
+        const addTags = (arr) => { if (Array.isArray(arr)) arr.forEach(t => activeTags.add(t)); };
+        addTags(this.selectedTags);
+        addTags(this.selectedSkillTags);
+        addTags(this.selectedTemplateTags);
+        addTags(this.selectedRuleTags);
+        addTags(this.selectedAgentTags);
+        const hasTagFilter = activeTags.size > 0;
+
         const nodes = [];
         const edges = [];
         const nodeMap = new Map();
         let idCounter = 0;
 
-        const walk = (items, parentId) => {
+        const walk = (items, parentId, depth = 0) => {
             if (!Array.isArray(items)) return;
             for (const item of items) {
+                const name = item.name || item.fileName || item.key || '';
+                // 标签过滤：仅顶层目录受标签筛选影响
+                if (depth === 0 && hasTagFilter) {
+                    if (!activeTags.has(name)) continue;
+                }
                 const id = `n${++idCounter}`;
                 const isFolder = item.type === 'folder' || (item.children && item.children.length > 0);
-                const name = item.name || item.fileName || item.key || '';
                 const ext = name.split('.').pop() || '';
 
                 const node = {
@@ -505,7 +567,7 @@ const fileTreeMethods = {
                 }
 
                 if (isFolder && item.children) {
-                    walk(item.children, id);
+                    walk(item.children, id, depth + 1);
                 }
             }
         };
