@@ -199,7 +199,10 @@
     <div v-else-if="showKnowledgeGraph && kgGraphData" class="graph-reader" ref="graphReader">
       <div class="graph-reader-header">
         <span class="graph-reader-title">{{ kgTitle }}</span>
-        <span class="graph-reader-stats">{{ kgGraphData.nodes.length }} 节点 · {{ kgGraphData.edges.length }} 边</span>
+        <span class="graph-reader-stats">
+          {{ kgGraphData.nodes.length }} 节点 · {{ kgGraphData.edges.length }} 边
+          <span v-if="kgMatchedIds && kgMatchedIds.size" class="graph-reader-matched"> · 🎯 {{ kgMatchedIds.size }} 关联</span>
+        </span>
         <div class="graph-reader-actions">
           <button type="button" class="graph-reader-btn" @click="fitKgGraph" title="适应视图">⊞</button>
           <button type="button" class="graph-reader-btn" @click="resetKgGraph" title="重置布局">↻</button>

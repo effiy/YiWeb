@@ -196,6 +196,11 @@
     white-space: nowrap;
 }
 
+.graph-reader-matched {
+    color: #fbbf24;
+    font-weight: 500;
+}
+
 .graph-reader-actions {
     display: flex;
     gap: 4px;

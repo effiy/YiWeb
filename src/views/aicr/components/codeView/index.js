@@ -168,7 +168,8 @@ const componentOptions = {
             kgGraphData: null,
             kgTitle: '',
             kgAllNodes: null,
-            kgSelectedNode: null
+            kgSelectedNode: null,
+            kgMatchedIds: null
         };
     },
     computed: {
@@ -323,12 +324,20 @@ const componentOptions = {
                 this.editingFileContent = '';
                 this.saveError = '';
             }
-            // 重置知识图谱状态
+
+            // KG 模式下自动跟随文件切换
+            if (this.showKnowledgeGraph && this.canShowKnowledgeGraph) {
+                this.kgGraphData = null;
+                this.kgError = '';
+                this.$nextTick(() => this.loadKnowledgeGraph());
+                return;
+            }
+
+            // 非 KG 模式或无兼容文件 → 重置图谱
             this.showKnowledgeGraph = false;
             this.kgGraphData = null;
             this.kgError = '';
             this.kgLoading = false;
-            // 加载 URL 中的高亮行
             this.loadHighlightFromURL();
         },
         searchQuery() {
@@ -1469,6 +1478,7 @@ const componentOptions = {
                     expandedIds.has(e.source) && expandedIds.has(e.target)
                 );
 
+                this.kgMatchedIds = relatedNodeIds.size > 0 ? new Set(relatedNodeIds) : null;
                 const hasMatches = relatedNodeIds.size > 0;
                 this.kgGraphData = {
                     nodes: hasMatches ? filteredNodes : allNodes,
@@ -1525,6 +1535,7 @@ const componentOptions = {
 
             const data = this.kgGraphData;
             if (!data || !data.nodes || !data.nodes.length) return;
+            const matchedIds = this.kgMatchedIds; // Set or null
 
             const GROUP_COLORS = {
                 'L1-Views': '#3B82F6', 'L2-Services': '#F59E0B', 'L3-Framework': '#8B5CF6',
@@ -1563,14 +1574,16 @@ const componentOptions = {
             const elements = [];
             for (const n of data.nodes) {
                 const d = degree[n.id] || 0;
-                const size = 20 + (d / maxDeg) * 20;
+                const isMatched = matchedIds ? matchedIds.has(n.id) : false;
+                const size = isMatched ? (24 + (d / maxDeg) * 22) : (18 + (d / maxDeg) * 16);
                 elements.push({
                     group: 'nodes',
+                    classes: isMatched ? 'matched' : '',
                     data: {
                         id: n.id, label: n.label || n.id,
                         color: GROUP_COLORS[n.group] || GROUP_COLORS[n.type] || '#94A3B8',
                         file: n.file || '', description: n.description || '',
-                        degree: d, size: size,
+                        degree: d, size: size, matched: isMatched,
                         functions: (n.keyFunctions || []).join(', '),
                         type: n.type || '', group: n.group || '',
                     },
@@ -1611,6 +1624,11 @@ const componentOptions = {
                         'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9,
                     }},
                     { selector: 'node.dimmed', style: { 'opacity': 0.15 }},
+                    { selector: 'node.matched', style: {
+                        'border-width': 3, 'border-color': '#F59E0B', 'border-opacity': 0.9,
+                        'shadow-blur': 12, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.35,
+                        'z-index': 100,
+                    }},
                     { selector: 'edge', style: {
                         'width': 1.4, 'line-color': '#475569', 'target-arrow-color': '#64748B',
                         'target-arrow-shape': 'triangle', 'arrow-scale': 0.8,
