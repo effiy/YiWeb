@@ -847,6 +847,7 @@ const componentOptions = {
                 const text = String(this.rawContent || '');
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(text);
+                    if (window.showSuccess) window.showSuccess('已复制全部代码');
                     return;
                 }
                 const ta = document.createElement('textarea');
@@ -857,6 +858,7 @@ const componentOptions = {
                 ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
+                if (window.showSuccess) window.showSuccess('已复制全部代码');
             }, '复制文件内容');
         },
         downloadCurrentFile() {
@@ -1135,6 +1137,11 @@ const componentOptions = {
 
                     if (window.showSuccess) window.showSuccess('已退出全屏模式');
                 }
+
+                // 图谱自适应：全屏切换后延迟 refit，等待 CSS 过渡完成
+                this.$nextTick(() => {
+                    setTimeout(() => this._refitCyGraph(), 350);
+                });
             }, '切换全屏模式');
         },
         openExternalUrl() {
@@ -1570,6 +1577,12 @@ const componentOptions = {
             if (this._cy) { this._cy.destroy(); this._cy = null; }
             this.kgSelectedNode = null;
 
+            // 清理旧 resize 观察器
+            if (this._kgResizeObserver) {
+                this._kgResizeObserver.disconnect();
+                this._kgResizeObserver = null;
+            }
+
             const data = this.kgGraphData;
             if (!data || !data.nodes || !data.nodes.length) return;
             const matchedIds = this.kgMatchedIds; // Set or null
@@ -1742,10 +1755,36 @@ const componentOptions = {
                 }
             });
 
-            // Double-click node → open file
+            // Double-click node → open file with visual feedback
             cy.on('dbltap', 'node', (evt) => {
-                const nd = evt.target.data();
-                if (nd.file) this.onKgNodeClick({ file: nd.file, label: nd.label, id: nd.id });
+                const node = evt.target;
+                const nd = node.data();
+                if (!nd.file) return;
+
+                // 视觉反馈：节点脉冲高亮
+                node.style({
+                    'border-width': 6,
+                    'border-color': '#FFFFFF',
+                    'border-opacity': 1,
+                    'transition-duration': 100,
+                });
+                setTimeout(() => {
+                    if (!node.removed()) {
+                        node.style({
+                            'border-width': 2,
+                            'border-color': 'data(color)',
+                            'border-opacity': 0.35,
+                        });
+                    }
+                }, 300);
+
+                // 先选中节点展示详情，再打开文件
+                cy.elements().removeClass('highlighted dimmed');
+                node.addClass('highlighted');
+                node.connectedEdges().addClass('highlighted');
+                node.connectedEdges().connectedNodes().removeClass('dimmed');
+
+                this.onKgNodeClick({ file: nd.file, label: nd.label, id: nd.id });
             });
 
             // Run layout
@@ -1756,7 +1795,23 @@ const componentOptions = {
                 { name: 'grid', animate: false, fit: true, padding: 40 },
             ];
             for (const opts of layouts) {
-                try { cy.layout(opts).run(); return; } catch (_) {}
+                try { cy.layout(opts).run(); break; } catch (_) {}
+            }
+
+            // 自适应视图：ResizeObserver 监听容器尺寸变化
+            this._kgResizeObserver = new ResizeObserver(() => {
+                if (this._cy) {
+                    this._cy.resize();
+                    this._cy.fit(undefined, 30);
+                }
+            });
+            this._kgResizeObserver.observe(container);
+        },
+
+        _refitCyGraph() {
+            if (this._cy) {
+                this._cy.resize();
+                this._cy.fit(undefined, 30);
             }
         },
 
@@ -1807,6 +1862,10 @@ const componentOptions = {
         },
 
         _destroyCyGraph() {
+            if (this._kgResizeObserver) {
+                this._kgResizeObserver.disconnect();
+                this._kgResizeObserver = null;
+            }
             if (this._cy) { this._cy.destroy(); this._cy = null; }
         },
 

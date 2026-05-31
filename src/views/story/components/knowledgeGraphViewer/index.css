@@ -237,9 +237,19 @@
 .kg-legend-item {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     font-size: 10px;
     color: #64748B;
+    cursor: default;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.12s;
+    max-width: 260px;
+}
+
+.kg-legend-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #94A3B8;
 }
 
 .kg-legend-dot {
@@ -247,6 +257,28 @@
     height: 8px;
     border-radius: 2px;
     flex-shrink: 0;
+}
+
+.kg-legend-name {
+    flex-shrink: 0;
+    font-weight: 500;
+    color: #94A3B8;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kg-legend-sep {
+    color: #334155;
+    flex-shrink: 0;
+}
+
+.kg-legend-desc {
+    color: #475569;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ── 详情面板 ── */

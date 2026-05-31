@@ -46,9 +46,24 @@ function createFullscreenStyle() {
   return style;
 }
 
+function _adaptFullscreenSvg() {
+  if (!_overlay || _overlay.classList.contains('hidden')) return;
+  const svg = _overlay.querySelector('svg');
+  if (!svg) return;
+  // Remove fixed width/height so CSS max-width/max-height take full control
+  const viewBox = svg.getAttribute('viewBox');
+  if (viewBox) {
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.style.width = '';
+    svg.style.height = '';
+  }
+}
+
 let _styleInjected = false;
 let _overlay = null;
 let _escHandler = null;
+let _resizeHandler = null;
 
 function openFullscreen(diagram) {
   const svg = diagram.querySelector('svg');
@@ -81,6 +96,9 @@ function openFullscreen(diagram) {
   const clonedSvg = svg.cloneNode(true);
   _overlay.appendChild(clonedSvg);
 
+  // 自适应视图：去除固定宽高，让 SVG 随 viewport 缩放
+  _adaptFullscreenSvg();
+
   // ESC键处理
   if (_escHandler) {
     document.removeEventListener('keydown', _escHandler);
@@ -89,6 +107,13 @@ function openFullscreen(diagram) {
     if (e.key === 'Escape') closeFullscreen();
   };
   document.addEventListener('keydown', _escHandler);
+
+  // 窗口 resize 监听 — 全屏期间自适应
+  if (_resizeHandler) {
+    window.removeEventListener('resize', _resizeHandler);
+  }
+  _resizeHandler = () => _adaptFullscreenSvg();
+  window.addEventListener('resize', _resizeHandler);
 
   // 显示overlay
   _overlay.classList.remove('hidden');
@@ -102,6 +127,11 @@ function closeFullscreen() {
   if (_escHandler) {
     document.removeEventListener('keydown', _escHandler);
     _escHandler = null;
+  }
+
+  if (_resizeHandler) {
+    window.removeEventListener('resize', _resizeHandler);
+    _resizeHandler = null;
   }
 
   const svg = _overlay.querySelector('svg');

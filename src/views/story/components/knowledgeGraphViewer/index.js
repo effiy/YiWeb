@@ -77,6 +77,83 @@ const RELATION_LABELS = {
     'produces': '产出', 'implements': '实现',
 };
 
+// ── 节点颜色说明（每个 group/type 对应的中文含义）──
+const GROUP_DESCRIPTIONS = {
+    // 架构层
+    'L0-Entry': '入口层 — 应用启动与初始化',
+    'L1-Views': '视图层 — 页面与 UI 组件',
+    'L2-Services': '服务层 — 业务逻辑与 API 封装',
+    'L3-Framework': '框架层 — 基础设施与工具函数',
+    'L1-AICR': '视图 · AICR — 代码审查面板',
+    'L1-Claude': '视图 · Claude — 对话交互面板',
+    'L1-Story': '视图 · Story — 故事任务面板',
+    'L2-DataOps': '数据操作 — CRUD 与数据转换',
+    'L2-Helpers': '辅助工具 — 请求封装与错误处理',
+    'L2-Sync': '同步服务 — 文档同步与导入',
+    'L2-Config': '配置 — 环境与常量定义',
+    'L3-Utilities': '工具集 — 通用纯函数与辅助方法',
+    // CDN 组件
+    'CDN-Icons': '图标库 — 矢量图标组件',
+    'CDN-Components': '通用组件 — Modal、Button、Tag 等',
+    'CDN-Markdown': 'Markdown 渲染 — 文档解析与展示',
+    // 中文分组
+    '视图工厂': '视图工厂 — createBaseView 应用挂载',
+    '组件系统': '组件系统 — 全局组件注册与加载',
+    '基础设施': '基础设施 — 日志、错误处理、核心工具',
+    '配置': '配置 — 环境切换与端点定义',
+    '服务聚合': '服务聚合 — API 模块统一入口',
+    '数据操作': '数据操作 — CRUD 增删改查',
+    '请求工具': '请求工具 — fetch 封装与重试',
+    '认证': '认证 — Token 管理与 401 拦截',
+    '同步服务': '同步服务 — 文档远程同步',
+    '视图入口': '视图入口 — 各页面初始化入口',
+    '共享工具': '共享工具 — 跨模块通用帮助函数',
+    '知识图谱': '知识图谱 — 图谱构建与可视化数据',
+    '通用组件': '通用组件 — 跨业务复用 UI 组件',
+    '业务组件': '业务组件 — 特定视图业务组件',
+    '渲染系统': '渲染系统 — Markdown/Mermaid 渲染管线',
+    // 分层事件
+    '①事件层': '事件层 — DOM 事件与用户交互',
+    '②方法层': '方法层 — 业务方法与副作用',
+    '③状态层': '状态层 — 响应式数据 store',
+    '④派生层': '派生层 — computed 计算属性',
+    '⑤数据层': '数据层 — API 数据获取与缓存',
+    '⑥网络层': '网络层 — HTTP 请求与重试',
+    '⑦认证层': '认证层 — Token 与登录态',
+    '⑧错误层': '错误层 — 异常捕获与用户提示',
+    '⑨校验层': '校验层 — 输入验证与类型检查',
+    '⑩渲染层': '渲染层 — DOM 更新与视图渲染',
+    // 安全面
+    '输入面': '输入面 — 用户输入与参数解析',
+    '接口面': '接口面 — API 端点与数据格式',
+    '存储面': '存储面 — localStorage/sessionStorage',
+    '认证面': '认证面 — 登录、Token、权限',
+    '渲染面': '渲染面 — HTML/XSS 安全渲染',
+    // 风险等级
+    '🔴 高风险': '高风险 — 需立即修复的安全/稳定性问题',
+    '🟡 中风险': '中风险 — 存在隐患但无立即影响',
+    '🟢 低风险': '低风险 — 最佳实践偏离或可优化项',
+    '⚠️ 违规': '违规 — 违反架构约束或编码规范',
+    // 故事图谱
+    '父故事': '父故事 — 顶层故事任务',
+    'P0 子故事': 'P0 子故事 — 阻塞级关键路径',
+    'P1 子故事': 'P1 子故事 — 重要但非阻塞',
+    '独立故事': '独立故事 — 无父子依赖的独立任务',
+    // 检查引擎
+    '消费者': '消费者 — 数据消费方',
+    '检查模式': '检查模式 — 规则检查定义',
+    '规则引擎': '规则引擎 — 规则匹配与执行',
+    '输出': '输出 — 检查结果与报告',
+    '规则项': '规则项 — 单一检查规则',
+    '参照基线': '参照基线 — 比较基准与阈值',
+    // 通用
+    '文档': '文档 — Markdown/设计文档',
+    '测试': '测试 — 测试用例与断言',
+    'Tests': '测试 — 单元/集成/E2E 测试',
+    'Documentation': '文档 — 项目文档与说明',
+    'External': '外部 — 第三方依赖与 CDN 资源',
+};
+
 function getNodeColor(node) {
     if (node.group && GROUP_COLORS[node.group]) return GROUP_COLORS[node.group];
     if (node.type && GROUP_COLORS[node.type]) return GROUP_COLORS[node.type];
@@ -198,8 +275,18 @@ function extractLegendGroups(nodes) {
         const g = n.group || n.type;
         if (!g || seen.has(g)) continue;
         seen.add(g);
-        groups.push({ name: g, color: getNodeColor(n) });
+        groups.push({
+            name: g,
+            color: getNodeColor(n),
+            desc: GROUP_DESCRIPTIONS[g] || '',
+        });
     }
+    // 按颜色类别排序：先将有描述的排前面，再按名称排序
+    groups.sort((a, b) => {
+        if (a.desc && !b.desc) return -1;
+        if (!a.desc && b.desc) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+    });
     return groups;
 }
 
@@ -215,7 +302,7 @@ registerGlobalComponent({
         height:         { type: Number, default: 0 },
         highlightFile:  { type: String, default: '' },
     },
-    emits: ['close', 'node-click'],
+    emits: ['close', 'node-click', 'node-dblclick'],
     data() {
         return {
             cy: null,
@@ -367,6 +454,40 @@ registerGlobalComponent({
             cy.on('tap', 'node', (evt) => {
                 const node = evt.target;
                 this._selectNode(node, cy);
+            });
+
+            // 双击节点 → 打开关联文件
+            cy.on('dbltap', 'node', (evt) => {
+                const node = evt.target;
+                const data = node.data();
+                if (data.file) {
+                    // 视觉反馈：节点脉冲动画
+                    node.style({
+                        'border-width': 6,
+                        'border-color': '#FFFFFF',
+                        'border-opacity': 1,
+                        'transition-property': 'border-width, border-color, border-opacity',
+                        'transition-duration': 100,
+                    });
+                    setTimeout(() => {
+                        if (!node.removed()) {
+                            node.style({
+                                'border-width': 2,
+                                'border-color': 'data(color)',
+                                'border-opacity': 0.4,
+                            });
+                        }
+                    }, 300);
+
+                    this.$emit('node-dblclick', {
+                        id: data.id,
+                        label: data.label,
+                        type: data.type,
+                        group: data.group,
+                        file: data.file,
+                        description: data.description,
+                    });
+                }
             });
 
             // 点击空白取消选中

@@ -51,9 +51,16 @@
 
     <!-- 图例 -->
     <div class="kg-legend-bar">
-        <span class="kg-legend-item" v-for="group in legendGroups" :key="group.name">
+        <span
+            class="kg-legend-item"
+            v-for="group in legendGroups"
+            :key="group.name"
+            :title="group.desc || group.name"
+        >
             <span class="kg-legend-dot" :style="{ background: group.color }"></span>
-            {{ group.name }}
+            <span class="kg-legend-name">{{ group.name }}</span>
+            <span v-if="group.desc" class="kg-legend-sep">·</span>
+            <span v-if="group.desc" class="kg-legend-desc">{{ group.desc }}</span>
         </span>
     </div>
 
