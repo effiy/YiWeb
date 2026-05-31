@@ -211,6 +211,67 @@
       </div>
       <div class="graph-reader-body">
         <div class="graph-reader-canvas" ref="kgCanvas"></div>
+        <!-- 图谱总览（未选中节点时） -->
+        <div v-if="!kgSelectedNode && kgGraphOverview" class="graph-node-detail">
+          <div class="graph-node-detail-header">
+            <span class="graph-node-detail-label">{{ kgGraphOverview.storyName }}</span>
+          </div>
+          <p v-if="kgGraphOverview.description" class="graph-node-detail-desc">{{ kgGraphOverview.description }}</p>
+
+          <div class="graph-node-detail-section">
+            <div class="graph-node-detail-section-title">图谱统计</div>
+            <div class="graph-overview-stats">
+              <div class="graph-overview-stat">
+                <span class="graph-overview-stat-num">{{ kgGraphOverview.totalNodes }}</span>
+                <span class="graph-overview-stat-label">节点</span>
+              </div>
+              <div class="graph-overview-stat">
+                <span class="graph-overview-stat-num">{{ kgGraphOverview.totalEdges }}</span>
+                <span class="graph-overview-stat-label">边</span>
+              </div>
+              <div class="graph-overview-stat">
+                <span class="graph-overview-stat-num">{{ kgGraphOverview.scenarioCount }}</span>
+                <span class="graph-overview-stat-label">场景</span>
+              </div>
+              <div v-if="kgGraphOverview.hasFilter" class="graph-overview-stat highlight">
+                <span class="graph-overview-stat-num">{{ kgGraphOverview.matchedNodes }}</span>
+                <span class="graph-overview-stat-label">关联</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-node-detail-section" v-if="kgGraphOverview.topGroups.length">
+            <div class="graph-node-detail-section-title">节点分组</div>
+            <div class="graph-overview-bars">
+              <div v-for="[name, count] in kgGraphOverview.topGroups" :key="name" class="graph-overview-bar">
+                <span class="graph-overview-bar-label">{{ name }}</span>
+                <span class="graph-overview-bar-count">{{ count }}</span>
+                <div class="graph-overview-bar-track"><div class="graph-overview-bar-fill" :style="{width: (count/kgGraphOverview.totalNodes*100)+'%'}"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-node-detail-section" v-if="kgGraphOverview.topRelations.length">
+            <div class="graph-node-detail-section-title">关系类型</div>
+            <div class="graph-overview-rels">
+              <span v-for="[name, count] in kgGraphOverview.topRelations" :key="name" class="graph-overview-rel">
+                {{ name }} ({{ count }})
+              </span>
+            </div>
+          </div>
+
+          <div class="graph-node-detail-section">
+            <div class="graph-node-detail-section-title">操作提示</div>
+            <ul class="graph-overview-tips">
+              <li>🖱️ 滚轮缩放 · 拖拽平移</li>
+              <li>👆 单击节点查看详情</li>
+              <li>👆👆 双击节点打开文件</li>
+              <li>⌨️ ⊞ 适应视图 · ↻ 重置布局</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 节点详情（选中节点时） -->
         <div v-if="kgSelectedNode" class="graph-node-detail">
           <div class="graph-node-detail-header">
             <div class="graph-node-detail-header-left">

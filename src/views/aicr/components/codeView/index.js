@@ -169,7 +169,8 @@ const componentOptions = {
             kgTitle: '',
             kgAllNodes: null,
             kgSelectedNode: null,
-            kgMatchedIds: null
+            kgMatchedIds: null,
+            kgGraphOverview: null
         };
     },
     computed: {
@@ -325,15 +326,16 @@ const componentOptions = {
                 this.saveError = '';
             }
 
-            // KG 模式下自动跟随文件切换
-            if (this.showKnowledgeGraph && this.canShowKnowledgeGraph) {
+            // 故事任务 MD / 知识图谱 JSON → 自动展示图谱
+            if (this.canShowKnowledgeGraph) {
+                this.showKnowledgeGraph = true;
                 this.kgGraphData = null;
                 this.kgError = '';
                 this.$nextTick(() => this.loadKnowledgeGraph());
                 return;
             }
 
-            // 非 KG 模式或无兼容文件 → 重置图谱
+            // 非兼容文件 → 关闭图谱
             this.showKnowledgeGraph = false;
             this.kgGraphData = null;
             this.kgError = '';
@@ -1369,9 +1371,13 @@ const componentOptions = {
                     const raw = String(this.rawContent || '');
                     if (!raw) throw new Error('文件内容为空');
                     const data = JSON.parse(raw);
-                    this.kgGraphData = data.graph || { nodes: [], edges: [] };
+                    const nodes = data.graph?.nodes || [];
+                    const edges = data.graph?.edges || [];
+                    this.kgGraphData = { nodes, edges };
                     this.kgTitle = (data.story && data.story.name) || fileName;
-                    this.kgAllNodes = data.graph?.nodes || [];
+                    this.kgAllNodes = nodes;
+                    this.kgMatchedIds = null;
+                    this.kgGraphOverview = this._buildGraphOverview(nodes, edges, data, false, 0);
                     return;
                 }
 
@@ -1380,9 +1386,13 @@ const componentOptions = {
                     const raw = String(this.rawContent || '');
                     if (!raw) throw new Error('文件内容为空');
                     const data = JSON.parse(raw);
-                    this.kgGraphData = data.graph || { nodes: [], edges: [] };
+                    const nodes = data.graph?.nodes || [];
+                    const edges = data.graph?.edges || [];
+                    this.kgGraphData = { nodes, edges };
                     this.kgTitle = (data.story && data.story.name) || '故事依赖关系图';
-                    this.kgAllNodes = data.graph?.nodes || [];
+                    this.kgAllNodes = nodes;
+                    this.kgMatchedIds = null;
+                    this.kgGraphOverview = this._buildGraphOverview(nodes, edges, data, false, 0);
                     return;
                 }
 
@@ -1417,45 +1427,64 @@ const componentOptions = {
 
                 // Find nodes related to this MD file
                 const relatedNodeIds = new Set();
-                const fileBase = fileName.replace(/\.md$/i, '');
+                const fileNameClean = fileName.replace(/\\/g, '/').split('/').pop() || '';
+                const fileBase = fileNameClean.replace(/\.md$/i, '');
+                const fileSceneIdx = (fileBase.match(/^场景(\d+)/) || [])[1];
+                const fileSceneNum = fileSceneIdx ? parseInt(fileSceneIdx, 10) : null;
+                const scenarios = data.story?.scenarios || [];
 
                 // Strategy A: Search node.mdFiles for matching file name
                 for (const node of allNodes) {
-                    const mdFiles = node.mdFiles || [];
-                    for (const mf of mdFiles) {
-                        const mfFile = (mf.file || '').replace(/\\/g, '/');
-                        const mfBase = mfFile.split('/').pop() || '';
-                        if (mfFile === fileName ||
-                            mfBase === fileName ||
-                            mfFile.endsWith('/' + fileName) ||
-                            mfFile.includes(fileName) ||
-                            fileName.includes(mfBase)) {
+                    for (const mf of (node.mdFiles || [])) {
+                        const mfFile = (mf.file || '').replace(/\\/g, '/').split('/').pop() || '';
+                        if (mfFile === fileNameClean ||
+                            mfFile === fileBase ||
+                            mfFile.includes(fileBase) ||
+                            fileBase.includes(mfFile)) {
                             relatedNodeIds.add(node.id);
+                            break;
                         }
                     }
                 }
 
-                // Strategy B: Search scenario.graphNodes by matching scenario name to file
-                const scenarios = data.story?.scenarios || [];
-                for (let si = 0; si < scenarios.length; si++) {
-                    const scenario = scenarios[si];
-                    const sn = (scenario.name || '');
-                    // Normalize separators: · and — to -
-                    const snNorm = sn.replace(/[·•—–]\s*/g, '-').replace(/\s+/g, '');
-                    const fbNorm = fileBase.replace(/[·•—–]\s*/g, '-').replace(/\s+/g, '');
-                    // Also extract just the scene number prefix for matching
-                    const sceneNum = sn.match(/^场景(\d+)/);
-                    const fileNum = fileBase.match(/^场景(\d+)/);
-                    if (snNorm.includes(fbNorm) ||
-                        fbNorm.includes(snNorm.split('-')[0] || '') ||
-                        (sceneNum && fileNum && sceneNum[1] === fileNum[1])) {
-                        for (const nid of (scenario.graphNodes || [])) {
+                // Strategy B: Direct scenarioIndex matching (most reliable)
+                if (fileSceneNum !== null) {
+                    // B1: Match mdFiles with same scenarioIndex
+                    for (const node of allNodes) {
+                        for (const mf of (node.mdFiles || [])) {
+                            if (mf.scenarioIndex === fileSceneNum - 1) {
+                                relatedNodeIds.add(node.id);
+                                break;
+                            }
+                        }
+                    }
+                    // B2: Add all graphNodes from the matching scenario
+                    const scenarioIdx = fileSceneNum - 1;
+                    if (scenarioIdx >= 0 && scenarioIdx < scenarios.length) {
+                        for (const nid of (scenarios[scenarioIdx].graphNodes || [])) {
                             relatedNodeIds.add(nid);
                         }
                     }
                 }
 
-                // Strategy C: Keyword-based matching from file name
+                // Strategy C: Scenario name fuzzy matching
+                if (relatedNodeIds.size === 0) {
+                    for (let si = 0; si < scenarios.length; si++) {
+                        const sn = (scenarios[si].name || '');
+                        const snNorm = sn.replace(/[·•—–]\s*/g, '-').replace(/\s+/g, '');
+                        const fbNorm = fileBase.replace(/[·•—–]\s*/g, '-').replace(/\s+/g, '');
+                        const sceneNum = sn.match(/^场景(\d+)/);
+                        if (snNorm.includes(fbNorm) ||
+                            fbNorm.includes(snNorm.split('-')[0] || '') ||
+                            (sceneNum && fileSceneNum === parseInt(sceneNum[1], 10))) {
+                            for (const nid of (scenarios[si].graphNodes || [])) {
+                                relatedNodeIds.add(nid);
+                            }
+                        }
+                    }
+                }
+
+                // Strategy D: Keyword-based matching
                 if (relatedNodeIds.size === 0) {
                     const keywords = fileBase.split(/[-·•\s]+/).filter(k => k.length > 1);
                     for (const node of allNodes) {
@@ -1480,13 +1509,21 @@ const componentOptions = {
 
                 this.kgMatchedIds = relatedNodeIds.size > 0 ? new Set(relatedNodeIds) : null;
                 const hasMatches = relatedNodeIds.size > 0;
-                this.kgGraphData = {
-                    nodes: hasMatches ? filteredNodes : allNodes,
-                    edges: hasMatches ? filteredEdges : allEdges
-                };
+                const resultNodes = hasMatches ? filteredNodes : allNodes;
+                const resultEdges = hasMatches ? filteredEdges : allEdges;
+                this.kgGraphData = { nodes: resultNodes, edges: resultEdges };
                 this.kgTitle = hasMatches
-                    ? `${(data.story && data.story.name) || storyDir} · ${fileName.replace(/\.md$/i, '')}`
+                    ? `${(data.story && data.story.name) || storyDir} · ${fileNameClean.replace(/\.md$/i, '')}`
                     : `${(data.story && data.story.name) || storyDir} (全部节点)`;
+
+                // Build overview
+                this.kgGraphOverview = this._buildGraphOverview(
+                    resultNodes, resultEdges, data, hasMatches,
+                    this.kgMatchedIds ? this.kgMatchedIds.size : 0
+                );
+                if (!this.kgGraphOverview.storyName) {
+                    this.kgGraphOverview.storyName = storyDir;
+                }
 
             } catch (err) {
                 console.error('[CodeView] 加载知识图谱失败:', err);
@@ -1739,6 +1776,34 @@ const componentOptions = {
                     try { this._cy.layout(opts).run(); return; } catch (_) {}
                 }
             }
+        },
+
+        _buildGraphOverview(nodes, edges, data, hasFilter, matchedCount) {
+            const groupCounts = {};
+            const relationCounts = {};
+            for (const n of nodes) {
+                const g = n.group || n.type || 'other';
+                groupCounts[g] = (groupCounts[g] || 0) + 1;
+            }
+            for (const e of edges) {
+                const r = e.relation || e.label || 'other';
+                relationCounts[r] = (relationCounts[r] || 0) + 1;
+            }
+            const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            const storyDesc = (data.story && data.story.description) || '';
+            const scenarios = data.story?.scenarios || [];
+            return {
+                storyName: (data.story && data.story.name) || '',
+                description: storyDesc,
+                totalNodes: nodes.length,
+                totalEdges: edges.length,
+                matchedNodes: matchedCount,
+                scenarioCount: scenarios.length,
+                topGroups,
+                topRelations,
+                hasFilter,
+            };
         },
 
         _destroyCyGraph() {

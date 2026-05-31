@@ -400,17 +400,20 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [
@@ -435,12 +438,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": [
@@ -464,12 +469,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": []
@@ -489,12 +496,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": [
@@ -524,17 +533,20 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [
@@ -560,12 +572,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": [
@@ -594,7 +608,8 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           }
         ],
         "relatedNodes": [
@@ -623,7 +638,8 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           }
         ],
         "relatedNodes": [
@@ -651,17 +667,20 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": []
@@ -680,12 +699,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": []
@@ -704,12 +725,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": []
@@ -729,12 +752,14 @@
           {
             "scenario": "场景1 · 模块定位 — 快速找到功能归属",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-模块定位.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": []
@@ -753,7 +778,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -774,7 +800,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -799,7 +826,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -820,7 +848,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -842,12 +871,14 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [
@@ -878,12 +909,14 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [
@@ -908,7 +941,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -932,7 +966,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -958,7 +993,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": [
@@ -984,12 +1020,14 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [
@@ -1017,7 +1055,8 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           }
         ],
         "relatedNodes": []
@@ -1036,12 +1075,14 @@
           {
             "scenario": "场景2 · 数据流追踪 — 用户操作到界面更新全链路",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-数据流追踪.md"
           },
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": []
@@ -1061,7 +1102,8 @@
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": [
@@ -1089,7 +1131,8 @@
           {
             "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": []
@@ -1109,7 +1152,8 @@
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [
@@ -1130,7 +1174,8 @@
           {
             "scenario": "场景4 · 依赖变更影响 — 修改前评估波及范围",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-依赖变更影响.md"
           }
         ],
         "relatedNodes": [

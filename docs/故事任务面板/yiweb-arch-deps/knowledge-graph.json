@@ -173,12 +173,14 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           },
           {
             "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-重构规划.md"
           }
         ],
         "relatedNodes": [
@@ -201,7 +203,8 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           }
         ],
         "relatedNodes": [
@@ -223,7 +226,8 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           }
         ],
         "relatedNodes": [
@@ -247,12 +251,14 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           },
           {
             "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-健康度检查.md"
           }
         ],
         "relatedNodes": []
@@ -272,7 +278,8 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           }
         ],
         "relatedNodes": [
@@ -298,12 +305,14 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           },
           {
             "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-重构规划.md"
           }
         ],
         "relatedNodes": []
@@ -322,7 +331,8 @@
           {
             "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
             "scenarioIndex": 0,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景1-影响评估.md"
           }
         ],
         "relatedNodes": []
@@ -342,7 +352,8 @@
           {
             "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-健康度检查.md"
           }
         ],
         "relatedNodes": [
@@ -367,7 +378,8 @@
           {
             "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
             "scenarioIndex": 1,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景2-健康度检查.md"
           }
         ],
         "relatedNodes": [
@@ -390,7 +402,8 @@
           {
             "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新增依赖评估.md"
           }
         ],
         "relatedNodes": []
@@ -409,7 +422,8 @@
           {
             "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
             "scenarioIndex": 2,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景3-新增依赖评估.md"
           }
         ],
         "relatedNodes": []
@@ -429,7 +443,8 @@
           {
             "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
             "scenarioIndex": 3,
-            "section": "§7 关联源码"
+            "section": "§7 关联源码",
+            "file": "场景4-重构规划.md"
           }
         ],
         "relatedNodes": [

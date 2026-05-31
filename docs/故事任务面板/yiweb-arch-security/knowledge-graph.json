@@ -243,8 +243,16 @@
           "解析"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          }
         ],
         "relatedNodes": [
           "projectZipMethods",
@@ -263,8 +271,16 @@
           "文件上传预检"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          }
         ],
         "relatedNodes": [
           "config",
@@ -282,9 +298,21 @@
           "输入处理"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景4-XSS评估.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · XSS 评估"
+          }
         ],
         "relatedNodes": [
           "config",
@@ -304,9 +332,21 @@
           "'omit'"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景3-认证排查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 认证排查"
+          }
         ],
         "relatedNodes": [
           "authUtils",
@@ -326,9 +366,21 @@
           "X-Token"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景3-认证排查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 认证排查"
+          }
         ],
         "relatedNodes": [
           "requestHelper",
@@ -347,9 +399,21 @@
           "handle401Error()"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景3-认证排查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 认证排查"
+          }
         ],
         "relatedNodes": [
           "requestHelper",
@@ -367,9 +431,21 @@
           "DOMPurify"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景4-XSS评估.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · XSS 评估"
+          }
         ],
         "relatedNodes": [
           "PluginSystem",
@@ -388,9 +464,21 @@
           "插件注册顺序"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景4-XSS评估.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · XSS 评估"
+          }
         ],
         "relatedNodes": [
           "SanitizePlugin",
@@ -408,8 +496,16 @@
           "配置测试"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          }
         ],
         "relatedNodes": [
           "config"
@@ -426,9 +522,21 @@
           "请求封装测试"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景3-认证排查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 认证排查"
+          }
         ],
         "relatedNodes": [
           "requestHelper"
@@ -445,9 +553,21 @@
           "认证测试"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景3-认证排查.md", "section": "§7 关联源码", "scenario": "场景3 · 认证排查" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景3-认证排查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景3 · 认证排查"
+          }
         ],
         "relatedNodes": [
           "authUtils"
@@ -464,7 +584,11 @@
           "自查对照表"
         ],
         "mdFiles": [
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" }
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          }
         ],
         "relatedNodes": [
           "requestHelper",
@@ -482,9 +606,21 @@
           "renderMarkdownHtml()"
         ],
         "mdFiles": [
-          { "file": "场景1-安全审计.md", "section": "§7 关联源码", "scenario": "场景1 · 安全审计" },
-          { "file": "场景2-安全自查.md", "section": "§7 关联源码", "scenario": "场景2 · 安全自查" },
-          { "file": "场景4-XSS评估.md", "section": "§7 关联源码", "scenario": "场景4 · XSS 评估" }
+          {
+            "file": "场景1-安全审计.md",
+            "section": "§7 关联源码",
+            "scenario": "场景1 · 安全审计"
+          },
+          {
+            "file": "场景2-安全自查.md",
+            "section": "§7 关联源码",
+            "scenario": "场景2 · 安全自查"
+          },
+          {
+            "file": "场景4-XSS评估.md",
+            "section": "§7 关联源码",
+            "scenario": "场景4 · XSS 评估"
+          }
         ],
         "relatedNodes": [
           "SanitizePlugin",

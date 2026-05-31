@@ -24,7 +24,14 @@
             "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-reporter", "ST-doc-claude", "ST-test-full", "ST-check-security"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-reporter",
+          "ST-doc-claude",
+          "ST-test-full",
+          "ST-check-security"
+        ]
       },
       {
         "id": "ST-incremental",
@@ -46,7 +53,13 @@
             "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-reporter", "ST-test-incremental", "ST-check-security"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-reporter",
+          "ST-test-incremental",
+          "ST-check-security"
+        ]
       },
       {
         "id": "ST-consistency",
@@ -63,7 +76,12 @@
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
           }
         ],
-        "relatedNodes": ["ST-doc-modules", "ST-code-actual", "ST-reporter", "ST-check-deps"]
+        "relatedNodes": [
+          "ST-doc-modules",
+          "ST-code-actual",
+          "ST-reporter",
+          "ST-check-deps"
+        ]
       },
       {
         "id": "ST-rule-registry",
@@ -85,7 +103,18 @@
             "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件"
           }
         ],
-        "relatedNodes": ["ST-check-completeness", "ST-check-arch", "ST-check-security", "ST-check-version", "ST-check-branch", "ST-check-doc-format", "ST-check-code-style", "ST-check-deps", "ST-full", "ST-incremental"]
+        "relatedNodes": [
+          "ST-check-completeness",
+          "ST-check-arch",
+          "ST-check-security",
+          "ST-check-version",
+          "ST-check-branch",
+          "ST-check-doc-format",
+          "ST-check-code-style",
+          "ST-check-deps",
+          "ST-full",
+          "ST-incremental"
+        ]
       },
       {
         "id": "ST-engine",
@@ -93,7 +122,11 @@
         "type": "engine",
         "group": "规则引擎",
         "description": "顺序/并行/降级执行策略",
-        "strategies": ["sequential", "parallel", "degraded"],
+        "strategies": [
+          "sequential",
+          "parallel",
+          "degraded"
+        ],
         "file": "",
         "mdFiles": [
           {
@@ -107,7 +140,18 @@
             "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件"
           }
         ],
-        "relatedNodes": ["ST-full", "ST-incremental", "ST-check-completeness", "ST-check-arch", "ST-check-security", "ST-check-version", "ST-check-branch", "ST-check-doc-format", "ST-check-code-style", "ST-check-deps"]
+        "relatedNodes": [
+          "ST-full",
+          "ST-incremental",
+          "ST-check-completeness",
+          "ST-check-arch",
+          "ST-check-security",
+          "ST-check-version",
+          "ST-check-branch",
+          "ST-check-doc-format",
+          "ST-check-code-style",
+          "ST-check-deps"
+        ]
       },
       {
         "id": "ST-reporter",
@@ -115,7 +159,10 @@
         "type": "output",
         "group": "输出",
         "description": "JSON + 终端格式报告输出",
-        "formats": ["json", "terminal"],
+        "formats": [
+          "json",
+          "terminal"
+        ],
         "file": "",
         "mdFiles": [
           {
@@ -134,7 +181,11 @@
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
           }
         ],
-        "relatedNodes": ["ST-full", "ST-incremental", "ST-consistency"]
+        "relatedNodes": [
+          "ST-full",
+          "ST-incremental",
+          "ST-consistency"
+        ]
       },
       {
         "id": "ST-check-completeness",
@@ -152,7 +203,12 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-doc-claude", "ST-rule-registry", "ST-engine", "ST-full"]
+        "relatedNodes": [
+          "ST-doc-claude",
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full"
+        ]
       },
       {
         "id": "ST-check-arch",
@@ -170,7 +226,12 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-doc-arch", "ST-rule-registry", "ST-engine", "ST-full"]
+        "relatedNodes": [
+          "ST-doc-arch",
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full"
+        ]
       },
       {
         "id": "ST-check-security",
@@ -193,7 +254,15 @@
             "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-full", "ST-incremental", "ST-test-full", "ST-test-incremental", "ST-doc-claude"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full",
+          "ST-incremental",
+          "ST-test-full",
+          "ST-test-incremental",
+          "ST-doc-claude"
+        ]
       },
       {
         "id": "ST-check-version",
@@ -211,7 +280,11 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-full"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full"
+        ]
       },
       {
         "id": "ST-check-branch",
@@ -229,7 +302,11 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-full"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full"
+        ]
       },
       {
         "id": "ST-check-doc-format",
@@ -247,7 +324,11 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-full"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full"
+        ]
       },
       {
         "id": "ST-check-code-style",
@@ -265,7 +346,11 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-rule-registry", "ST-engine", "ST-full"]
+        "relatedNodes": [
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-full"
+        ]
       },
       {
         "id": "ST-check-deps",
@@ -288,7 +373,12 @@
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
           }
         ],
-        "relatedNodes": ["ST-doc-modules", "ST-rule-registry", "ST-engine", "ST-consistency"]
+        "relatedNodes": [
+          "ST-doc-modules",
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-consistency"
+        ]
       },
       {
         "id": "ST-doc-claude",
@@ -309,7 +399,11 @@
             "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查"
           }
         ],
-        "relatedNodes": ["ST-check-completeness", "ST-full", "ST-check-security"]
+        "relatedNodes": [
+          "ST-check-completeness",
+          "ST-full",
+          "ST-check-security"
+        ]
       },
       {
         "id": "ST-doc-arch",
@@ -325,7 +419,9 @@
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
           }
         ],
-        "relatedNodes": ["ST-check-arch"]
+        "relatedNodes": [
+          "ST-check-arch"
+        ]
       },
       {
         "id": "ST-doc-modules",
@@ -341,7 +437,10 @@
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
           }
         ],
-        "relatedNodes": ["ST-consistency", "ST-check-deps"]
+        "relatedNodes": [
+          "ST-consistency",
+          "ST-check-deps"
+        ]
       },
       {
         "id": "ST-code-actual",
@@ -358,7 +457,9 @@
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
           }
         ],
-        "relatedNodes": ["ST-consistency"]
+        "relatedNodes": [
+          "ST-consistency"
+        ]
       },
       {
         "id": "ST-test-full",
@@ -379,7 +480,10 @@
             "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查"
           }
         ],
-        "relatedNodes": ["ST-full", "ST-check-security"]
+        "relatedNodes": [
+          "ST-full",
+          "ST-check-security"
+        ]
       },
       {
         "id": "ST-test-incremental",
@@ -400,45 +504,213 @@
             "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查"
           }
         ],
-        "relatedNodes": ["ST-incremental", "ST-check-security"]
+        "relatedNodes": [
+          "ST-incremental",
+          "ST-check-security"
+        ]
       }
     ],
     "edges": [
-      { "source": "ST-full", "target": "ST-rule-registry", "relation": "uses", "label": "加载全部规则" },
-      { "source": "ST-full", "target": "ST-engine", "relation": "drives", "label": "驱动执行" },
-      { "source": "ST-full", "target": "ST-reporter", "relation": "produces", "label": "生成报告" },
-      { "source": "ST-incremental", "target": "ST-rule-registry", "relation": "uses", "label": "加载变更规则" },
-      { "source": "ST-incremental", "target": "ST-engine", "relation": "drives", "label": "驱动执行" },
-      { "source": "ST-incremental", "target": "ST-reporter", "relation": "produces", "label": "生成报告" },
-      { "source": "ST-consistency", "target": "ST-doc-modules", "relation": "compares", "label": "文档声称" },
-      { "source": "ST-consistency", "target": "ST-code-actual", "relation": "compares", "label": "代码实际" },
-      { "source": "ST-consistency", "target": "ST-reporter", "relation": "produces", "label": "差异清单" },
-      { "source": "ST-rule-registry", "target": "ST-check-completeness", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-arch", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-security", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-version", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-branch", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-doc-format", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-code-style", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-rule-registry", "target": "ST-check-deps", "relation": "contains", "label": "规则定义" },
-      { "source": "ST-engine", "target": "ST-check-completeness", "relation": "executes", "label": "执行" },
-      { "source": "ST-engine", "target": "ST-check-arch", "relation": "executes", "label": "执行" },
-      { "source": "ST-engine", "target": "ST-check-security", "relation": "executes", "label": "执行" },
-      { "source": "ST-check-completeness", "target": "ST-doc-claude", "relation": "validates", "label": "检查" },
-      { "source": "ST-check-arch", "target": "ST-doc-arch", "relation": "validates", "label": "检查" },
-      { "source": "ST-check-deps", "target": "ST-doc-modules", "relation": "validates", "label": "检查" },
-      { "source": "ST-test-full", "target": "ST-full", "relation": "tests", "label": "验证" },
-      { "source": "ST-test-incremental", "target": "ST-incremental", "relation": "tests", "label": "验证" }
+      {
+        "source": "ST-full",
+        "target": "ST-rule-registry",
+        "relation": "uses",
+        "label": "加载全部规则"
+      },
+      {
+        "source": "ST-full",
+        "target": "ST-engine",
+        "relation": "drives",
+        "label": "驱动执行"
+      },
+      {
+        "source": "ST-full",
+        "target": "ST-reporter",
+        "relation": "produces",
+        "label": "生成报告"
+      },
+      {
+        "source": "ST-incremental",
+        "target": "ST-rule-registry",
+        "relation": "uses",
+        "label": "加载变更规则"
+      },
+      {
+        "source": "ST-incremental",
+        "target": "ST-engine",
+        "relation": "drives",
+        "label": "驱动执行"
+      },
+      {
+        "source": "ST-incremental",
+        "target": "ST-reporter",
+        "relation": "produces",
+        "label": "生成报告"
+      },
+      {
+        "source": "ST-consistency",
+        "target": "ST-doc-modules",
+        "relation": "compares",
+        "label": "文档声称"
+      },
+      {
+        "source": "ST-consistency",
+        "target": "ST-code-actual",
+        "relation": "compares",
+        "label": "代码实际"
+      },
+      {
+        "source": "ST-consistency",
+        "target": "ST-reporter",
+        "relation": "produces",
+        "label": "差异清单"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-completeness",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-arch",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-security",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-version",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-branch",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-doc-format",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-code-style",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-rule-registry",
+        "target": "ST-check-deps",
+        "relation": "contains",
+        "label": "规则定义"
+      },
+      {
+        "source": "ST-engine",
+        "target": "ST-check-completeness",
+        "relation": "executes",
+        "label": "执行"
+      },
+      {
+        "source": "ST-engine",
+        "target": "ST-check-arch",
+        "relation": "executes",
+        "label": "执行"
+      },
+      {
+        "source": "ST-engine",
+        "target": "ST-check-security",
+        "relation": "executes",
+        "label": "执行"
+      },
+      {
+        "source": "ST-check-completeness",
+        "target": "ST-doc-claude",
+        "relation": "validates",
+        "label": "检查"
+      },
+      {
+        "source": "ST-check-arch",
+        "target": "ST-doc-arch",
+        "relation": "validates",
+        "label": "检查"
+      },
+      {
+        "source": "ST-check-deps",
+        "target": "ST-doc-modules",
+        "relation": "validates",
+        "label": "检查"
+      },
+      {
+        "source": "ST-test-full",
+        "target": "ST-full",
+        "relation": "tests",
+        "label": "验证"
+      },
+      {
+        "source": "ST-test-incremental",
+        "target": "ST-incremental",
+        "relation": "tests",
+        "label": "验证"
+      }
     ],
     "rules": [
-      { "id": "claude-completeness", "category": "文档", "severity": "P0", "description": "CLAUDE.md 五大标记段是否完整" },
-      { "id": "architecture-rules", "category": "架构", "severity": "P0", "description": "模块间 import 方向是否符合分层约束" },
-      { "id": "security-scan", "category": "安全", "severity": "P0", "description": "代码中是否藏有硬编码密码或密钥" },
-      { "id": "version-consistency", "category": "版本", "severity": "P1", "description": "各处版本号是否一致" },
-      { "id": "branch-naming", "category": "分支", "severity": "P1", "description": "分支名是否符合 feat/<name> 规范" },
-      { "id": "doc-format", "category": "文档", "severity": "P1", "description": "文档格式和引用完整性" },
-      { "id": "code-style", "category": "代码", "severity": "P2", "description": "代码风格一致性" },
-      { "id": "dependency-check", "category": "架构", "severity": "P1", "description": "依赖矩阵与实际 import 一致性" }
+      {
+        "id": "claude-completeness",
+        "category": "文档",
+        "severity": "P0",
+        "description": "CLAUDE.md 五大标记段是否完整"
+      },
+      {
+        "id": "architecture-rules",
+        "category": "架构",
+        "severity": "P0",
+        "description": "模块间 import 方向是否符合分层约束"
+      },
+      {
+        "id": "security-scan",
+        "category": "安全",
+        "severity": "P0",
+        "description": "代码中是否藏有硬编码密码或密钥"
+      },
+      {
+        "id": "version-consistency",
+        "category": "版本",
+        "severity": "P1",
+        "description": "各处版本号是否一致"
+      },
+      {
+        "id": "branch-naming",
+        "category": "分支",
+        "severity": "P1",
+        "description": "分支名是否符合 feat/<name> 规范"
+      },
+      {
+        "id": "doc-format",
+        "category": "文档",
+        "severity": "P1",
+        "description": "文档格式和引用完整性"
+      },
+      {
+        "id": "code-style",
+        "category": "代码",
+        "severity": "P2",
+        "description": "代码风格一致性"
+      },
+      {
+        "id": "dependency-check",
+        "category": "架构",
+        "severity": "P1",
+        "description": "依赖矩阵与实际 import 一致性"
+      }
     ]
   },
   "story": {
@@ -449,55 +721,159 @@
         "name": "场景1 · 全量自检 — 项目初始化后完整检查",
         "description": "扫描项目根目录 → 检查项目说明(完整项目画像?) → 检查项目说明书(≥3个领域术语?) → 检查故事目录(每个任务都有完整文档?) → 检查架构规则(模块间有违规引用?) → 检查安全(代码中藏有密码或密钥?) → 检查版本(各处版本号一致?) → 检查分支(分支名规范?) → 全部通过生成健康报告",
         "sourceFiles": [
-          { "type": "开发", "file": "自检脚本", "keyContent": "检查项注册表 (JSON)", "description": "15 项规则配置" },
-          { "type": "开发", "file": "自检脚本", "keyContent": "执行引擎", "description": "顺序/并行/降级" },
-          { "type": "开发", "file": "自检脚本", "keyContent": "报告生成器", "description": "JSON + 终端" },
-          { "type": "开发", "file": "CLAUDE.md", "keyContent": "五大标记段", "description": "claude-completeness 检查依据" },
-          { "type": "测试", "file": "tests/self-test/full.test.js", "keyContent": "全量自检测试", "description": "验证合规+违规场景" }
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "检查项注册表 (JSON)",
+            "description": "15 项规则配置"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "执行引擎",
+            "description": "顺序/并行/降级"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "报告生成器",
+            "description": "JSON + 终端"
+          },
+          {
+            "type": "开发",
+            "file": "CLAUDE.md",
+            "keyContent": "五大标记段",
+            "description": "claude-completeness 检查依据"
+          },
+          {
+            "type": "测试",
+            "file": "tests/self-test/full.test.js",
+            "keyContent": "全量自检测试",
+            "description": "验证合规+违规场景"
+          }
         ],
         "wireframe": "全量自检流程:\n\n  ┌──────────────────────────────────────────────────────────┐\n  │                    全量自检引擎                          │\n  ├──────────────────────────────────────────────────────────┤\n  │  输入: 项目根目录                                        │\n  │  输出: 健康报告 (JSON + 终端)                            │\n  ├──────────────────────────────────────────────────────────┤\n  │                                                          │\n  │  ① 扫描根目录  →  ② 加载15项规则  →  ③ 顺序/并行执行    │\n  │       │                  │                    │          │\n  │       ▼                  ▼                    ▼          │\n  │  ┌─────────┐      ┌───────────┐        ┌───────────┐    │\n  │  │检查项目 │      │claude-    │        │architecture│    │\n  │  │说明     │      │completenes│        │-rules      │    │\n  │  │(5字段)  │      │s (标记段) │        │(分层约束)  │    │\n  │  └─────────┘      └───────────┘        └───────────┘    │\n  │                                                          │\n  │  ┌─────────┐      ┌───────────┐        ┌───────────┐    │\n  │  │检查故事 │      │security-  │        │version-    │    │\n  │  │目录     │      │scan       │        │consistency │    │\n  │  │(文档完整)│      │(密钥检测) │        │(版本一致)  │    │\n  │  └─────────┘      └───────────┘        └───────────┘    │\n  │                                                          │\n  │  ┌─────────┐      ┌───────────┐        ┌───────────┐    │\n  │  │branch-  │      │doc-format │        │code-style  │    │\n  │  │naming   │      │(引用完整) │        │(风格一致)  │    │\n  │  │(feat/*) │      └───────────┘        └───────────┘    │\n  │  └─────────┘                                             │\n  │                                                          │\n  │  ④ 汇总结果 → ⑤ 生成健康度报告 (全部通过/部分失败)       │\n  └──────────────────────────────────────────────────────────┘",
         "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
         "graphNodes": [
-          "ST-full", "ST-rule-registry", "ST-engine", "ST-reporter",
-          "ST-check-completeness", "ST-check-arch", "ST-check-security",
-          "ST-check-version", "ST-check-branch", "ST-check-doc-format",
-          "ST-check-code-style", "ST-check-deps", "ST-doc-claude", "ST-test-full"
+          "ST-full",
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-reporter",
+          "ST-check-completeness",
+          "ST-check-arch",
+          "ST-check-security",
+          "ST-check-version",
+          "ST-check-branch",
+          "ST-check-doc-format",
+          "ST-check-code-style",
+          "ST-check-deps",
+          "ST-doc-claude",
+          "ST-test-full"
         ]
       },
       {
         "name": "场景2 · 增量自检 — 提交前仅检查变更文件",
         "description": "提交触发 → 找出本次变更了哪些文件 → 有文件变更? → 按文件类型分类(文档/代码/配置) → 变更了文档?(检查文档格式+引用) / 变更了代码?(检查安全+日志+架构) / 变更了配置?(检查环境切换) → 全部通过(允许提交) / 有失败(阻断提交列出失败项)",
         "sourceFiles": [
-          { "type": "开发", "file": "自检脚本 (增量模式)", "keyContent": "git diff --name-only", "description": "变更检测" },
-          { "type": "开发", "file": "自检脚本", "keyContent": "按扩展名分发检查", "description": "文档(.md)/代码(.js)/配置(.json)" },
-          { "type": "测试", "file": "tests/self-test/incremental.test.js", "keyContent": "增量自检测试", "description": "验证混合变更场景" }
+          {
+            "type": "开发",
+            "file": "自检脚本 (增量模式)",
+            "keyContent": "git diff --name-only",
+            "description": "变更检测"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本",
+            "keyContent": "按扩展名分发检查",
+            "description": "文档(.md)/代码(.js)/配置(.json)"
+          },
+          {
+            "type": "测试",
+            "file": "tests/self-test/incremental.test.js",
+            "keyContent": "增量自检测试",
+            "description": "验证混合变更场景"
+          }
         ],
         "wireframe": "增量自检流程 (提交前):\n\n  git commit 触发\n        │\n        ▼\n  ┌──────────────────┐\n  │ git diff         │\n  │ --name-only      │\n  └────────┬─────────┘\n           ▼\n  ┌──────────────────┐\n  │ 按文件类型分类   │\n  └────────┬─────────┘\n           │\n    ┌──────┼──────┐\n    ▼      ▼      ▼\n  文档   代码    配置\n  (.md)  (.js)  (.json)\n    │      │      │\n    ▼      ▼      ▼\n  格式   安全    环境\n  引用   日志    切换\n  完整   架构    ENDPOINTS\n    │      │      │\n    └──────┼──────┘\n           ▼\n  ┌──────────────────┐\n  │ 全部通过 → 允许  │\n  │ 有失败   → 阻断  │\n  └──────────────────┘",
         "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
-        "graphNodes": ["ST-incremental", "ST-rule-registry", "ST-engine", "ST-reporter", "ST-test-incremental"]
+        "graphNodes": [
+          "ST-incremental",
+          "ST-rule-registry",
+          "ST-engine",
+          "ST-reporter",
+          "ST-test-incremental"
+        ]
       },
       {
         "name": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
         "description": "读取模块地图了解文档声称的目录结构 → 扫描实际代码列出真实存在的目录和文件 → 对比视图层(文档列出的视图代码中都有吗?) → 反向检查(代码中有而文档未列出的模块) → 对比服务层(文档中的服务实际文件存在吗?) → 汇总差异清单 → 差异数=0(完全一致评审可继续) / 差异数>0(发现不一致建议先修复)",
         "sourceFiles": [
-          { "type": "开发", "file": "模块地图文档", "keyContent": "全部模块条目", "description": "文档基线" }
+          {
+            "type": "开发",
+            "file": "模块地图文档",
+            "keyContent": "全部模块条目",
+            "description": "文档基线"
+          }
         ],
         "wireframe": "一致性校验:\n\n  ┌─────────────────────┐         ┌─────────────────────┐\n  │   文档基线 (声称)    │         │   代码实际 (真实)    │\n  ├─────────────────────┤         ├─────────────────────┤\n  │ 模块地图文档        │         │ git 仓库文件结构     │\n  │  ├─ 视图层: aicr    │  对比   │  ├─ src/views/aicr/  │\n  │  │  claude story    │ ◄─────► │  │  claude/ story/   │\n  │  ├─ 服务层: crud    │         │  ├─ src/core/        │\n  │  │  request auth    │         │  │  services/        │\n  │  ├─ 框架层: baseView│         │  ├─ cdn/utils/       │\n  │  │  componentLoader │         │  │  view/ core/      │\n  │  └─ 测试层: tests/  │         │  └─ tests/           │\n  └─────────────────────┘         └─────────────────────┘\n                    │\n                    ▼\n  ┌──────────────────────────────────────────────┐\n  │  差异清单:                                   │\n  │  文档有·代码无 → 文档过期 (需更新)           │\n  │  代码有·文档无 → 文档缺失 (需补充)           │\n  │  一致          → 评审可继续                   │\n  └──────────────────────────────────────────────┘",
         "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
-        "graphNodes": ["ST-consistency", "ST-doc-modules", "ST-code-actual", "ST-reporter", "ST-check-deps"]
+        "graphNodes": [
+          "ST-consistency",
+          "ST-doc-modules",
+          "ST-code-actual",
+          "ST-reporter",
+          "ST-check-deps"
+        ]
       },
       {
         "name": "场景4 · 安全回归 — 安全相关变更后触发检查",
         "description": "安全相关代码变更检测 → 变更是否涉及安全面? → 启动安全面回归检查 → 检查密钥暴露 → 检查请求安全 → 检查日志安全 → 检查存储安全 → 检查第三方内容过滤 → 五项全通过?(安全回归通过) / 有发现?(汇总安全问题，高风险阻断)",
         "sourceFiles": [
-          { "type": "开发", "file": "自检脚本 (安全模块)", "keyContent": "`security-no-secrets`", "description": "密钥暴露检查" },
-          { "type": "开发", "file": "自检脚本 (安全模块)", "keyContent": "`security-fetch-credentials`", "description": "请求安全检查" },
-          { "type": "开发", "file": "自检脚本 (安全模块)", "keyContent": "`security-no-raw-log`", "description": "日志安全检查" },
-          { "type": "开发", "file": "src/core/services/helper/requestHelper.js", "keyContent": "credentials:omit", "description": "请求安全验证目标" },
-          { "type": "开发", "file": "cdn/markdown/plugins/SanitizePlugin.js", "keyContent": "DOMPurify", "description": "第三方过滤验证目标" },
-          { "type": "测试", "file": "tests/self-test/security.test.js", "keyContent": "安全回归测试", "description": "验证 5 项检查" }
+          {
+            "type": "开发",
+            "file": "自检脚本 (安全模块)",
+            "keyContent": "`security-no-secrets`",
+            "description": "密钥暴露检查"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本 (安全模块)",
+            "keyContent": "`security-fetch-credentials`",
+            "description": "请求安全检查"
+          },
+          {
+            "type": "开发",
+            "file": "自检脚本 (安全模块)",
+            "keyContent": "`security-no-raw-log`",
+            "description": "日志安全检查"
+          },
+          {
+            "type": "开发",
+            "file": "src/core/services/helper/requestHelper.js",
+            "keyContent": "credentials:omit",
+            "description": "请求安全验证目标"
+          },
+          {
+            "type": "开发",
+            "file": "cdn/markdown/plugins/SanitizePlugin.js",
+            "keyContent": "DOMPurify",
+            "description": "第三方过滤验证目标"
+          },
+          {
+            "type": "测试",
+            "file": "tests/self-test/security.test.js",
+            "keyContent": "安全回归测试",
+            "description": "验证 5 项检查"
+          }
         ],
-        "graphNodes": ["ST-check-security", "ST-full", "ST-incremental", "ST-doc-claude", "ST-test-full", "ST-test-incremental"]
+        "graphNodes": [
+          "ST-check-security",
+          "ST-full",
+          "ST-incremental",
+          "ST-doc-claude",
+          "ST-test-full",
+          "ST-test-incremental"
+        ]
       }
     ]
   }

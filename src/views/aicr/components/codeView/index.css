@@ -429,6 +429,121 @@
     cursor: default;
 }
 
+/* 图谱总览统计 */
+.graph-overview-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.graph-overview-stat {
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+}
+
+.graph-overview-stat.highlight {
+    background: rgba(245,158,11,0.1);
+}
+
+.graph-overview-stat-num {
+    display: block;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--yi-text-primary, #e2e8f0);
+    line-height: 1.2;
+}
+
+.graph-overview-stat.highlight .graph-overview-stat-num {
+    color: #fbbf24;
+}
+
+.graph-overview-stat-label {
+    display: block;
+    font-size: 11px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+/* 节点分组柱状图 */
+.graph-overview-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.graph-overview-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.graph-overview-bar-label {
+    font-size: 11px;
+    color: #94A3B8;
+    width: 70px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.graph-overview-bar-count {
+    font-size: 11px;
+    color: #64748B;
+    width: 24px;
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.graph-overview-bar-track {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+}
+
+.graph-overview-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+    transition: width 0.3s ease;
+}
+
+/* 关系类型标签 */
+.graph-overview-rels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.graph-overview-rel {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    background: rgba(255,255,255,0.06);
+    color: #94A3B8;
+}
+
+/* 操作提示 */
+.graph-overview-tips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.graph-overview-tips li {
+    font-size: 12px;
+    color: #64748B;
+}
+
 /* 图谱按钮激活态 */
 .code-header .action-button.active {
     color: var(--yi-primary, #3B82F6);
