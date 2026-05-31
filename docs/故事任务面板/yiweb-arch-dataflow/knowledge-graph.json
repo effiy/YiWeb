@@ -259,6 +259,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -282,6 +288,18 @@
           "useMethods(store)"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
           {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
@@ -316,6 +334,18 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -346,6 +376,18 @@
           "createAicrStore()"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
           {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
@@ -380,6 +422,18 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -412,6 +466,12 @@
           "streamPrompt()"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
           {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
@@ -446,6 +506,12 @@
           "retryRequest()"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
           {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
@@ -484,6 +550,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -519,6 +591,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -548,6 +626,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -575,6 +659,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -599,6 +689,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
+          {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新"
@@ -622,6 +718,12 @@
           "认证工具测试"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-命令流排查.md"
+          },
           {
             "file": "场景1-命令流排查.md",
             "section": "§7 关联源码",
@@ -648,6 +750,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
+          {
             "file": "场景2-加载流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载"
@@ -671,6 +779,12 @@
           "createBaseView(config)"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
           {
             "file": "场景2-加载流排查.md",
             "section": "§7 关联源码",
@@ -703,6 +817,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
+          {
             "file": "场景2-加载流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载"
@@ -731,6 +851,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
+          {
             "file": "场景2-加载流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载"
@@ -757,6 +883,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
+          {
             "file": "场景2-加载流排查.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载"
@@ -780,6 +912,12 @@
           "组件加载测试"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-加载流排查.md"
+          },
           {
             "file": "场景2-加载流排查.md",
             "section": "§7 关联源码",
@@ -806,6 +944,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景3 · 文档管线流 — 从需求到远端存储",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-文档管线流.md"
+          },
+          {
             "file": "场景3-文档管线流.md",
             "section": "§7 关联源码",
             "scenario": "场景3 · 文档管线流 — 从需求到远端存储"
@@ -831,6 +975,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景3 · 文档管线流 — 从需求到远端存储",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-文档管线流.md"
+          },
+          {
             "file": "场景3-文档管线流.md",
             "section": "§7 关联源码",
             "scenario": "场景3 · 文档管线流 — 从需求到远端存储"
@@ -855,6 +1005,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景3 · 文档管线流 — 从需求到远端存储",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-文档管线流.md"
+          },
+          {
             "file": "场景3-文档管线流.md",
             "section": "§7 关联源码",
             "scenario": "场景3 · 文档管线流 — 从需求到远端存储"
@@ -878,6 +1034,12 @@
           "sync(workspace=true)"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景3 · 文档管线流 — 从需求到远端存储",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-文档管线流.md"
+          },
           {
             "file": "场景3-文档管线流.md",
             "section": "§7 关联源码",

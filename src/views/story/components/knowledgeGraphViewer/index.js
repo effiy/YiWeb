@@ -302,13 +302,14 @@ registerGlobalComponent({
         height:         { type: Number, default: 0 },
         highlightFile:  { type: String, default: '' },
     },
-    emits: ['close', 'node-click', 'node-dblclick'],
+    emits: ['close', 'node-click'],
     data() {
         return {
             cy: null,
             searchQuery: '',
             showLabels: true,
             selectedNode: null,
+            drillNodeId: null,
             resizeObserver: null,
         };
     },
@@ -456,44 +457,63 @@ registerGlobalComponent({
                 this._selectNode(node, cy);
             });
 
-            // 双击节点 → 打开关联文件
+            // 双击节点 → 下钻：聚焦该节点及其直接邻居
             cy.on('dbltap', 'node', (evt) => {
                 const node = evt.target;
-                const data = node.data();
-                if (data.file) {
-                    // 视觉反馈：节点脉冲动画
-                    node.style({
-                        'border-width': 6,
-                        'border-color': '#FFFFFF',
-                        'border-opacity': 1,
-                        'transition-property': 'border-width, border-color, border-opacity',
-                        'transition-duration': 100,
-                    });
-                    setTimeout(() => {
-                        if (!node.removed()) {
-                            node.style({
-                                'border-width': 2,
-                                'border-color': 'data(color)',
-                                'border-opacity': 0.4,
-                            });
-                        }
-                    }, 300);
+                this.drillNodeId = node.data('id');
 
-                    this.$emit('node-dblclick', {
-                        id: data.id,
-                        label: data.label,
-                        type: data.type,
-                        group: data.group,
-                        file: data.file,
-                        description: data.description,
-                    });
-                }
+                // 脉冲动画
+                node.style({
+                    'border-width': 6,
+                    'border-color': '#FFFFFF',
+                    'border-opacity': 1,
+                    'transition-duration': 100,
+                });
+                setTimeout(() => {
+                    if (!node.removed()) {
+                        node.style({
+                            'border-width': 3,
+                            'border-color': '#F59E0B',
+                            'border-opacity': 0.9,
+                        });
+                    }
+                }, 300);
+
+                // 下钻视图：dim 所有非邻居
+                cy.elements().removeClass('highlighted dimmed');
+                const neighbors = node.closedNeighborhood();
+                cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+                cy.edges().not(neighbors.edges()).addClass('dimmed');
+                node.addClass('highlighted');
+                neighbors.nodes().removeClass('dimmed');
+                neighbors.edges().removeClass('dimmed').addClass('highlighted');
+
+                // 聚焦到子图
+                cy.fit(neighbors.nodes(), 50);
+
+                // 选中节点
+                this._selectNode(node, cy);
             });
 
-            // 点击空白取消选中
+            // 双击空白 → 退出下钻，恢复全图
+            cy.on('dbltap', (evt) => {
+                if (evt.target !== cy) return;
+                this.drillNodeId = null;
+                cy.elements().removeClass('highlighted dimmed');
+                cy.fit(undefined, 40);
+                this.selectedNode = null;
+            });
+
+            // 点击空白 → 取消选中 / 退出下钻
             cy.on('tap', (evt) => {
                 if (evt.target === cy) {
-                    cy.elements().removeClass('highlighted dimmed');
+                    if (this.drillNodeId) {
+                        this.drillNodeId = null;
+                        cy.elements().removeClass('highlighted dimmed');
+                        cy.fit(undefined, 40);
+                    } else {
+                        cy.elements().removeClass('highlighted dimmed');
+                    }
                     this.selectedNode = null;
                 }
             });
@@ -542,6 +562,12 @@ registerGlobalComponent({
                 _riskLevel: data.riskLevel,
                 _edgeCount: node.connectedEdges().length,
                 _mdFiles: mdFilesParsed,
+                _nodeId: data.id,
+                _roleSummary: [
+                    getTypeLabel(data.type),
+                    data.group ? `归属: ${data.group}` : '',
+                    node.connectedEdges().length ? `${node.connectedEdges().length} 个关联` : '',
+                ].filter(Boolean).join(' · '),
             };
 
             // 通知父组件节点被点击
@@ -553,6 +579,12 @@ registerGlobalComponent({
                 file: data.file,
                 description: data.description,
                 mdFiles: mdFilesParsed,
+                edgeCount: node.connectedEdges().length,
+                roleSummary: [
+                    getTypeLabel(data.type),
+                    data.group ? `归属: ${data.group}` : '',
+                    node.connectedEdges().length ? `${node.connectedEdges().length} 个关联` : '',
+                ].filter(Boolean).join(' · '),
             });
         },
 
@@ -697,6 +729,7 @@ registerGlobalComponent({
 
         fitGraph() {
             if (this.cy) {
+                this.drillNodeId = null;
                 this.cy.fit(undefined, 40);
                 this.selectedNode = null;
                 this.cy.elements().removeClass('highlighted dimmed found');
@@ -705,6 +738,7 @@ registerGlobalComponent({
 
         resetLayout() {
             if (this.cy) {
+                this.drillNodeId = null;
                 this._runDagreLayout(this.cy);
                 this.selectedNode = null;
                 this.cy.elements().removeClass('highlighted dimmed found');

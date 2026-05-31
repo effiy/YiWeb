@@ -14,6 +14,18 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-安全回归.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§1 使用场景 / §2 技术评审 / §7 关联源码",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -43,6 +55,18 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-增量自检.md"
+          },
+          {
+            "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-安全回归.md"
+          },
+          {
             "file": "场景2-增量自检.md",
             "section": "§1 使用场景 / §2 技术评审 / §7 关联源码",
             "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件"
@@ -71,6 +95,12 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-一致性校验.md"
+          },
+          {
             "file": "场景3-一致性校验.md",
             "section": "§1 使用场景 / §2 技术评审 / §7 关联源码",
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
@@ -92,6 +122,18 @@
         "ruleCount": 15,
         "file": "",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-增量自检.md"
+          },
           {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (15 行规则，3 个安全子项)",
@@ -130,6 +172,18 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-增量自检.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 执行模式 (顺序/并行/降级三种策略)",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -166,6 +220,24 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-增量自检.md"
+          },
+          {
+            "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-一致性校验.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§4 实施报告 — 报告格式 (JSON + 终端，保留最近 10 份)",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -198,6 +270,12 @@
         "severity": "P0",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (claude-completeness: 项目画像/约束/准则/退化对策/安全面) / §7 关联源码",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -221,6 +299,12 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (arch-layer: 视图层→基础设施层 违规引用)",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -243,6 +327,18 @@
         "severity": "P0",
         "file": "",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-安全回归.md"
+          },
           {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (security-no-secrets / security-fetch-credentials / security-no-raw-log)",
@@ -275,6 +371,12 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (version-consistency: CLAUDE.md / 文档 / 代码注释 三处一致)",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -296,6 +398,12 @@
         "severity": "P1",
         "file": "",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
           {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (branch-isolation: feat/<name> 且从 main 分出)",
@@ -319,6 +427,12 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (story-fmeta / story-nav / story-changelog / cross-ref-valid / stale-ref 共 5 子项)",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -341,6 +455,12 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (security-no-raw-log / config-env 风格相关子项)",
             "scenario": "场景1 · 全量自检 — 项目初始化后完整检查"
@@ -362,6 +482,18 @@
         "severity": "P1",
         "file": "",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-一致性校验.md"
+          },
           {
             "file": "场景1-全量自检.md",
             "section": "§2 技术评审 — 检查项注册表 (arch-layer: 依赖方向与分层约束一致性)",
@@ -388,6 +520,18 @@
         "file": "CLAUDE.md",
         "description": "项目画像+约束+准则的权威来源",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-安全回归.md"
+          },
           {
             "file": "场景1-全量自检.md",
             "section": "§7 关联源码 — CLAUDE.md 五大标记段 (claude-completeness 检查依据)",
@@ -432,6 +576,12 @@
         "description": "模块清单基线",
         "mdFiles": [
           {
+            "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-一致性校验.md"
+          },
+          {
             "file": "场景3-一致性校验.md",
             "section": "§1 使用场景 / §2 技术评审 — 一致性校验维度 / §7 关联源码",
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
@@ -452,6 +602,12 @@
         "file": "",
         "mdFiles": [
           {
+            "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-一致性校验.md"
+          },
+          {
             "file": "场景3-一致性校验.md",
             "section": "§1 使用场景 / §2 技术评审 — 一致性校验维度 (find src/ cdn/ 目录扫描) / §7 关联源码",
             "scenario": "场景3 · 一致性校验 — 文档声称 vs 代码实际"
@@ -469,6 +625,18 @@
         "file": "tests/self-test/full.test.js",
         "description": "验证合规+违规场景",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 全量自检 — 项目初始化后完整检查",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-全量自检.md"
+          },
+          {
+            "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-安全回归.md"
+          },
           {
             "file": "场景1-全量自检.md",
             "section": "§3 测试设计 / §5 测试报告 / §7 关联源码",
@@ -493,6 +661,18 @@
         "file": "tests/self-test/incremental.test.js",
         "description": "验证混合变更场景",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 增量自检 — 提交前仅检查变更文件",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-增量自检.md"
+          },
+          {
+            "scenario": "场景4 · 安全回归 — 安全相关变更后触发检查",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-安全回归.md"
+          },
           {
             "file": "场景2-增量自检.md",
             "section": "§3 测试设计 / §5 测试报告 / §7 关联源码",

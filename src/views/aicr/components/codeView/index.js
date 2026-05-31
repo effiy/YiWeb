@@ -170,6 +170,7 @@ const componentOptions = {
             kgAllNodes: null,
             kgSelectedNode: null,
             kgMatchedIds: null,
+            kgSourceScenarios: null,
             kgGraphOverview: null
         };
     },
@@ -1384,6 +1385,7 @@ const componentOptions = {
                     this.kgTitle = (data.story && data.story.name) || fileName;
                     this.kgAllNodes = nodes;
                     this.kgMatchedIds = null;
+                    this.kgSourceScenarios = (data.story && data.story.scenarios) || [];
                     this.kgGraphOverview = this._buildGraphOverview(nodes, edges, data, false, 0);
                     return;
                 }
@@ -1399,11 +1401,12 @@ const componentOptions = {
                     this.kgTitle = (data.story && data.story.name) || '故事依赖关系图';
                     this.kgAllNodes = nodes;
                     this.kgMatchedIds = null;
+                    this.kgSourceScenarios = (data.story && data.story.scenarios) || [];
                     this.kgGraphOverview = this._buildGraphOverview(nodes, edges, data, false, 0);
                     return;
                 }
 
-                // Case 3: MD file under 故事任务面板 → find story dir and load KG via API
+                // Case 3: MD file under 故事任务面板 → find story dir and load KG directly
                 const storyDir = this.kgSourceStoryDir;
                 if (!storyDir) {
                     this.kgError = '无法确定故事目录';
@@ -1411,26 +1414,16 @@ const componentOptions = {
                 }
 
                 const kgFilePath = `docs/故事任务面板/${storyDir}/knowledge-graph.json`;
-                const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
-                    ? String(window.API_URL).replace(/\/+$/, '')
-                    : '';
-                if (!apiBase) throw new Error('API 地址未配置');
 
-                const resp = await fetch(`${apiBase}/read-file`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target_file: kgFilePath })
-                });
+                // 直接从本地路径获取 JSON 文件（docs/ 目录作为静态资源可访问）
+                const resp = await fetch(`/${kgFilePath}`);
                 if (!resp.ok) throw new Error(`无法加载知识图谱: HTTP ${resp.status}`);
 
-                const json = await resp.json().catch(() => ({}));
-                if (!json || (json.code !== 200 && json.code !== 0) || !json.data) {
-                    throw new Error(json?.message || '读取知识图谱失败');
-                }
-                const data = JSON.parse(json.data.content);
+                const data = await resp.json();
                 const allNodes = data.graph?.nodes || [];
                 const allEdges = data.graph?.edges || [];
                 this.kgAllNodes = allNodes;
+                this.kgSourceScenarios = (data.story && data.story.scenarios) || [];
 
                 // Find nodes related to this MD file
                 const relatedNodeIds = new Set();
@@ -1502,30 +1495,19 @@ const componentOptions = {
                     }
                 }
 
-                // Filter to related nodes + 1-hop neighbors
-                const expandedIds = new Set(relatedNodeIds);
-                for (const edge of allEdges) {
-                    if (relatedNodeIds.has(edge.source)) expandedIds.add(edge.target);
-                    if (relatedNodeIds.has(edge.target)) expandedIds.add(edge.source);
-                }
-
-                const filteredNodes = allNodes.filter(n => expandedIds.has(n.id));
-                const filteredEdges = allEdges.filter(e =>
-                    expandedIds.has(e.source) && expandedIds.has(e.target)
-                );
-
+                // 始终展示完整图谱，关联节点高亮 + 其余 dim
                 this.kgMatchedIds = relatedNodeIds.size > 0 ? new Set(relatedNodeIds) : null;
                 const hasMatches = relatedNodeIds.size > 0;
-                const resultNodes = hasMatches ? filteredNodes : allNodes;
-                const resultEdges = hasMatches ? filteredEdges : allEdges;
-                this.kgGraphData = { nodes: resultNodes, edges: resultEdges };
+
+                // 使用全部节点，不裁剪 — matched 类用于高亮
+                this.kgGraphData = { nodes: allNodes, edges: allEdges };
                 this.kgTitle = hasMatches
                     ? `${(data.story && data.story.name) || storyDir} · ${fileNameClean.replace(/\.md$/i, '')}`
                     : `${(data.story && data.story.name) || storyDir} (全部节点)`;
 
                 // Build overview
                 this.kgGraphOverview = this._buildGraphOverview(
-                    resultNodes, resultEdges, data, hasMatches,
+                    allNodes, allEdges, data, hasMatches,
                     this.kgMatchedIds ? this.kgMatchedIds.size : 0
                 );
                 if (!this.kgGraphOverview.storyName) {
@@ -1549,16 +1531,6 @@ const componentOptions = {
             this._destroyCyGraph();
         },
 
-        onKgNodeClick(node) {
-            if (!node || !node.file) return;
-            const fileKey = normalizePath(node.file);
-            if (!fileKey) return;
-            const setSelectedKey = this.viewContext?.setSelectedKey;
-            const loadFileByKey = this.viewContext?.loadFileByKey;
-            if (typeof setSelectedKey === 'function') setSelectedKey(fileKey);
-            if (typeof loadFileByKey === 'function') loadFileByKey(null, fileKey);
-        },
-
         /* ── 图谱渲染 ── */
 
         renderKgGraph() {
@@ -1576,6 +1548,7 @@ const componentOptions = {
         _initCyGraph(container) {
             if (this._cy) { this._cy.destroy(); this._cy = null; }
             this.kgSelectedNode = null;
+            this._kgDrillNodeId = null;  // 下钻状态：当前聚焦的节点 ID，null 表示全图
 
             // 清理旧 resize 观察器
             if (this._kgResizeObserver) {
@@ -1636,6 +1609,7 @@ const componentOptions = {
                         degree: d, size: size, matched: isMatched,
                         functions: (n.keyFunctions || []).join(', '),
                         type: n.type || '', group: n.group || '',
+                        mdFiles: n.mdFiles || [],
                     },
                 });
             }
@@ -1715,53 +1689,45 @@ const componentOptions = {
 
             // Node click → select + show detail
             cy.on('tap', 'node', (evt) => {
-                const node = evt.target;
-                const nd = node.data();
-                cy.elements().removeClass('highlighted dimmed');
-                node.addClass('highlighted');
-                node.connectedEdges().addClass('highlighted');
-                node.connectedEdges().connectedNodes().removeClass('dimmed');
-                const connected = node.connectedEdges().map(e => {
-                    const src = e.source().data();
-                    const tgt = e.target().data();
-                    const isOut = src.id === nd.id;
-                    return {
-                        label: e.data('label'),
-                        relation: e.data('relation'),
-                        targetId: isOut ? tgt.id : src.id,
-                        targetLabel: isOut ? tgt.label : src.label,
-                        direction: isOut ? '→' : '←',
-                    };
-                });
-                const neighborIds = new Set(connected.map(c => c.targetId));
-                const neighbors = cy.nodes().filter(n => neighborIds.has(n.data('id'))).map(n => ({
-                    id: n.data('id'), label: n.data('label'), color: n.data('color'),
-                }));
-                this.kgSelectedNode = {
-                    label: nd.label, type: nd.type, group: nd.group,
-                    description: nd.description, file: nd.file,
-                    functions: nd.functions, degree: nd.degree,
-                    id: nd.id, size: Math.round(nd.size || 0),
-                    edges: connected.slice(0, 20),
-                    neighbors: neighbors.slice(0, 15),
-                };
+                this._selectKgNodeDetail(evt.target, cy);
             });
 
-            // Tap background → deselect
+            // Tap background → deselect (退出下钻模式则恢复全图)
             cy.on('tap', (evt) => {
                 if (evt.target === cy) {
-                    cy.elements().removeClass('highlighted dimmed');
+                    if (this._kgDrillNodeId) {
+                        // 在下钻模式中点击空白 → 退出下钻
+                        this._kgDrillNodeId = null;
+                        cy.elements().removeClass('highlighted dimmed');
+                        if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                            const matchedNodes = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                            matchedNodes.addClass('matched');
+                            cy.nodes().not(matchedNodes).addClass('dimmed');
+                            cy.edges().addClass('dimmed');
+                            matchedNodes.connectedEdges().removeClass('dimmed');
+                        }
+                        cy.fit(undefined, 40);
+                    } else {
+                        cy.elements().removeClass('highlighted dimmed');
+                        if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                            const matched = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                            matched.addClass('matched');
+                            cy.nodes().not(matched).addClass('dimmed');
+                            cy.edges().addClass('dimmed');
+                            matched.connectedEdges().removeClass('dimmed');
+                        }
+                    }
                     this.kgSelectedNode = null;
                 }
             });
 
-            // Double-click node → open file with visual feedback
+            // Double-click node → 下钻：聚焦该节点及其直接邻居
             cy.on('dbltap', 'node', (evt) => {
                 const node = evt.target;
                 const nd = node.data();
-                if (!nd.file) return;
+                this._kgDrillNodeId = nd.id;
 
-                // 视觉反馈：节点脉冲高亮
+                // 视觉反馈：节点脉冲动画
                 node.style({
                     'border-width': 6,
                     'border-color': '#FFFFFF',
@@ -1771,20 +1737,47 @@ const componentOptions = {
                 setTimeout(() => {
                     if (!node.removed()) {
                         node.style({
-                            'border-width': 2,
-                            'border-color': 'data(color)',
-                            'border-opacity': 0.35,
+                            'border-width': 3,
+                            'border-color': '#F59E0B',
+                            'border-opacity': 0.9,
                         });
                     }
                 }, 300);
 
-                // 先选中节点展示详情，再打开文件
+                // 下钻视图：dim 所有非邻居节点，高亮当前节点+邻居
                 cy.elements().removeClass('highlighted dimmed');
+                const neighbors = node.closedNeighborhood(); // 节点自身 + 邻居节点 + 关联边
+                cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+                cy.edges().not(neighbors.edges()).addClass('dimmed');
                 node.addClass('highlighted');
-                node.connectedEdges().addClass('highlighted');
-                node.connectedEdges().connectedNodes().removeClass('dimmed');
+                // 恢复邻居节点和边的可见性
+                neighbors.nodes().removeClass('dimmed');
+                neighbors.edges().removeClass('dimmed').addClass('highlighted');
 
-                this.onKgNodeClick({ file: nd.file, label: nd.label, id: nd.id });
+                // 聚焦到子图
+                cy.fit(neighbors.nodes(), 50);
+
+                // 选择节点展示详情
+                this._selectKgNodeDetail(node, cy);
+            });
+
+            // Double-click 空白背景 → 退出下钻，恢复全图
+            cy.on('dbltap', (evt) => {
+                if (evt.target !== cy) return;
+                this._kgDrillNodeId = null;
+                cy.elements().removeClass('highlighted dimmed');
+                // 恢复 matched 高亮（如果有）
+                if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                    const matchedNodes = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                    matchedNodes.addClass('matched');
+                    cy.nodes().not(matchedNodes).addClass('dimmed');
+                    cy.edges().addClass('dimmed');
+                    matchedNodes.connectedEdges().removeClass('dimmed');
+                    if (matchedNodes.length <= 20) cy.fit(matchedNodes, 60);
+                } else {
+                    cy.fit(undefined, 40);
+                }
+                this.kgSelectedNode = null;
             });
 
             // Run layout
@@ -1796,6 +1789,21 @@ const componentOptions = {
             ];
             for (const opts of layouts) {
                 try { cy.layout(opts).run(); break; } catch (_) {}
+            }
+
+            // MD 文件关联：高亮匹配节点 + dim 其余 + 聚焦匹配区域
+            if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                const matchedNodes = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                matchedNodes.addClass('matched');
+                // 非匹配节点和边 dim
+                cy.nodes().not(matchedNodes).addClass('dimmed');
+                cy.edges().addClass('dimmed');
+                // 匹配节点的边恢复可见
+                matchedNodes.connectedEdges().removeClass('dimmed');
+                // 聚焦到匹配节点
+                if (matchedNodes.length <= 20) {
+                    cy.fit(matchedNodes, 60);
+                }
             }
 
             // 自适应视图：ResizeObserver 监听容器尺寸变化
@@ -1815,12 +1823,116 @@ const componentOptions = {
             }
         },
 
+        /* ── 节点详情提取（单击/双击共用）── */
+        _selectKgNodeDetail(node, cy) {
+            const nd = node.data();
+
+            // 如果处于下钻模式，保持下钻 dim 状态
+            if (this._kgDrillNodeId) {
+                const drillNode = cy.getElementById(this._kgDrillNodeId);
+                if (drillNode.length && drillNode.id() !== nd.id) {
+                    // 点击非下钻节点：清除旧高亮，高亮新节点
+                    cy.elements().removeClass('highlighted');
+                    const neighbors = node.closedNeighborhood();
+                    neighbors.nodes().removeClass('dimmed');
+                    neighbors.edges().removeClass('dimmed').addClass('highlighted');
+                    node.addClass('highlighted');
+                }
+            } else {
+                cy.elements().removeClass('highlighted dimmed');
+                node.addClass('highlighted');
+                node.connectedEdges().addClass('highlighted');
+                node.connectedEdges().connectedNodes().removeClass('dimmed');
+                // 恢复 matched 状态
+                if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                    const matched = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                    matched.addClass('matched');
+                }
+            }
+
+            // 构建详情数据
+            const connected = node.connectedEdges().map(e => {
+                const src = e.source().data();
+                const tgt = e.target().data();
+                const isOut = src.id === nd.id;
+                return {
+                    label: e.data('label'),
+                    relation: e.data('relation'),
+                    targetId: isOut ? tgt.id : src.id,
+                    targetLabel: isOut ? tgt.label : src.label,
+                    direction: isOut ? '→' : '←',
+                };
+            });
+            const neighborIds = new Set(connected.map(c => c.targetId));
+            const neighbors = cy.nodes().filter(n => neighborIds.has(n.data('id'))).map(n => ({
+                id: n.data('id'), label: n.data('label'), color: n.data('color'),
+            }));
+            // 解析 mdFiles（可能是 JSON 字符串）
+            let mdFiles = [];
+            try {
+                const raw = nd.mdFiles;
+                if (Array.isArray(raw)) {
+                    mdFiles = raw;
+                } else if (typeof raw === 'string' && raw) {
+                    mdFiles = JSON.parse(raw);
+                }
+            } catch (_) { mdFiles = []; }
+
+            // 生成架构角色描述
+            const typeLabels = { view: '视图', service: '服务', utility: '工具', component: '组件', config: '配置', doc: '文档', framework: '框架', test: '测试', entry: '入口', external: '外部' };
+            const typeLabel = typeLabels[nd.type] || nd.type || '';
+            const roleParts = [];
+            if (typeLabel) roleParts.push(typeLabel);
+            if (nd.group) roleParts.push(`归属: ${nd.group}`);
+            if (nd.degree != null) roleParts.push(`${nd.degree} 个关联`);
+            const roleSummary = roleParts.join(' · ');
+
+            // 场景来源汇总 — 附带场景描述
+            const scenarios = this.kgSourceScenarios || [];
+            const sceneDescMap = {};
+            for (const sc of scenarios) {
+                sceneDescMap[sc.name || ''] = sc.description || '';
+            }
+            // 丰富 mdFiles：附加场景描述
+            const enrichedMdFiles = mdFiles.map(mf => ({
+                ...mf,
+                _desc: sceneDescMap[mf.scenario || ''] || '',
+            }));
+            const sceneSourceText = enrichedMdFiles.length
+                ? `被 ${enrichedMdFiles.length} 个场景文档引用`
+                : '暂无关联场景文档';
+
+            this.kgSelectedNode = {
+                label: nd.label, type: nd.type, group: nd.group,
+                description: nd.description, file: nd.file,
+                functions: nd.functions, degree: nd.degree,
+                id: nd.id, size: Math.round(nd.size || 0),
+                color: nd.color,
+                isDrilled: !!this._kgDrillNodeId,
+                edges: connected.slice(0, 20),
+                neighbors: neighbors.slice(0, 15),
+                mdFiles: enrichedMdFiles,
+                roleSummary: roleSummary,
+                sceneSourceText: sceneSourceText,
+            };
+        },
+
         fitKgGraph() {
-            if (this._cy) { this._cy.fit(undefined, 30); this.kgSelectedNode = null; this._cy.elements().removeClass('highlighted dimmed'); }
+            if (this._cy) {
+                this._kgDrillNodeId = null;
+                this.kgSelectedNode = null;
+                this._cy.elements().removeClass('highlighted dimmed');
+                if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                    const matched = this._cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                    matched.addClass('matched');
+                }
+                this._cy.fit(undefined, 30);
+            }
         },
 
         resetKgGraph() {
             if (this._cy) {
+                this._kgDrillNodeId = null;
                 this.kgSelectedNode = null;
                 this._cy.elements().removeClass('highlighted dimmed');
                 const layouts = [
@@ -1848,6 +1960,42 @@ const componentOptions = {
             const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
             const storyDesc = (data.story && data.story.description) || '';
             const scenarios = data.story?.scenarios || [];
+
+            // 构建 场景 → 节点 映射（每个场景引用了哪些图谱节点）
+            const sceneNodeMap = {}; // { sceneName: [{ id, label, file, group, description }] }
+            const nodeSceneMap = {}; // { nodeId: [sceneName, ...] }
+            const sceneDescs = {};   // { sceneName: description }
+            for (const sc of scenarios) {
+                sceneDescs[sc.name || ''] = sc.description || '';
+            }
+            for (const n of nodes) {
+                const mdFiles = n.mdFiles || [];
+                for (const mf of mdFiles) {
+                    const sceneName = mf.scenario || mf.file || '';
+                    if (!sceneName) continue;
+                    if (!sceneNodeMap[sceneName]) sceneNodeMap[sceneName] = [];
+                    sceneNodeMap[sceneName].push({
+                        id: n.id,
+                        label: n.label || n.id,
+                        file: n.file || '',
+                        group: n.group || n.type || '',
+                        description: n.description || '',
+                        section: mf.section || '',
+                    });
+                    if (!nodeSceneMap[n.id]) nodeSceneMap[n.id] = [];
+                    nodeSceneMap[n.id].push(sceneName);
+                }
+            }
+            // 转换为排序数组，附加场景描述
+            const sceneNodes = Object.entries(sceneNodeMap)
+                .sort(([, a], [, b]) => b.length - a.length)
+                .map(([name, nodeList]) => ({
+                    name,
+                    desc: sceneDescs[name] || '',
+                    count: nodeList.length,
+                    nodes: nodeList.slice(0, 12),
+                }));
+
             return {
                 storyName: (data.story && data.story.name) || '',
                 description: storyDesc,
@@ -1858,6 +2006,8 @@ const componentOptions = {
                 topGroups,
                 topRelations,
                 hasFilter,
+                sceneNodes,
+                nodeSceneMap,
             };
         },
 

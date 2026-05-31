@@ -19,6 +19,18 @@
         "riskLevel": "🔴",
         "mdFiles": [
           {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 查下游"
@@ -54,6 +66,12 @@
         "riskLevel": "🟡",
         "mdFiles": [
           {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景4-补充下游.md",
             "section": "§7 关联源码",
             "scenario": "场景4 · 补充下游"
@@ -77,6 +95,24 @@
         ],
         "riskLevel": "🟡",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
@@ -113,6 +149,24 @@
         "riskLevel": "🟡",
         "mdFiles": [
           {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 查下游"
@@ -148,6 +202,18 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -175,6 +241,18 @@
         "riskLevel": "🟡",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -201,6 +279,18 @@
         ],
         "riskLevel": "🟡",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
@@ -235,6 +325,24 @@
         ],
         "riskLevel": "🔴",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
@@ -273,6 +381,24 @@
         ],
         "riskLevel": "🔴",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
@@ -313,6 +439,24 @@
         "riskLevel": "🔴",
         "mdFiles": [
           {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 查下游"
@@ -348,6 +492,18 @@
         "riskLevel": "🟡",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -377,6 +533,18 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -403,6 +571,30 @@
         ],
         "riskLevel": "🔴",
         "mdFiles": [
+          {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景3 · 方向校验 — 审查跨模块引用合规性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-方向校验.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
@@ -441,6 +633,24 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景3 · 方向校验 — 审查跨模块引用合规性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-方向校验.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -474,6 +684,24 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景3 · 方向校验 — 审查跨模块引用合规性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-方向校验.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -504,6 +732,24 @@
         "consumers": [],
         "riskLevel": "🟢",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景3 · 方向校验 — 审查跨模块引用合规性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-方向校验.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
@@ -541,6 +787,24 @@
         "riskLevel": "🟡",
         "mdFiles": [
           {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-查下游.md"
+          },
+          {
+            "scenario": "场景3 · 方向校验 — 审查跨模块引用合规性",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-方向校验.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景1-查下游.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 查下游"
@@ -575,6 +839,12 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景4-补充下游.md",
             "section": "§7 关联源码",
             "scenario": "场景4 · 补充下游"
@@ -598,6 +868,12 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景4-补充下游.md",
             "section": "§7 关联源码",
             "scenario": "场景4 · 补充下游"
@@ -620,6 +896,18 @@
         ],
         "riskLevel": "🟢",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
@@ -648,6 +936,18 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -675,6 +975,18 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -699,6 +1011,18 @@
         ],
         "riskLevel": "🟢",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
@@ -725,6 +1049,18 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -750,6 +1086,18 @@
         "riskLevel": "🟢",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -774,6 +1122,18 @@
         ],
         "riskLevel": "🟢",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
@@ -802,6 +1162,18 @@
         "riskLevel": "🟡",
         "mdFiles": [
           {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
+          {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 分类浏览"
@@ -828,6 +1200,18 @@
         ],
         "riskLevel": "🔴",
         "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-分类浏览.md"
+          },
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-补充下游.md"
+          },
           {
             "file": "场景2-分类浏览.md",
             "section": "§7 关联源码",

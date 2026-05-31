@@ -227,6 +227,30 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-层级变更.md"
+          },
+          {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 新人上手 — 建立分层认知"
@@ -265,6 +289,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 新人上手 — 建立分层认知"
@@ -296,6 +338,30 @@
           "config"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-层级变更.md"
+          },
           {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
@@ -331,6 +397,18 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-层级变更.md"
+          },
+          {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 新人上手 — 建立分层认知"
@@ -355,6 +433,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 新人上手 — 建立分层认知"
@@ -373,6 +457,18 @@
           "配置测试"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-层级变更.md"
+          },
           {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
@@ -462,6 +558,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-新人上手.md"
+          },
+          {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
             "file": "场景1-新人上手-分层认知.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 新人上手 — 建立分层认知"
@@ -495,6 +609,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
+          {
             "file": "场景2-功能归属-判断放哪层.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
@@ -513,6 +633,12 @@
           "故事面板测试"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
           {
             "file": "场景2-功能归属-判断放哪层.md",
             "section": "§7 关联源码",
@@ -534,6 +660,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-功能归属.md"
+          },
+          {
             "file": "场景2-功能归属-判断放哪层.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 功能归属 — 判断新功能放哪层"
@@ -552,6 +684,12 @@
           "createStore()"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
           {
             "file": "场景3-架构评审-检查层级依赖.md",
             "section": "§7 关联源码",
@@ -577,6 +715,18 @@
           "responseInterceptor()"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-层级变更.md"
+          },
           {
             "file": "场景3-架构评审-检查层级依赖.md",
             "section": "§7 关联源码",
@@ -606,6 +756,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
             "file": "场景3-架构评审-检查层级依赖.md",
             "section": "§7 关联源码",
             "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
@@ -628,6 +784,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
             "file": "场景3-架构评审-检查层级依赖.md",
             "section": "§7 关联源码",
             "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
@@ -647,6 +809,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
+          {
             "file": "场景3-架构评审-检查层级依赖.md",
             "section": "§7 关联源码",
             "scenario": "场景3 · 架构评审 — 检查层级依赖方向"
@@ -665,6 +833,12 @@
           "认证工具测试"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-架构评审.md"
+          },
           {
             "file": "场景3-架构评审-检查层级依赖.md",
             "section": "§7 关联源码",

@@ -100,7 +100,10 @@
           "tests-core-config-test",
           "svc-crud",
           "tests-services-crud-test",
-          "story-index"
+          "story-index",
+          "svc-index",
+          "index",
+          "claude-index"
         ]
       },
       {
@@ -292,7 +295,10 @@
           "tests-cdn-componentLoader-test",
           "src-core-config",
           "tests-core-config-test",
-          "story-index"
+          "story-index",
+          "svc-index",
+          "index",
+          "index-html"
         ]
       },
       {
@@ -640,6 +646,12 @@
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-模块定位.md"
+          },
+          {
+            "scenario": "场景3 · 新人上手 — 一小时内建立项目认知",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-新人上手.md"
           }
         ],
         "relatedNodes": [

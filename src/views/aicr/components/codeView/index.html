@@ -260,12 +260,32 @@
             </div>
           </div>
 
+          <!-- 场景 ↔ 节点映射 -->
+          <div class="graph-node-detail-section" v-if="kgGraphOverview.sceneNodes && kgGraphOverview.sceneNodes.length">
+            <div class="graph-node-detail-section-title">📄 场景与图谱节点映射 ({{ kgGraphOverview.sceneNodes.length }} 个场景)</div>
+            <div class="graph-overview-scenes">
+              <div v-for="scene in kgGraphOverview.sceneNodes" :key="scene.name" class="graph-overview-scene">
+                <div class="graph-overview-scene-header">
+                  <span class="graph-overview-scene-name">{{ scene.name }}</span>
+                  <span class="graph-overview-scene-count">{{ scene.count }} 节点</span>
+                </div>
+                <p v-if="scene.desc" class="graph-overview-scene-desc">{{ scene.desc }}</p>
+                <div class="graph-overview-scene-nodes">
+                  <span v-for="n in scene.nodes" :key="n.id" class="graph-overview-scene-node" :title="n.file + (n.description ? '\n' + n.description : '')">
+                    <span class="graph-overview-scene-node-label">{{ n.label }}</span>
+                    <span v-if="n.group" class="graph-overview-scene-node-group">{{ n.group }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="graph-node-detail-section">
             <div class="graph-node-detail-section-title">操作提示</div>
             <ul class="graph-overview-tips">
               <li>🖱️ 滚轮缩放 · 拖拽平移</li>
               <li>👆 单击节点查看详情</li>
-              <li>👆👆 双击节点打开文件</li>
+              <li>👆👆 双击节点下钻查看子图</li>
               <li>⌨️ ⊞ 适应视图 · ↻ 重置布局</li>
             </ul>
           </div>
@@ -281,25 +301,58 @@
             <button class="graph-reader-btn" @click="kgSelectedNode = null" title="关闭">✕</button>
           </div>
           <div class="graph-node-detail-meta">
+            <span v-if="kgSelectedNode.isDrilled" class="graph-node-badge drill" title="双击空白退出下钻">🔍 下钻</span>
             <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.type }}</span>
             <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
             <span v-if="kgSelectedNode.degree" class="graph-node-badge degree">{{ kgSelectedNode.degree }} 连接</span>
-            <span v-if="kgSelectedNode.size" class="graph-node-badge size">半径 {{ kgSelectedNode.size }}px</span>
           </div>
+
+          <!-- 架构角色 -->
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.roleSummary">
+            <div class="graph-node-detail-section-title">架构角色</div>
+            <p class="graph-node-detail-role">{{ kgSelectedNode.roleSummary }}</p>
+          </div>
+
+          <!-- 场景来源 -->
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.sceneSourceText">
+            <div class="graph-node-detail-section-title">场景来源</div>
+            <p class="graph-node-detail-scene-source">{{ kgSelectedNode.sceneSourceText }}</p>
+          </div>
+
+          <!-- 描述 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.description">
             <div class="graph-node-detail-section-title">描述</div>
             <p class="graph-node-detail-desc">{{ kgSelectedNode.description }}</p>
           </div>
+
+          <!-- 关键函数 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.functions">
             <div class="graph-node-detail-section-title">关键函数</div>
             <p class="graph-node-detail-funcs">{{ kgSelectedNode.functions }}</p>
           </div>
+
+          <!-- 文件路径 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.file">
             <div class="graph-node-detail-section-title">文件路径</div>
-            <div class="graph-node-detail-file" @click="onKgNodeClick({ file: kgSelectedNode.file, label: kgSelectedNode.label })" title="点击打开文件">
-              {{ kgSelectedNode.file }}
+            <code class="graph-node-detail-file">{{ kgSelectedNode.file }}</code>
+          </div>
+
+          <!-- 关联场景文档 (MD文件) -->
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.mdFiles && kgSelectedNode.mdFiles.length">
+            <div class="graph-node-detail-section-title">📄 关联场景文档 ({{ kgSelectedNode.mdFiles.length }})</div>
+            <div class="graph-node-detail-mdfiles">
+              <div v-for="mf in kgSelectedNode.mdFiles" :key="mf.file" class="graph-node-mdfile">
+                <div class="graph-node-mdfile-header">
+                  <span class="graph-node-mdfile-dot">◆</span>
+                  <span class="graph-node-mdfile-name">{{ mf.scenario || mf.file }}</span>
+                  <span class="graph-node-mdfile-section">{{ mf.section || '' }}</span>
+                </div>
+                <p v-if="mf._desc" class="graph-node-mdfile-desc">{{ mf._desc }}</p>
+              </div>
             </div>
           </div>
+
+          <!-- 关联边 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.edges && kgSelectedNode.edges.length">
             <div class="graph-node-detail-section-title">关联边 ({{ kgSelectedNode.edges.length }})</div>
             <div class="graph-node-detail-edges">
@@ -310,6 +363,8 @@
               </div>
             </div>
           </div>
+
+          <!-- 邻居节点 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.neighbors && kgSelectedNode.neighbors.length">
             <div class="graph-node-detail-section-title">邻居节点 ({{ kgSelectedNode.neighbors.length }})</div>
             <div class="graph-node-detail-neighbors">

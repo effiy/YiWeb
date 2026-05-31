@@ -244,6 +244,18 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -272,6 +284,18 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -298,6 +322,24 @@
           "输入处理"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景4 · XSS 评估 — 检查内容清洗安全性",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-XSS评估.md"
+          },
           {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
@@ -333,6 +375,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景3 · 认证排查 — 追踪凭证链路",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-认证排查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -367,6 +427,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景3 · 认证排查 — 追踪凭证链路",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-认证排查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -400,6 +478,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景3 · 认证排查 — 追踪凭证链路",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-认证排查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -431,6 +527,24 @@
           "DOMPurify"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景4 · XSS 评估 — 检查内容清洗安全性",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-XSS评估.md"
+          },
           {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
@@ -465,6 +579,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景4 · XSS 评估 — 检查内容清洗安全性",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-XSS评估.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -497,6 +629,18 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -522,6 +666,24 @@
           "请求封装测试"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景3 · 认证排查 — 追踪凭证链路",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-认证排查.md"
+          },
           {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
@@ -554,6 +716,24 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景3 · 认证排查 — 追踪凭证链路",
+            "scenarioIndex": 2,
+            "section": "§7 关联源码",
+            "file": "场景3-认证排查.md"
+          },
+          {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
             "scenario": "场景1 · 安全审计"
@@ -585,6 +765,12 @@
         ],
         "mdFiles": [
           {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
             "file": "场景2-安全自查.md",
             "section": "§7 关联源码",
             "scenario": "场景2 · 安全自查"
@@ -606,6 +792,24 @@
           "renderMarkdownHtml()"
         ],
         "mdFiles": [
+          {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§7 关联源码",
+            "file": "场景1-安全审计.md"
+          },
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§7 关联源码",
+            "file": "场景2-安全自查.md"
+          },
+          {
+            "scenario": "场景4 · XSS 评估 — 检查内容清洗安全性",
+            "scenarioIndex": 3,
+            "section": "§7 关联源码",
+            "file": "场景4-XSS评估.md"
+          },
           {
             "file": "场景1-安全审计.md",
             "section": "§7 关联源码",
