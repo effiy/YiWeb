@@ -24,7 +24,7 @@ registerGlobalComponent({
             return [
                 { value: 'tree', label: '树形', icon: 'list' },
                 { value: 'cards', label: '卡片', icon: 'grid' },
-                { value: 'graph', label: '图谱', icon: 'graph' }
+                { value: 'graph', label: '图谱', icon: 'share' }
             ];
         },
         filterSummaryText() {

@@ -167,7 +167,8 @@ const componentOptions = {
             kgError: '',
             kgGraphData: null,
             kgTitle: '',
-            kgAllNodes: null
+            kgAllNodes: null,
+            kgSelectedNode: null
         };
     },
     computed: {
@@ -1520,6 +1521,7 @@ const componentOptions = {
 
         _initCyGraph(container) {
             if (this._cy) { this._cy.destroy(); this._cy = null; }
+            this.kgSelectedNode = null;
 
             const data = this.kgGraphData;
             if (!data || !data.nodes || !data.nodes.length) return;
@@ -1527,23 +1529,50 @@ const componentOptions = {
             const GROUP_COLORS = {
                 'L1-Views': '#3B82F6', 'L2-Services': '#F59E0B', 'L3-Framework': '#8B5CF6',
                 'Tests': '#EF4444', 'Documentation': '#6B7280', 'External': '#9CA3AF',
-                'L0-Entry': '#10B981', '视图工厂': '#8B5CF6', '组件系统': '#8B5CF6',
-                '基础设施': '#8B5CF6', '配置': '#F59E0B', '服务聚合': '#F59E0B',
-                '数据操作': '#F59E0B', '请求工具': '#F59E0B', '认证': '#F59E0B',
-                '同步服务': '#F59E0B', '视图入口': '#3B82F6', '共享工具': '#3B82F6',
+                'L0-Entry': '#10B981', 'L1-AICR': '#3B82F6', 'L1-Claude': '#6366F1', 'L1-Story': '#8B5CF6',
+                'L2-DataOps': '#F59E0B', 'L2-Helpers': '#F97316', 'L2-Services': '#F59E0B',
+                'L2-Sync': '#F59E0B', 'L2-Config': '#F59E0B',
+                'L3-Framework': '#8B5CF6', 'L3-Utilities': '#A855F7',
+                'CDN-Icons': '#06B6D4', 'CDN-Components': '#06B6D4', 'CDN-Markdown': '#06B6D4',
+                'Storage': '#EC4899',
+                '视图工厂': '#8B5CF6', '组件系统': '#8B5CF6', '基础设施': '#8B5CF6',
+                '配置': '#F59E0B', '服务聚合': '#F59E0B', '数据操作': '#F59E0B',
+                '请求工具': '#F59E0B', '认证': '#F59E0B', '同步服务': '#F59E0B',
+                '视图入口': '#3B82F6', '共享工具': '#3B82F6',
                 '通用组件': '#06B6D4', '业务组件': '#06B6D4', '渲染系统': '#06B6D4',
                 '🔴 高风险': '#EF4444', '🟡 中风险': '#F59E0B', '🟢 低风险': '#10B981',
                 '⚠️ 违规': '#DC2626', '消费者': '#3B82F6',
+                '检查模式': '#3B82F6', '规则引擎': '#F59E0B', '输出': '#10B981',
+                '规则项': '#8B5CF6', '参照基线': '#6B7280',
+                '父故事': '#3B82F6', 'P0 子故事': '#10B981', 'P1 子故事': '#F59E0B', '独立故事': '#8B5CF6',
+                '①事件层':'#3B82F6','②方法层':'#6366F1','③状态层':'#8B5CF6','④派生层':'#A855F7',
+                '⑤数据层':'#F59E0B','⑥网络层':'#F97316','⑦认证层':'#EF4444','⑧错误层':'#DC2626',
+                '⑨校验层':'#10B981','⑩渲染层':'#06B6D4',
+                '输入面':'#EF4444','接口面':'#F59E0B','存储面':'#8B5CF6','认证面':'#EC4899','渲染面':'#06B6D4',
+                '文档':'#6B7280','测试':'#EF4444','外部':'#9CA3AF',
             };
+
+            // Calculate node importance from edge degree
+            const degree = {};
+            for (const e of data.edges) {
+                degree[e.source] = (degree[e.source] || 0) + 1;
+                degree[e.target] = (degree[e.target] || 0) + 1;
+            }
+            const maxDeg = Math.max(1, ...Object.values(degree));
 
             const elements = [];
             for (const n of data.nodes) {
+                const d = degree[n.id] || 0;
+                const size = 20 + (d / maxDeg) * 20;
                 elements.push({
                     group: 'nodes',
                     data: {
                         id: n.id, label: n.label || n.id,
                         color: GROUP_COLORS[n.group] || GROUP_COLORS[n.type] || '#94A3B8',
                         file: n.file || '', description: n.description || '',
+                        degree: d, size: size,
+                        functions: (n.keyFunctions || []).join(', '),
+                        type: n.type || '', group: n.group || '',
                     },
                 });
             }
@@ -1564,54 +1593,110 @@ const componentOptions = {
                 style: [
                     { selector: 'node', style: {
                         'background-color': 'data(color)', 'label': 'data(label)',
-                        'color': '#E2E8F0', 'font-size': '10px', 'text-valign': 'bottom',
-                        'text-halign': 'center', 'text-margin-y': 6, 'text-max-width': '120px',
-                        'width': 28, 'height': 28, 'border-width': 2, 'border-color': 'data(color)',
-                        'border-opacity': 0.4, 'shape': 'ellipse',
+                        'color': '#E2E8F0', 'font-size': '11px', 'font-weight': '500',
+                        'text-valign': 'bottom', 'text-halign': 'center',
+                        'text-margin-y': 6, 'text-max-width': '140px',
+                        'text-wrap': 'ellipsis',
+                        'width': 'data(size)', 'height': 'data(size)',
+                        'border-width': 2, 'border-color': 'data(color)',
+                        'border-opacity': 0.35, 'shape': 'ellipse',
+                        'transition-property': 'border-color, border-width',
+                        'transition-duration': 150,
                     }},
                     { selector: 'node:selected', style: {
+                        'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.95,
+                        'shadow-blur': 12, 'shadow-color': 'data(color)', 'shadow-opacity': 0.4,
+                    }},
+                    { selector: 'node.highlighted', style: {
                         'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9,
                     }},
+                    { selector: 'node.dimmed', style: { 'opacity': 0.15 }},
                     { selector: 'edge', style: {
-                        'width': 1.2, 'line-color': '#475569', 'target-arrow-color': '#475569',
-                        'target-arrow-shape': 'triangle', 'arrow-scale': 0.7, 'curve-style': 'bezier',
-                        'label': 'data(label)', 'color': '#64748B', 'font-size': '8px',
-                        'text-rotation': 'autorotate', 'opacity': 0.6,
+                        'width': 1.4, 'line-color': '#475569', 'target-arrow-color': '#64748B',
+                        'target-arrow-shape': 'triangle', 'arrow-scale': 0.8,
+                        'curve-style': 'bezier', 'label': 'data(label)',
+                        'color': '#64748B', 'font-size': '8px',
+                        'text-rotation': 'autorotate', 'opacity': 0.5,
                     }},
+                    { selector: 'edge.highlighted', style: {
+                        'width': 2.5, 'line-color': '#E2E8F0', 'target-arrow-color': '#E2E8F0',
+                        'opacity': 0.9,
+                    }},
+                    { selector: 'edge.dimmed', style: { 'opacity': 0.05 }},
                 ],
                 layout: { name: 'preset' },
-                minZoom: 0.1, maxZoom: 3, wheelSensitivity: 0.3,
+                minZoom: 0.08, maxZoom: 4, wheelSensitivity: 0.25,
             });
 
             this._cy = cy;
 
+            // Hover effects
+            cy.on('mouseover', 'node', (evt) => {
+                const node = evt.target;
+                cy.nodes().not(node).addClass('dimmed');
+                cy.edges().addClass('dimmed');
+                node.connectedEdges().removeClass('dimmed').addClass('highlighted');
+                node.connectedEdges().connectedNodes().removeClass('dimmed');
+                node.addClass('highlighted');
+                container.style.cursor = 'pointer';
+            });
+            cy.on('mouseout', 'node', () => {
+                cy.elements().removeClass('highlighted dimmed');
+                container.style.cursor = '';
+            });
+
+            // Node click → select + show detail
+            cy.on('tap', 'node', (evt) => {
+                const node = evt.target;
+                const nd = node.data();
+                cy.elements().removeClass('highlighted dimmed');
+                node.addClass('highlighted');
+                node.connectedEdges().addClass('highlighted');
+                node.connectedEdges().connectedNodes().removeClass('dimmed');
+                this.kgSelectedNode = {
+                    label: nd.label, type: nd.type, group: nd.group,
+                    description: nd.description, file: nd.file,
+                    functions: nd.functions, degree: nd.degree,
+                };
+            });
+
+            // Tap background → deselect
+            cy.on('tap', (evt) => {
+                if (evt.target === cy) {
+                    cy.elements().removeClass('highlighted dimmed');
+                    this.kgSelectedNode = null;
+                }
+            });
+
+            // Double-click node → open file
+            cy.on('dbltap', 'node', (evt) => {
+                const nd = evt.target.data();
+                if (nd.file) this.onKgNodeClick({ file: nd.file, label: nd.label, id: nd.id });
+            });
+
             // Run layout
             const layouts = [
-                { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, animate: true, fit: true, padding: 30 },
-                { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 30 },
-                { name: 'cose', animate: true, fit: true, padding: 30 },
-                { name: 'grid', animate: false, fit: true, padding: 30 },
+                { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, nodeDimensionsIncludeLabels: true, animate: true, animationDuration: 400, fit: true, padding: 40 },
+                { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 40 },
+                { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 40, nodeRepulsion: 6000, idealEdgeLength: 100 },
+                { name: 'grid', animate: false, fit: true, padding: 40 },
             ];
             for (const opts of layouts) {
                 try { cy.layout(opts).run(); return; } catch (_) {}
             }
-
-            // Node click → open file
-            cy.on('tap', 'node', (evt) => {
-                const nd = evt.target.data();
-                if (nd.file) this.onKgNodeClick({ file: nd.file, label: nd.label, id: nd.id });
-            });
         },
 
         fitKgGraph() {
-            if (this._cy) this._cy.fit(undefined, 30);
+            if (this._cy) { this._cy.fit(undefined, 30); this.kgSelectedNode = null; this._cy.elements().removeClass('highlighted dimmed'); }
         },
 
         resetKgGraph() {
             if (this._cy) {
+                this.kgSelectedNode = null;
+                this._cy.elements().removeClass('highlighted dimmed');
                 const layouts = [
-                    { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, animate: true, fit: true, padding: 30 },
-                    { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 30 },
+                    { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 40 },
+                    { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 40 },
                 ];
                 for (const opts of layouts) {
                     try { this._cy.layout(opts).run(); return; } catch (_) {}

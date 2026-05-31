@@ -127,55 +127,7 @@
         </div>
 
         <!-- 知识图谱视图 -->
-        <div v-else-if="viewMode === 'graph'" class="file-graph-view" ref="graphContainer">
-            <canvas
-                ref="graphCanvas"
-                class="file-graph-canvas"
-                @mousemove="onGraphMouseMove"
-                @mousedown="onGraphMouseDown"
-                @mouseup="onGraphMouseUp"
-                @click="onGraphClick"
-                @dblclick="onGraphDblClick"
-                @mouseleave="onGraphMouseLeave"
-                @wheel.prevent="onGraphWheel"
-            ></canvas>
-            <!-- 缩放控件 -->
-            <div class="graph-zoom-controls">
-                <button class="graph-zoom-btn" @click="onGraphZoomIn" title="放大">+</button>
-                <span class="graph-zoom-level" @dblclick="onGraphZoomReset" title="双击适配窗口">{{ getGraphZoomPercent() }}%</span>
-                <button class="graph-zoom-btn" @click="onGraphZoomOut" title="缩小">−</button>
-                <div class="graph-zoom-divider"></div>
-                <button class="graph-zoom-btn graph-zoom-btn--action" @click="onGraphFocusFiltered" title="聚焦当前视图">⊙</button>
-                <button class="graph-zoom-btn graph-zoom-btn--action" @click="onGraphZoomReset" title="回到 L1 并适配窗口">↺</button>
-            </div>
-            <!-- 信息提示 -->
-            <div v-if="graphTooltip" class="graph-tooltip" :style="graphTooltipStyle">
-                <div class="graph-tooltip-name">{{ graphTooltip.name }}</div>
-                <div v-if="graphTooltip.desc" class="graph-tooltip-desc">{{ graphTooltip.desc }}</div>
-                <div v-if="graphTooltip.meta" class="graph-tooltip-meta">{{ graphTooltip.meta }}</div>
-                <div v-if="graphTooltip.action" class="graph-tooltip-action">{{ graphTooltip.action }}</div>
-                <pre v-if="graphTooltip.code" class="graph-tooltip-code">{{ graphTooltip.code }}</pre>
-            </div>
-            <!-- 图例 -->
-            <div class="graph-legend">
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#3b82f6"></span> 项目</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#10b981"></span> 故事</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#0ea5e9"></span> 场景</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#8b5cf6"></span> Skills</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#f59e0b"></span> Templates</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#f43f5e"></span> Rules</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#06b6d4"></span> Agents</span>
-                <span class="graph-legend-item"><span class="graph-legend-dot" style="background:#d1d5db;border-radius:50%"></span> 文件</span>
-            </div>
-            <!-- 迷你地图 -->
-            <canvas
-                ref="graphMiniMap"
-                class="graph-minimap"
-                width="160"
-                height="120"
-                @click="onMiniMapClick"
-            ></canvas>
-        </div>
+        <div v-else-if="viewMode === 'graph'" class="file-graph-view" ref="ftGraphContainer"></div>
 
     </div>
 

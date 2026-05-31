@@ -14,6 +14,18 @@
       </div>
       <div class="code-actions">
         <button
+          v-if="!isEditingFile && canShowKnowledgeGraph"
+          type="button"
+          class="action-button"
+          :class="{ active: showKnowledgeGraph }"
+          @click="toggleKnowledgeGraph"
+          :disabled="!file"
+          :title="showKnowledgeGraph ? '关闭知识图谱' : '查看知识图谱'"
+          aria-label="查看知识图谱"
+        >
+          <yi-icon name="share"></yi-icon>
+        </button>
+        <button
           v-if="!isEditingFile && !shouldShowImagePreview"
           type="button"
           class="action-button"
@@ -67,18 +79,6 @@
           aria-label="在文件树中定位"
         >
           <yi-icon name="crosshairs"></yi-icon>
-        </button>
-        <button
-          v-if="!isEditingFile && canShowKnowledgeGraph"
-          type="button"
-          class="action-button"
-          :class="{ active: showKnowledgeGraph }"
-          @click="toggleKnowledgeGraph"
-          :disabled="!file"
-          :title="showKnowledgeGraph ? '关闭知识图谱' : '查看知识图谱'"
-          aria-label="查看知识图谱"
-        >
-          <yi-icon name="share"></yi-icon>
         </button>
         <button
           v-if="!isEditingFile"
@@ -206,7 +206,25 @@
           <button type="button" class="graph-reader-btn" @click="closeKnowledgeGraph" title="关闭">✕</button>
         </div>
       </div>
-      <div class="graph-reader-canvas" ref="kgCanvas"></div>
+      <div class="graph-reader-body">
+        <div class="graph-reader-canvas" ref="kgCanvas"></div>
+        <div v-if="kgSelectedNode" class="graph-node-detail">
+          <div class="graph-node-detail-header">
+            <span class="graph-node-detail-label">{{ kgSelectedNode.label }}</span>
+            <button class="graph-reader-btn" @click="kgSelectedNode = null" title="关闭">✕</button>
+          </div>
+          <div class="graph-node-detail-meta">
+            <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.type }}</span>
+            <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
+            <span v-if="kgSelectedNode.degree" class="graph-node-badge degree">{{ kgSelectedNode.degree }} 连接</span>
+          </div>
+          <p v-if="kgSelectedNode.description" class="graph-node-detail-desc">{{ kgSelectedNode.description }}</p>
+          <p v-if="kgSelectedNode.functions" class="graph-node-detail-funcs">{{ kgSelectedNode.functions }}</p>
+          <div v-if="kgSelectedNode.file" class="graph-node-detail-file" @click="onKgNodeClick({ file: kgSelectedNode.file, label: kgSelectedNode.label })" title="点击打开文件">
+            {{ kgSelectedNode.file }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="showKnowledgeGraph && kgLoading" class="graph-reader">

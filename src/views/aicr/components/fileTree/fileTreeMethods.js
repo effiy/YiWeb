@@ -2,8 +2,6 @@ import { safeExecute, createError, ErrorTypes } from '/cdn/utils/core/error.js';
 import { normalizeFilePath } from '../../utils/fileFieldNormalizer.js';
 import { formatFileSizeCompact, sortFileTreeItems } from './fileTreeUtils.js';
 import { enrichDocumentPageDescription, needsEnrichment, buildEnrichPrompt } from '/src/core/services/modules/documentEnrichService.js';
-import * as GraphEngine from './graph/index.js';
-
 const escapeHtml = (str) => {
     const div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
@@ -337,379 +335,6 @@ const fileTreeMethods = {
         e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
     },
 
-    /* ====== 知识图谱视图 — 委托给 GraphEngine ====== */
-
-    isGraphActive() {
-        return GraphEngine.getGraphCtx() != null;
-    },
-    hasGraphNodes() {
-        const state = GraphEngine.getState();
-        return state.nodes && state.nodes.length > 0;
-    },
-
-    initGraph() {
-        const canvas = this.$refs.graphCanvas;
-        const container = this.$refs.graphContainer;
-        if (!canvas || !container) return;
-
-        GraphEngine.initGraph(canvas, container);
-        this._buildAndRunGraph();
-    },
-
-    rebuildGraph() {
-        const canvas = this.$refs.graphCanvas;
-        const container = this.$refs.graphContainer;
-        if (!canvas || !container) return;
-
-        if (!GraphEngine.getGraphCtx()) {
-            GraphEngine.initGraph(canvas, container);
-        }
-        this._buildAndRunGraph();
-    },
-
-    _buildAndRunGraph() {
-        const ctx = {
-            sessions: this.sessions,
-            tree: this.tree,
-            sortedTree: this.sortedTree,
-            selectedTags: this.selectedTags,
-            selectedSkillTags: this.selectedSkillTags,
-            selectedTemplateTags: this.selectedTemplateTags,
-            selectedRuleTags: this.selectedRuleTags,
-            selectedAgentTags: this.selectedAgentTags
-        };
-
-        const isRebuild = GraphEngine.getState().nodes.length > 0;
-        GraphEngine.buildAndLayout(ctx, isRebuild);
-
-        GraphEngine.startForceSimulation(() => {
-            GraphEngine.renderCurrentGraph();
-            const mm = this.$refs.graphMiniMap;
-            if (mm) GraphEngine.renderCurrentMiniMap(mm);
-        });
-    },
-
-    applyGraphFilterHighlight() {
-        const ctx = {
-            sessions: this.sessions,
-            tree: this.tree,
-            sortedTree: this.sortedTree,
-            selectedTags: this.selectedTags,
-            selectedSkillTags: this.selectedSkillTags,
-            selectedTemplateTags: this.selectedTemplateTags,
-            selectedRuleTags: this.selectedRuleTags,
-            selectedAgentTags: this.selectedAgentTags,
-            tagFilterNoTags: this.tagFilterNoTags,
-            W: (GraphEngine.getState())._graphW,
-            H: (GraphEngine.getState())._graphH
-        };
-        GraphEngine.applyFilterHighlight(ctx);
-    },
-
-    getGraphZoomPercent() {
-        return GraphEngine.getZoomPercent();
-    },
-
-    onGraphWheel(e) {
-        GraphEngine.handleWheel(e.deltaY);
-    },
-
-    onGraphMouseMove(e) {
-        const canvas = this.$refs.graphCanvas;
-        if (!canvas) return;
-
-        GraphEngine.handleMouseMove(e, canvas, (node, x, y) => {
-            if (!node) {
-                this.graphTooltip = null;
-                return;
-            }
-
-            const E = GraphEngine.ENTITY;
-            const TL = GraphEngine.TYPE_LABELS;
-            const typeLabel = (TL[node.entityType] || {}).zh || '';
-
-            const metaParts = [typeLabel];
-            let descText = '';
-
-            if (node.entityType === E.FILE) {
-                if (node.size) metaParts.push(node.size > 1024 ? Math.round(node.size / 1024) + 'KB' : node.size + 'B');
-                if (node.lastModified) {
-                    metaParts.push(new Date(node.lastModified).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }));
-                }
-                if (node.extension) metaParts.push('.' + node.extension);
-                descText = node.pageDescription || '';
-            }
-            if (node.entityType === E.PROJECT && node.extra) {
-                const ex = node.extra;
-                const infoParts = [];
-                if (ex.storyCount) infoParts.push(ex.storyCount + ' 故事');
-                if (ex.scenarioCount) infoParts.push(ex.scenarioCount + ' 场景');
-                if (ex.skillCount) infoParts.push(ex.skillCount + ' 技能');
-                if (ex.count) infoParts.push(ex.count + ' 文件');
-                descText = infoParts.join(' · ');
-            }
-            if (node.entityType === E.STORY && node.extra) {
-                if (node.extra.project) metaParts.push('属于 ' + node.extra.project);
-                if (node._childrenKeys && node._childrenKeys.length) {
-                    metaParts.push(node._childrenKeys.length + ' 个场景');
-                }
-            }
-            if (node.entityType === E.SCENARIO && node.extra) {
-                if (node.extra.story) metaParts.push('属于 ' + node.extra.story);
-                if (node.extra.pageDescription) descText = node.extra.pageDescription;
-            }
-            if ((node.entityType === E.SKILL || node.entityType === E.TEMPLATE ||
-                node.entityType === E.RULE || node.entityType === E.AGENT) && node.extra) {
-                if (node.extra.project) metaParts.push('项目 ' + node.extra.project);
-            }
-
-            let codePreview = null;
-            if (node.entityType === E.FILE && node.treeKey) {
-                if (node._codePreview !== undefined) {
-                    codePreview = node._codePreview;
-                } else {
-                    node._codePreview = null;
-                    this._fetchCodePreview(node);
-                }
-            }
-
-            // 钻取提示
-            let actionHint = '';
-            const layer = GraphEngine.getCurrentLayer();
-            if (node.entityType === E.STORY && layer === 1) {
-                actionHint = '点击查看场景';
-            } else if (node.entityType === E.SCENARIO && layer === 2) {
-                actionHint = '点击查看文件';
-            }
-
-            this.graphTooltip = {
-                name: node.name,
-                desc: descText || node.pageDescription || '',
-                meta: metaParts.join(' · '),
-                code: codePreview || (node._codePreview || null),
-                action: actionHint
-            };
-            this.graphTooltipStyle = { left: (x + 14) + 'px', top: (y - 10) + 'px' };
-        });
-    },
-
-    onGraphMouseDown(e) {
-        GraphEngine.handleMouseDown(e, this.$refs.graphCanvas);
-    },
-
-    onGraphMouseUp() {
-        GraphEngine.handleMouseUp(this.$refs.graphCanvas);
-    },
-
-    onGraphClick(e) {
-        const currentLayer = GraphEngine.getCurrentLayer();
-        const E = GraphEngine.ENTITY;
-
-        const node = GraphEngine.handleClick(e, this.$refs.graphCanvas, (node) => {
-            if (!node) return;
-
-            // 图层导航：点击驱动钻取
-            if (node.entityType === E.STORY && currentLayer === 1) {
-                // L1 点击故事 → 进入 L2 故事+场景
-                GraphEngine.navigateToLayer(2, node);
-                return;
-            }
-            if (node.entityType === E.SCENARIO && currentLayer === 2) {
-                // L2 点击场景 → 进入 L3 场景+文件
-                GraphEngine.navigateToLayer(3, node);
-                return;
-            }
-
-            // 业务交互
-            if (node.entityType === E.FILE && node.treeKey) {
-                this.handleTagClick(node.treeKey);
-                return;
-            }
-
-            if (node.entityType === E.PROJECT) {
-                this.$emit('tag-select', [node.name]);
-            } else if (node.entityType === E.STORY && currentLayer !== 1) {
-                const proj = node.extra && node.extra.project;
-                const tags = proj ? [proj, node.name] : [node.name];
-                this.$emit('tag-select', tags);
-            } else if (node.entityType === E.SKILL) {
-                this.$emit('skill-tag-toggle', node.name);
-            } else if (node.entityType === E.TEMPLATE) {
-                this.$emit('template-tag-toggle', node.name);
-            } else if (node.entityType === E.RULE) {
-                this.$emit('rule-tag-toggle', node.name);
-            } else if (node.entityType === E.AGENT) {
-                this.$emit('agent-tag-toggle', node.name);
-            }
-        });
-    },
-
-    onGraphMouseLeave() {
-        this.graphTooltip = null;
-        GraphEngine.handleMouseLeave();
-    },
-
-    onGraphDblClick() {
-        const ctx = {
-            sessions: this.sessions,
-            tree: this.tree,
-            sortedTree: this.sortedTree,
-            selectedTags: this.selectedTags,
-            selectedSkillTags: this.selectedSkillTags,
-            selectedTemplateTags: this.selectedTemplateTags,
-            selectedRuleTags: this.selectedRuleTags,
-            selectedAgentTags: this.selectedAgentTags
-        };
-        GraphEngine.handleDblClick(ctx);
-    },
-
-    watchGraphResize() {
-        const ctx = {
-            sessions: this.sessions,
-            tree: this.tree,
-            sortedTree: this.sortedTree,
-            selectedTags: this.selectedTags,
-            selectedSkillTags: this.selectedSkillTags,
-            selectedTemplateTags: this.selectedTemplateTags,
-            selectedRuleTags: this.selectedRuleTags,
-            selectedAgentTags: this.selectedAgentTags
-        };
-        GraphEngine.handleResize(this.$refs.graphCanvas, this.$refs.graphContainer, ctx);
-    },
-
-    onGraphZoomIn() {
-        GraphEngine.zoomIn();
-    },
-
-    onGraphZoomOut() {
-        GraphEngine.zoomOut();
-    },
-
-    onGraphZoomReset() {
-        GraphEngine.zoomReset();
-    },
-
-    onGraphFocusFiltered() {
-        GraphEngine.focusFiltered();
-    },
-
-    onMiniMapClick(e) {
-        GraphEngine.handleMiniMapClick(e, this.$refs.graphMiniMap);
-    },
-
-    _fetchCodePreview(node) {
-        if (!node || !node.treeKey) return;
-        const sessions = this.sessions;
-        if (!sessions) return;
-        for (const s of sessions) {
-            if (s.key === node.treeKey && s.pageDescription) {
-                const lines = s.pageDescription.split('\n').slice(0, 15);
-                node._codePreview = lines.join('\n');
-                return;
-            }
-        }
-        node._codePreview = '';
-    },
-
-    /* ====== 文档增强 ====== */
-
-    graphNodeNeedsEnrich(node) {
-        if (!node) return false;
-        if (node.entityType === 'file' || node.entityType === 'scenario') {
-            const desc = (node.extra && node.extra.pageDescription) || '';
-            if (!desc || desc.trim().length < 10) return true;
-            if (desc.startsWith('文件：') && desc.length < 50) return true;
-        }
-        return false;
-    },
-
-    async enrichGraphNode(node) {
-        if (!node) return false;
-
-        const E = GraphEngine.ENTITY;
-        const entityType = node.entityType;
-        let filePath = '';
-
-        if (entityType === E.SCENARIO) {
-            const storyName = node.extra && node.extra.story;
-            const projName = node.extra && node.extra.project;
-            const scName = node.name || '';
-            filePath = `${projName}/docs/故事任务面板/${storyName}/${scName}.md`;
-        } else if (entityType === E.FILE && node.treeKey) {
-            filePath = node.treeKey;
-        } else if (entityType === E.STORY) {
-            const projName = node.extra && node.extra.project;
-            filePath = `${projName}/docs/故事任务面板/${node.name}/故事任务.md`;
-        } else {
-            return false;
-        }
-
-        try {
-            const prompt = buildEnrichPrompt(node);
-            let aiSummary = '';
-
-            if (typeof window.streamPrompt === 'function') {
-                const aiUrl = `${window.API_URL}/`;
-                const aiPayload = {
-                    module_name: 'services.chat.chat_service',
-                    method_name: 'chat',
-                    parameters: {
-                        messages: [{ role: 'user', content: prompt }],
-                        model: 'gpt-4o-mini',
-                        max_tokens: 300
-                    }
-                };
-                const result = await window.streamPrompt(aiUrl, aiPayload, {}, (chunk) => {
-                    aiSummary += chunk;
-                });
-                aiSummary = (result && result.data) || aiSummary;
-            }
-
-            if (!aiSummary || aiSummary.trim().length < 5) {
-                const typeLabels = { project: '项目', story: '故事', scenario: '场景',
-                    skill: '技能', template: '模板', rule: '规则', agent: '智能体', file: '文件' };
-                const tl = typeLabels[entityType] || entityType;
-                aiSummary = `${tl}：${node.name || ''}`;
-            }
-
-            await enrichDocumentPageDescription({
-                cname: 'sessions',
-                filePath,
-                pageDescription: aiSummary.trim()
-            });
-
-            if (node.extra) {
-                node.extra.pageDescription = aiSummary.trim();
-            }
-
-            if (this.sessions && Array.isArray(this.sessions)) {
-                for (const s of this.sessions) {
-                    const fp = s.file_path || s.filePath || '';
-                    if (fp === filePath || s.key === filePath) {
-                        s.pageDescription = aiSummary.trim();
-                        break;
-                    }
-                }
-            }
-
-            GraphEngine.renderCurrentGraph();
-            const mm = this.$refs.graphMiniMap;
-            if (mm) GraphEngine.renderCurrentMiniMap(mm);
-            return true;
-        } catch (err) {
-            console.error('[GraphEnrich] 补充节点描述失败:', err);
-            return false;
-        }
-    },
-
-    getNodesNeedingEnrich() {
-        const state = GraphEngine.getState();
-        if (!state.nodes) return [];
-        return state.nodes.filter(n =>
-            n._visible !== false && this.graphNodeNeedsEnrich(n)
-        );
-    },
-
     /* ====== 卡片编辑 ====== */
 
     onCardClick(file) {
@@ -752,6 +377,151 @@ const fileTreeMethods = {
         } finally {
             this.cardSaving = false;
         }
+    },
+
+    /* ====== 知识图谱视图 (Cytoscape) ====== */
+
+    initFileTreeGraph() {
+        if (typeof cytoscape === 'undefined') return;
+        const container = this.$refs.ftGraphContainer;
+        if (!container) return;
+
+        if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
+
+        const { nodes, edges } = this._buildFileTreeGraphData();
+        if (!nodes.length) return;
+
+        const colors = {
+            folder: '#F59E0B', file: '#64748B', md: '#3B82F6', json: '#10B981',
+            js: '#F59E0B', css: '#06B6D4', html: '#EF4444', other: '#8B5CF6',
+        };
+        function nodeColor(n) {
+            if (n.kind === 'folder') return colors.folder;
+            if (n.kind === 'file') {
+                const ext = (n.label || '').split('.').pop();
+                return colors[ext] || colors.other;
+            }
+            return colors.other;
+        }
+
+        const elements = [];
+        for (const n of nodes) {
+            const deg = (n._deg || 0);
+            elements.push({
+                group: 'nodes',
+                data: {
+                    id: n.id, label: n.label,
+                    color: nodeColor(n), kind: n.kind,
+                    key: n.key || '', file: n.file || '', weight: 18 + Math.min(deg * 4, 18),
+                },
+            });
+        }
+        for (const e of edges) {
+            elements.push({
+                group: 'edges',
+                data: { id: `${e.source}_${e.target}`, source: e.source, target: e.target },
+            });
+        }
+
+        const cy = cytoscape({
+            container, elements,
+            style: [
+                { selector: 'node', style: {
+                    'background-color': 'data(color)', 'label': 'data(label)',
+                    'color': '#E2E8F0', 'font-size': '9px', 'text-valign': 'bottom',
+                    'text-halign': 'center', 'text-margin-y': 5, 'text-max-width': '100px',
+                    'width': 'data(weight)', 'height': 'data(weight)',
+                    'border-width': 1.5, 'border-color': 'data(color)', 'border-opacity': 0.3,
+                    'shape': 'ellipse',
+                }},
+                { selector: 'node:selected', style: { 'border-width': 2, 'border-color': '#FFF', 'border-opacity': 0.8 }},
+                { selector: 'node.dimmed', style: { 'opacity': 0.12 }},
+                { selector: 'node.highlighted', style: { 'border-width': 2.5, 'border-color': '#FFF', 'border-opacity': 0.8 }},
+                { selector: 'edge', style: { 'width': 0.8, 'line-color': '#334155', 'opacity': 0.4, 'curve-style': 'bezier' }},
+                { selector: 'edge.highlighted', style: { 'width': 2, 'line-color': '#94A3B8', 'opacity': 0.7 }},
+                { selector: 'edge.dimmed', style: { 'opacity': 0.03 }},
+            ],
+            layout: { name: 'preset' },
+            minZoom: 0.05, maxZoom: 3, wheelSensitivity: 0.3,
+        });
+
+        this._ftCy = cy;
+
+        // Hover
+        cy.on('mouseover', 'node', (evt) => {
+            const n = evt.target;
+            cy.nodes().not(n).addClass('dimmed');
+            cy.edges().addClass('dimmed');
+            n.connectedEdges().removeClass('dimmed').addClass('highlighted');
+            n.connectedEdges().connectedNodes().removeClass('dimmed');
+            n.addClass('highlighted');
+        });
+        cy.on('mouseout', 'node', () => cy.elements().removeClass('highlighted dimmed'));
+
+        // Click → select file
+        cy.on('tap', 'node', (evt) => {
+            const nd = evt.target.data();
+            if (nd.kind === 'file' && nd.key) {
+                this.handleTagClick(nd.key);
+            }
+        });
+
+        // Layout
+        const layouts = [
+            { name: 'cose', animate: false, fit: true, padding: 20, nodeRepulsion: 4000, idealEdgeLength: 60 },
+            { name: 'breadthfirst', directed: false, spacingFactor: 1.2, animate: false, fit: true, padding: 20 },
+            { name: 'grid', animate: false, fit: true, padding: 20 },
+        ];
+        for (const opts of layouts) {
+            try { cy.layout(opts).run(); break; } catch (_) {}
+        }
+    },
+
+    _buildFileTreeGraphData() {
+        const nodes = [];
+        const edges = [];
+        const nodeMap = new Map();
+        let idCounter = 0;
+
+        const walk = (items, parentId) => {
+            if (!Array.isArray(items)) return;
+            for (const item of items) {
+                const id = `n${++idCounter}`;
+                const isFolder = item.type === 'folder' || (item.children && item.children.length > 0);
+                const name = item.name || item.fileName || item.key || '';
+                const ext = name.split('.').pop() || '';
+
+                const node = {
+                    id, label: name.length > 28 ? name.substring(0, 26) + '…' : name,
+                    kind: isFolder ? 'folder' : 'file',
+                    key: normalizeFilePath(item.key || item.path || name),
+                    file: item.key || item.path || name,
+                };
+                nodeMap.set(item.key || item.path || id, id);
+                nodes.push(node);
+
+                if (parentId) {
+                    edges.push({ source: parentId, target: id });
+                }
+
+                if (isFolder && item.children) {
+                    walk(item.children, id);
+                }
+            }
+        };
+
+        walk(this.tree || [], null);
+
+        // Calculate degree for sizing
+        const deg = {};
+        for (const e of edges) { deg[e.source] = (deg[e.source] || 0) + 1; deg[e.target] = (deg[e.target] || 0) + 1; }
+        for (const n of nodes) { n._deg = deg[n.id] || 0; }
+
+        return { nodes, edges };
+    },
+
+    _destroyFtCy() {
+        if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
     },
 };
 

@@ -93,87 +93,21 @@ const componentOptions = {
     data() {
         return {
             tagOrderVersion: 0,
-            graphTooltip: null,
-            graphTooltipStyle: {},
             editingCardKey: null,
             editingCardDesc: '',
             cardSaving: false,
-            _graphResizeObserver: null
+            _ftCy: null
         };
     },
     watch: {
-        viewMode: {
-            handler(newMode) {
-                if (newMode === 'graph') {
-                    this.$nextTick(() => {
-                        this.initGraph();
-                        if (!this._graphResizeObserver && typeof ResizeObserver !== 'undefined') {
-                            this._graphResizeObserver = new ResizeObserver(() => {
-                                this.watchGraphResize();
-                            });
-                            const container = this.$refs.graphContainer;
-                            if (container) this._graphResizeObserver.observe(container);
-                        }
-                    });
-                }
-            },
-            immediate: false
-        },
-        tree: {
-            handler() {
-                if (this.viewMode === 'graph' && this.isGraphActive()) {
-                    this.$nextTick(() => this.rebuildGraph());
-                }
-            },
-            deep: true
-        },
-        selectedTags: {
-            handler() {
-                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
-                    this.$nextTick(() => this.applyGraphFilterHighlight());
-                }
-            },
-            deep: true
-        },
-        selectedSkillTags: {
-            handler() {
-                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
-                    this.$nextTick(() => this.applyGraphFilterHighlight());
-                }
-            },
-            deep: true
-        },
-        selectedTemplateTags: {
-            handler() {
-                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
-                    this.$nextTick(() => this.applyGraphFilterHighlight());
-                }
-            },
-            deep: true
-        },
-        selectedRuleTags: {
-            handler() {
-                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
-                    this.$nextTick(() => this.applyGraphFilterHighlight());
-                }
-            },
-            deep: true
-        },
-        selectedAgentTags: {
-            handler() {
-                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
-                    this.$nextTick(() => this.applyGraphFilterHighlight());
-                }
-            },
-            deep: true
-        },
-        tagFilterNoTags: {
-            handler() {
-                if (this.viewMode === 'graph' && this.hasGraphNodes()) {
-                    this.$nextTick(() => this.applyGraphFilterHighlight());
-                }
+        viewMode(newMode) {
+            if (newMode === 'graph') {
+                this.$nextTick(() => this.initFileTreeGraph());
+            } else if (this._ftCy) {
+                this._ftCy.destroy();
+                this._ftCy = null;
             }
-        },
+        }
     },
     methods: fileTreeMethods
 };

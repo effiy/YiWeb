@@ -222,10 +222,99 @@
     border-color: var(--yi-border, #2d3340);
 }
 
+.graph-reader-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .graph-reader-canvas {
     flex: 1;
     min-height: 0;
-    width: 100%;
+    min-width: 0;
+}
+
+/* 节点详情面板 */
+.graph-node-detail {
+    width: 260px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--yi-border, #2d3340);
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.graph-node-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.graph-node-detail-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--yi-text-primary, #e2e8f0);
+    word-break: break-all;
+}
+
+.graph-node-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.graph-node-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    background: rgba(255,255,255,0.08);
+    color: var(--yi-text-secondary, #94a3b8);
+}
+
+.graph-node-badge.group {
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+}
+
+.graph-node-badge.degree {
+    background: rgba(245,158,11,0.15);
+    color: #fbbf24;
+}
+
+.graph-node-detail-desc {
+    font-size: 13px;
+    color: var(--yi-text-secondary, #94a3b8);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.graph-node-detail-funcs {
+    font-size: 12px;
+    color: #60a5fa;
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0;
+}
+
+.graph-node-detail-file {
+    font-size: 11px;
+    color: #64748B;
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-all;
+    cursor: pointer;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.graph-node-detail-file:hover {
+    color: #93c5fd;
+    background: rgba(59,130,246,0.1);
 }
 
 /* 图谱按钮激活态 */
