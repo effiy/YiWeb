@@ -349,6 +349,11 @@ registerGlobalComponent({
                 return;
             }
 
+            // 手动注册 dagre 布局（cytoscape-dagre CDN 不会自动注册）
+            if (typeof cytoscapeDagre !== 'undefined' && typeof cytoscapeDagre === 'function') {
+                try { cytoscapeDagre(cytoscape); } catch (_) {}
+            }
+
             // 销毁旧实例
             if (this.cy) {
                 this.cy.destroy();
@@ -389,7 +394,7 @@ registerGlobalComponent({
                 container,
                 elements: { nodes, edges },
                 style: CY_STYLESHEET,
-                layout: { name: 'preset' },
+                layout: { name: 'breadthfirst', directed: true, spacingFactor: 1.3, fit: true, padding: 40 },
                 minZoom: 0.1,
                 maxZoom: 3,
                 wheelSensitivity: 0.3,

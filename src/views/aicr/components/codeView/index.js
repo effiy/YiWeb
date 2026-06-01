@@ -1629,6 +1629,10 @@ const componentOptions = {
                 this.kgError = 'Cytoscape.js 未加载';
                 return;
             }
+            // 手动注册 dagre 布局（cytoscape-dagre CDN 不会自动注册）
+            if (typeof cytoscapeDagre !== 'undefined' && typeof cytoscapeDagre === 'function') {
+                try { cytoscapeDagre(cytoscape); } catch (_) {}
+            }
             this.$nextTick(() => {
                 const container = this.$refs.kgCanvas;
                 if (!container || !this.kgGraphData) return;
