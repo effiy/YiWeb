@@ -31,7 +31,9 @@ export function createSimulation(nodes, edges, nodeMap, W, H, dragging) {
         x: n.x, y: n.y,
         vx: n.vx || 0, vy: n.vy || 0,
         _ref: n,
-        _radius: Math.max(n.w, n.h) / 2 + 8,
+        // 参考 Understand-Anything：碰撞半径为节点对角线的一半 + 间距
+        // 使用对角线能更好地覆盖矩形节点的实际碰撞区域
+        _radius: Math.sqrt(n.w * n.w + n.h * n.h) / 2 + 4,
         _anchorY: n._anchorY != null ? n._anchorY : (n._targetY || H / 2),
         _subRow: n._subRow,
         _projectName: n._projectName,
@@ -55,18 +57,28 @@ export function createSimulation(nodes, edges, nodeMap, W, H, dragging) {
         if (n.entityType === ENTITY.PROJECT) projCenterMap.set(n.name, n.x);
     }
 
+    // 参考 Understand-Anything：按节点数量动态缩放力参数
+    const isLarge = nodes.length > FORCE.LARGE_GRAPH_THRESHOLD;
+    const chargeStrength = isLarge ? FORCE.CHARGE_STRENGTH_LARGE : FORCE.CHARGE_STRENGTH_SMALL;
+    // 链路距离随图规模增大（大图需要更分散）
+    const linkDistanceScale = isLarge ? 1.6 : 1.0;
+    const centerStrengthScale = isLarge ? 1.5 : 1.0;
+
     const sim = forceSimulation(simNodes)
         .force('link', forceLink(simLinks)
             .id(d => d.id)
-            .distance(d => (EDGE_FORCE[d.type] || EDGE_FORCE.contains).distance)
+            .distance(d => {
+                const base = (EDGE_FORCE[d.type] || EDGE_FORCE.contains).distance;
+                return base * linkDistanceScale;
+            })
             .strength(d => (EDGE_FORCE[d.type] || EDGE_FORCE.contains).strength)
         )
         .force('charge', forceManyBody()
-            .strength(FORCE.CHARGE_STRENGTH)
+            .strength(chargeStrength)
             .distanceMax(FORCE.CHARGE_MAX_DIST)
         )
         .force('center', forceCenter(W / 2, H / 2)
-            .strength(FORCE.CENTER_STRENGTH)
+            .strength(FORCE.CENTER_STRENGTH * centerStrengthScale)
         )
         .force('collide', forceCollide()
             .radius(d => d._radius)
@@ -118,8 +130,12 @@ export function syncPositions(simNodes, nodeMap, dragging) {
  */
 export function runSimulation(sim, simNodes, nodeMap, allNodes, renderFn, stateRef) {
     return new Promise((resolve) => {
-        const totalTicks = Math.min(FORCE.TOTAL_TICKS_MAX,
-            Math.max(FORCE.TOTAL_TICKS_MIN, allNodes.length * 2));
+        // 参考 Understand-Anything: tick 数随节点数量动态缩放
+        const isLarge = allNodes.length > FORCE.LARGE_GRAPH_THRESHOLD;
+        const totalTicks = Math.min(
+            isLarge ? FORCE.TOTAL_TICKS_MAX : FORCE.TOTAL_TICKS_MAX,
+            Math.max(FORCE.TOTAL_TICKS_MIN, allNodes.length * (isLarge ? 3 : 2))
+        );
         let tickCount = 0;
 
         const step = () => {
@@ -135,9 +151,9 @@ export function runSimulation(sim, simNodes, nodeMap, allNodes, renderFn, stateR
 
             syncPositions(simNodes, nodeMap, stateRef.dragging);
 
-            // 每 20 tick 运行一次层内碰撞检测
-            if (tickCount % 20 === 0) {
-                intraBandCollision(allNodes, 0.4);
+            // 每 12 tick 运行一次层内碰撞检测（ELK 风格：持续防止同层重叠）
+            if (tickCount % 12 === 0) {
+                intraBandCollision(allNodes, 0.5);
             }
 
             renderFn();

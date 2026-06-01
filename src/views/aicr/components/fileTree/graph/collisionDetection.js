@@ -128,8 +128,7 @@ export function multiRoundCollision(nodes, options = {}) {
         horizontalOnly = false
     } = options;
 
-    const defaultPaddings = [12, 8, 6, 4];
-    const padArray = paddings || defaultPaddings;
+    const padArray = paddings || COLLISION.DEFAULT_PADDINGS;
 
     let totalMoved = 0;
 
@@ -167,7 +166,8 @@ export function intraBandCollision(nodes, force = 0.6) {
     let totalMoved = 0;
     for (const [, bandNodes] of bands) {
         if (bandNodes.length <= 1) continue;
-        totalMoved += collisionRound(bandNodes, force, 6, true);
+        // 水平碰撞使用稍大间距以适应不同节点宽度
+        totalMoved += collisionRound(bandNodes, force, 8, true);
     }
     return totalMoved;
 }

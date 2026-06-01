@@ -2,15 +2,16 @@
  * 图谱引擎 — 主入口
  *
  * 参考 Understand-Anything 架构，协调以下模块：
- *   - dagreLayout.js      分层布局算法（Dagre 风格）
- *   - forceLayout.js      d3-force 力模拟 + 分层约束
+ *   - elkLayout.js         ELK.js 工业级布局（Understand-Anything 同款，主引擎）
+ *   - dagreLayout.js       分层布局算法（ELK 不可用时的回退方案）
+ *   - forceLayout.js       d3-force 力模拟 + 分层约束
  *   - collisionDetection.js 自研多轮碰撞检测
- *   - graphDataBuilder.js  节点/边数据构建
- *   - graphRenderer.js     Canvas 渲染 + 迷你地图
+ *   - graphDataBuilder.js   节点/边数据构建
+ *   - graphRenderer.js      Canvas 渲染 + 迷你地图
  *
  * 架构特点：
- *   1. Dagre 分层算法 → 初始布局（垂直分层 + Barycenter 排序）
- *   2. d3-force → 力导向微调（link + charge + center + collide + Y/X anchor）
+ *   1. ELK layered 算法 → 初始布局（Sugiyama 框架，保证不重叠）
+ *   2. d3-force → 力导向微调（可选，大图时启用）
  *   3. 自研多轮碰撞检测 → 最终去重叠（4 轮递减力度）
  *   4. Canvas 2D → 高性能渲染（Understand-Anything CustomNode 设计语言）
  *
@@ -22,6 +23,7 @@
 
 import { ENTITY, ENTITY_SIZES, LAYER_TYPES, LAYER_LABELS, LAYER_HINTS, RENDER, FORCE, TYPE_LABELS, RELATION_LABELS } from './constants.js';
 import { applyLayout } from './dagreLayout.js';
+import { applyElkLayout, isElkAvailable } from './elkLayout.js';
 import { createSimulation, syncPositions, runSimulation, stopSimulation } from './forceLayout.js';
 import { multiRoundCollision, intraBandCollision } from './collisionDetection.js';
 import { buildGraphData, recomputeFilterHighlight, clearScenarioCache, getScenarioCache } from './graphDataBuilder.js';
@@ -102,9 +104,18 @@ export function initGraph(canvas, container) {
 }
 
 /**
- * 构建图谱数据 + 布局 + 力模拟
+ * 构建图谱数据 + 布局
+ *
+ * 布局策略（参考 Understand-Anything）：
+ *   1. ELK.js layered 算法 → 主布局引擎（工业级 Sugiyama 框架，保证不重叠）
+ *   2. dagreLayout → ELK 不可用或失败时的回退
+ *   3. multiRoundCollision → 布局后安全保障
+ *
+ * @param {Object} ctx - 图谱上下文
+ * @param {boolean} rebuild - 是否重建
+ * @returns {Promise<void>}
  */
-export function buildAndLayout(ctx, rebuild = false) {
+export async function buildAndLayout(ctx, rebuild = false) {
     const W = _state._graphW;
     const H = _state._graphH;
 
@@ -138,7 +149,21 @@ export function buildAndLayout(ctx, rebuild = false) {
     _state._activeFilterTypes = null;
     _applyVisibility();
 
-    applyLayout(_state.nodes, _state.edges, _state.nodeMap, W, H);
+    // ── 布局引擎选择 ──
+    // 参考 Understand-Anything：优先使用 ELK.js 工业级布局引擎
+    let layoutOk = false;
+
+    if (isElkAvailable()) {
+        layoutOk = await applyElkLayout(_state.nodes, _state.edges, _state.nodeMap, W, H);
+    }
+
+    if (!layoutOk) {
+        // 回退：自研 Dagre 风格布局
+        applyLayout(_state.nodes, _state.edges, _state.nodeMap, W, H);
+    }
+
+    // 布局后碰撞检测——安全保障（ELK 理论上不需要，但作为安全网）
+    multiRoundCollision(_state.nodes);
 }
 
 /**
@@ -440,13 +465,13 @@ export function handleMouseLeave() {
     }
 }
 
-export function handleDblClick(ctx) {
+export async function handleDblClick(ctx) {
     clearScenarioCache();
     _state._currentLayer = 1;
     _state._drillKey = null;
     _state.selectedKey = null;
     _state._hasFittedOnce = false;
-    buildAndLayout(ctx);
+    await buildAndLayout(ctx);
     startForceSimulation(() => {
         renderCurrentGraph();
         if (_state._renderMiniMapCanvas) renderCurrentMiniMap(_state._renderMiniMapCanvas);
@@ -613,7 +638,7 @@ export function handleResize(canvas, container, ctx) {
         newCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         _graphCtx = newCtx;
         _state._hasFittedOnce = false;
-        buildAndLayout(ctx);
+        await buildAndLayout(ctx);
         startForceSimulation(() => {
             renderCurrentGraph();
             if (_state._renderMiniMapCanvas) renderCurrentMiniMap(_state._renderMiniMapCanvas);

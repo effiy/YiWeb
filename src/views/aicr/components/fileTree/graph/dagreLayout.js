@@ -53,12 +53,15 @@ export function layoutNodesInBands(nodes, W, H) {
         const pad = 100;
         const availW = W - pad * 2;
         const projNodeW = ENTITY_SIZES.project.w;
-        const minProjGap = 20;
+        const projNodeH = ENTITY_SIZES.project.h;
+        const isLarge = projectNodes.length > 8;
+        const minProjGap = isLarge ? 28 : 20;
+        const rowPadding = 12;
 
         const singleRowW = projectNodes.length * projNodeW + (projectNodes.length - 1) * minProjGap;
         const rowsNeeded = singleRowW > availW ? Math.ceil(singleRowW / availW) : 1;
         const perRow = Math.ceil(projectNodes.length / rowsNeeded);
-        const rowH = 64;
+        const rowH = projNodeH + rowPadding;
 
         for (let ri = 0; ri < rowsNeeded; ri++) {
             const rowNodes = projectNodes.slice(ri * perRow, Math.min((ri + 1) * perRow, projectNodes.length));
@@ -88,9 +91,14 @@ export function layoutNodesInBands(nodes, W, H) {
         });
 
         // Step 5: 各层内 Dagre 风格排列（Barycenter 排序 + 贪心分行）
+        const totalNodeCount = nodes.length;
         for (let bi = 1; bi < BAND_DEFS.length; bi++) {
             const bandNodes = nodes.filter(n => n._band === bi);
             if (bandNodes.length === 0) continue;
+
+            // 按节点数量动态缩放间距（参考 ELK nodeNode 参数）
+            const isLarge = totalNodeCount > 80;
+            const minNodeGap = isLarge ? 28 : 20;
 
             // 按项目分组
             const byProject = new Map();
@@ -111,8 +119,6 @@ export function layoutNodesInBands(nodes, W, H) {
                     groupWidth = W - 120;
                 }
 
-                const minNodeGap = 16;
-                const rowHeight = 52;
                 const rows = [];
                 let currentRow = [];
                 let currentRowW = 0;
@@ -130,33 +136,38 @@ export function layoutNodesInBands(nodes, W, H) {
                 }
                 if (currentRow.length > 0) rows.push(currentRow);
 
-                const totalRows = rows.length;
-                const rowOffsetY = totalRows > 1 ? -(totalRows - 1) * rowHeight / 2 : 0;
+                // 为每行计算实际高度（使用行内最高节点 + 垂直间距）
+                const rowPadding = 10;
+                const rowHeights = rows.map(rn => Math.max(...rn.map(n => n.h)) + rowPadding);
+                const totalRowsHeight = rowHeights.reduce((s, h) => s + h, 0);
+                const rowBaseY = groupNodes[0]._targetY - totalRowsHeight / 2 + rowHeights[0] / 2;
 
+                let cumY = rowBaseY;
                 rows.forEach((rowNodes, ri) => {
                     const rowTotalW = rowNodes.reduce((sum, n) => sum + n.w, 0)
                         + minNodeGap * (rowNodes.length - 1);
                     const startX = groupCenterX - rowTotalW / 2;
-                    const rowY = rowNodes[0]._targetY + rowOffsetY + ri * rowHeight;
 
                     let cursorX = startX;
                     rowNodes.forEach((n) => {
-                        n.x = cursorX + n.w / 2 + (Math.random() - 0.5) * 4;
-                        n.y = rowY + (Math.random() - 0.5) * 6;
+                        n.x = cursorX + n.w / 2;
+                        n.y = cumY;
                         n._groupKey = projName;
                         n._subRow = ri;
                         cursorX += n.w + minNodeGap;
                     });
+                    cumY += rowHeights[ri];
                 });
             }
         }
     } else {
         // 无项目节点时的回退布局
+        const isLarge = nodes.length > 80;
+        const minGap = isLarge ? 28 : 20;
+        const rowPadding = 10;
         for (let bi = 0; bi < BAND_DEFS.length; bi++) {
             const bandNodes = nodes.filter(n => n._band === bi);
             if (bandNodes.length === 0) continue;
-            const minGap = 16;
-            const rowH = 52;
             const availW = W - 120;
             const rows = [];
             let curRow = [], curW = 0;
@@ -172,17 +183,23 @@ export function layoutNodesInBands(nodes, W, H) {
                 }
             }
             if (curRow.length > 0) rows.push(curRow);
-            const rowOffY = rows.length > 1 ? -(rows.length - 1) * rowH / 2 : 0;
+            // 按实际节点高度计算行高
+            const rowHeights = rows.map(rn => Math.max(...rn.map(n => n.h)) + rowPadding);
+            const totalRowsHeight = rowHeights.reduce((s, h) => s + h, 0);
+            const rowBaseY = bandNodes[0]._targetY - totalRowsHeight / 2 + rowHeights[0] / 2;
+
+            let cumY = rowBaseY;
             rows.forEach((rn, ri) => {
                 const totalW = rn.reduce((s, n) => s + n.w, 0) + minGap * (rn.length - 1);
                 const sx = W / 2 - totalW / 2;
                 let cx = sx;
                 rn.forEach((n) => {
                     n.x = cx + n.w / 2;
-                    n.y = n._targetY + rowOffY + ri * rowH;
+                    n.y = cumY;
                     n._subRow = ri;
                     cx += n.w + minGap;
                 });
+                cumY += rowHeights[ri];
             });
         }
     }

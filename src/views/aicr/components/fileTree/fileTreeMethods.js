@@ -620,12 +620,16 @@ const fileTreeMethods = {
             this._updateFtBreadcrumb();
         });
 
-        // ── 布局（多策略 fallback） ──
+        // ── 布局（多策略 fallback，参考 ELK 间距标准防止节点重叠） ──
+        const nodeCount = nodes.length;
+        const isDense = nodeCount > 60;
+        // dagre spacingFactor：密集图用更大间距，参考 ELK nodeNode=50 策略
+        const dagreSpacing = isDense ? 1.65 : 1.45;
         const layouts = [
-            { name: 'dagre', rankDir: 'TB', spacingFactor: 1.35, nodeDimensionsIncludeLabels: true, animate: true, animationDuration: 400, fit: true, padding: 40 },
-            { name: 'breadthfirst', directed: true, spacingFactor: 1.25, animate: true, fit: true, padding: 40 },
-            { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 40, nodeRepulsion: 5000, idealEdgeLength: 90 },
-            { name: 'grid', animate: false, fit: true, padding: 40 },
+            { name: 'dagre', rankDir: 'TB', spacingFactor: dagreSpacing, nodeDimensionsIncludeLabels: true, nodeSep: isDense ? 60 : 40, edgeSep: 20, rankSep: isDense ? 120 : 80, animate: true, animationDuration: 400, fit: true, padding: 50 },
+            { name: 'breadthfirst', directed: true, spacingFactor: isDense ? 1.5 : 1.3, animate: true, fit: true, padding: 50, avoidOverlap: true },
+            { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 50, nodeRepulsion: isDense ? 8000 : 5000, idealEdgeLength: isDense ? 120 : 90, gravity: 0.3, nodeOverlap: 16 },
+            { name: 'grid', animate: false, fit: true, padding: 50, avoidOverlap: true, condense: false, rows: Math.ceil(Math.sqrt(nodeCount)) },
         ];
         for (const opts of layouts) {
             try { cy.layout(opts).run(); break; } catch (_) {}
@@ -1166,10 +1170,13 @@ const fileTreeMethods = {
         this.ftGraphOverviewOriginal = null;
         this.ftSelectedNode = null;
         this._ftCy.elements().removeClass('highlighted dimmed matched');
+        const nodeCount = this._ftCy.nodes().length;
+        const isDense = nodeCount > 60;
+        const dagreSpacing = isDense ? 1.65 : 1.45;
         const layouts = [
-            { name: 'dagre', rankDir: 'TB', spacingFactor: 1.35, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 40 },
-            { name: 'breadthfirst', directed: true, spacingFactor: 1.25, animate: true, fit: true, padding: 40 },
-            { name: 'cose', animate: true, fit: true, padding: 40, nodeRepulsion: 5000, idealEdgeLength: 90 },
+            { name: 'dagre', rankDir: 'TB', spacingFactor: dagreSpacing, nodeDimensionsIncludeLabels: true, nodeSep: isDense ? 60 : 40, edgeSep: 20, rankSep: isDense ? 120 : 80, animate: true, fit: true, padding: 50 },
+            { name: 'breadthfirst', directed: true, spacingFactor: isDense ? 1.5 : 1.3, animate: true, fit: true, padding: 50, avoidOverlap: true },
+            { name: 'cose', animate: true, fit: true, padding: 50, nodeRepulsion: isDense ? 8000 : 5000, idealEdgeLength: isDense ? 120 : 90, gravity: 0.3, nodeOverlap: 16 },
         ];
         for (const opts of layouts) {
             try { this._ftCy.layout(opts).run(); return; } catch (_) {}

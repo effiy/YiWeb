@@ -73,17 +73,21 @@ export const BAND_DEFS = [
 
 // 力模拟常量
 export const FORCE = {
-    CHARGE_STRENGTH: -500,
-    CHARGE_MAX_DIST: 1000,
-    CENTER_STRENGTH: 0.015,
+    // 基础值 — 会按节点数量动态缩放（参考 Understand-Anything 策略）
+    CHARGE_STRENGTH_SMALL: -350,
+    CHARGE_STRENGTH_LARGE: -600,
+    CHARGE_MAX_DIST: 1500,
+    CENTER_STRENGTH: 0.03,
     Y_ANCHOR_BASE: 0.1,
     Y_ANCHOR_SUBROW: 0.2,
     X_ANCHOR_STRENGTH: 0.04,
-    COLLIDE_STRENGTH: 0.9,
-    COLLIDE_ITERATIONS: 3,
+    COLLIDE_STRENGTH: 0.85,
+    COLLIDE_ITERATIONS: 4,
     TOTAL_TICKS_MIN: 150,
     TOTAL_TICKS_MAX: 350,
-    TICKS_PER_FRAME: 4
+    TICKS_PER_FRAME: 4,
+    // 大图阈值
+    LARGE_GRAPH_THRESHOLD: 100
 };
 
 // 边距离和强度
@@ -100,7 +104,9 @@ export const COLLISION = {
     INITIAL_FORCE: 1.2,
     FORCE_DECAY: 0.4,
     MIN_MOVEMENT: 0.5,
-    PADDING: 8
+    PADDING: 10,
+    // 默认多轮碰撞间距（px），逐轮收紧
+    DEFAULT_PADDINGS: [16, 10, 8, 6]
 };
 
 // 渲染常量
