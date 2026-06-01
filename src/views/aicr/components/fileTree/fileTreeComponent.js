@@ -96,7 +96,7 @@ const componentOptions = {
             editingCardKey: null,
             editingCardDesc: '',
             cardSaving: false,
-            _ftCy: null,
+            _ftGraph: null,
             _ftDrillNodeId: null,
             _ftResizeObserver: null,
             ftFilterType: null,
@@ -113,7 +113,7 @@ const componentOptions = {
             if (newMode === 'graph') {
                 this.$nextTick(() => this.initFileTreeGraph());
             } else {
-                this._destroyFtCy();
+                this._destroyFtGraph();
             }
         },
         selectedTags(_newTags, _oldTags) {
@@ -123,7 +123,7 @@ const componentOptions = {
         }
     },
     beforeUnmount() {
-        this._destroyFtCy();
+        this._destroyFtGraph();
     },
     methods: fileTreeMethods
 };

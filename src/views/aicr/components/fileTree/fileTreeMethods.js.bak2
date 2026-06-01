@@ -8,17 +8,6 @@ const escapeHtml = (str) => {
     return div.innerHTML;
 };
 
-
-/* ── 颜色工具：hex → rgba ── */
-const hexToRgba = (hex, alpha) => {
-    if (!hex || typeof hex !== "string") return `rgba(100,116,139,${alpha})`;
-    const h = hex.replace("#", "");
-    if (h.length < 6) return `rgba(100,116,139,${alpha})`;
-    const r = parseInt(h.substring(0, 2), 16);
-    const g = parseInt(h.substring(2, 4), 16);
-    const b = parseInt(h.substring(4, 6), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-};
 const fileTreeMethods = {
     filterTree(items, query) {
         if (!query) return items;
@@ -390,6 +379,16 @@ const fileTreeMethods = {
         }
     },
 
+/* ── 颜色工具：hex → rgba ── */
+function hexToRgba(hex, alpha) {
+    if (!hex || typeof hex !== 'string') return `rgba(100,116,139,${alpha})`;
+    const h = hex.replace('#', '');
+    if (h.length < 6) return `rgba(100,116,139,${alpha})`;
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
 
     /* ── 注册自定义 G6 节点 (Understand-Anything 设计语言) ── */
     _registerFtCustomNode() {
@@ -830,7 +829,6 @@ const fileTreeMethods = {
             topFolders,
             nodeList,
         };
-    },
 
     /* ── 选中节点详情 ── */
     _selectFtNodeDetail(item, graph) {

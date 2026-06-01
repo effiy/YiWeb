@@ -1119,3 +1119,15 @@
     flex-shrink: 0;
     font-weight: 500;
 }
+
+/* ── G6 小地图 ── */
+.ft-graph-minimap {
+    position: absolute !important;
+    bottom: 8px !important;
+    right: 8px !important;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    background: rgba(15, 23, 42, 0.85);
+    overflow: hidden;
+}
