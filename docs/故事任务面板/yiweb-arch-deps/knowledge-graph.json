@@ -67,7 +67,8 @@
           "error",
           "filterHelpers",
           "requestHelper"
-        ]
+        ],
+        "_sourceDir": "yiweb-arch-deps"
       },
       {
         "name": "场景2-健康度检查",
@@ -100,7 +101,8 @@
           "filterHelpers",
           "index",
           "sessionSyncService"
-        ]
+        ],
+        "_sourceDir": "yiweb-arch-deps"
       },
       {
         "name": "场景3-新增依赖评估",
@@ -123,7 +125,8 @@
           "yiweb-arch-deps-scene-3",
           "-------",
           "--------yiweb-arch-layers-"
-        ]
+        ],
+        "_sourceDir": "yiweb-arch-deps"
       },
       {
         "name": "场景4-重构规划",
@@ -155,7 +158,8 @@
           "aiSearchMethods",
           "crud",
           "crud-test"
-        ]
+        ],
+        "_sourceDir": "yiweb-arch-deps"
       }
     ]
   },
@@ -175,13 +179,13 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
           },
           {
-            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenario": "场景4-重构规划",
             "scenarioIndex": 3,
             "section": "§7 关联源码",
             "file": "场景4-重构规划.md"
@@ -205,7 +209,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
@@ -228,7 +232,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
@@ -253,13 +257,13 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
           },
           {
-            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenario": "场景2-健康度检查",
             "scenarioIndex": 1,
             "section": "§7 关联源码",
             "file": "场景2-健康度检查.md"
@@ -280,7 +284,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
@@ -307,13 +311,13 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
           },
           {
-            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenario": "场景4-重构规划",
             "scenarioIndex": 3,
             "section": "§7 关联源码",
             "file": "场景4-重构规划.md"
@@ -333,7 +337,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§7 关联源码",
             "file": "场景1-影响评估.md"
@@ -354,7 +358,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenario": "场景2-健康度检查",
             "scenarioIndex": 1,
             "section": "§7 关联源码",
             "file": "场景2-健康度检查.md"
@@ -380,7 +384,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenario": "场景2-健康度检查",
             "scenarioIndex": 1,
             "section": "§7 关联源码",
             "file": "场景2-健康度检查.md"
@@ -404,7 +408,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
+            "scenario": "场景3-新增依赖评估",
             "scenarioIndex": 2,
             "section": "§7 关联源码",
             "file": "场景3-新增依赖评估.md"
@@ -424,7 +428,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
+            "scenario": "场景3-新增依赖评估",
             "scenarioIndex": 2,
             "section": "§7 关联源码",
             "file": "场景3-新增依赖评估.md"
@@ -445,7 +449,7 @@
         ],
         "mdFiles": [
           {
-            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenario": "场景4-重构规划",
             "scenarioIndex": 3,
             "section": "§7 关联源码",
             "file": "场景4-重构规划.md"
@@ -486,7 +490,7 @@
       },
       {
         "id": "yiweb-arch-deps-scene-1",
-        "label": "场景1 · 影响评估 — 查矩阵知全貌",
+        "label": "场景1-影响评估",
         "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景1-影响评估.md",
@@ -494,7 +498,7 @@
         "keyFunctions": [],
         "mdFiles": [
           {
-            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenario": "场景1-影响评估",
             "scenarioIndex": 0,
             "section": "§0 技术评审",
             "file": "场景1-影响评估.md"
@@ -512,7 +516,7 @@
       },
       {
         "id": "yiweb-arch-deps-scene-2",
-        "label": "场景2 · 健康度检查 — 定期扫描架构违规",
+        "label": "场景2-健康度检查",
         "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景2-健康度检查.md",
@@ -520,7 +524,7 @@
         "keyFunctions": [],
         "mdFiles": [
           {
-            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenario": "场景2-健康度检查",
             "scenarioIndex": 1,
             "section": "§0 技术评审",
             "file": "场景2-健康度检查.md"
@@ -534,7 +538,7 @@
       },
       {
         "id": "yiweb-arch-deps-scene-3",
-        "label": "场景3 · 新增依赖评估 — 确定依赖合理性",
+        "label": "场景3-新增依赖评估",
         "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景3-新增依赖评估.md",
@@ -542,7 +546,7 @@
         "keyFunctions": [],
         "mdFiles": [
           {
-            "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
+            "scenario": "场景3-新增依赖评估",
             "scenarioIndex": 2,
             "section": "§0 技术评审",
             "file": "场景3-新增依赖评估.md"
@@ -555,7 +559,7 @@
       },
       {
         "id": "yiweb-arch-deps-scene-4",
-        "label": "场景4 · 重构规划 — 评估高风险模块拆分",
+        "label": "场景4-重构规划",
         "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景4-重构规划.md",
@@ -563,7 +567,7 @@
         "keyFunctions": [],
         "mdFiles": [
           {
-            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenario": "场景4-重构规划",
             "scenarioIndex": 3,
             "section": "§0 技术评审",
             "file": "场景4-重构规划.md"

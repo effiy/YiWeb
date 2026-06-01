@@ -1651,93 +1651,72 @@ const componentOptions = {
             if (!data || !data.nodes || !data.nodes.length) return;
             const matchedIds = this.kgMatchedIds; // Set or null
 
-            // 类型色板：按节点 type 分配高区分度颜色
-            const TYPE_COLORS = {
-                story: '#F59E0B',      // 金 — 故事
-                scenario: '#7DD3FC',   // 浅蓝 — 场景
-                source: '#4ADE80',     // 绿 — 开发源文件
-                test: '#DC2626',       // 深红 — 测试源文件
-                view: '#3B82F6',       // 蓝 — 视图
-                entry: '#10B981',      // 绿 — 入口
-                service: '#F59E0B',    // 琥珀 — 服务
-                utility: '#A855F7',    // 紫 — 工具
-                component: '#06B6D4',  // 青 — 组件
-                framework: '#8B5CF6',  // 紫罗兰 — 框架
-                config: '#F97316',     // 橙 — 配置
-                state: '#EC4899',      // 粉 — 状态
-                event: '#EF4444',      // 红 — 事件
-                method: '#6366F1',     // 靛蓝 — 方法
-                doc: '#6B7280',        // 灰 — 文档
-                external: '#9CA3AF',   // 浅灰 — 外部
-                storage: '#EC4899',    // 粉 — 存储
+            // ── 节点类型 → 形状 + 色彩映射 ──
+            const TYPE_DEFS = {
+                story:    { color: '#F59E0B', shape: 'round-rectangle', label: '故事' },
+                scenario: { color: '#7DD3FC', shape: 'diamond',        label: '场景' },
+                source:   { color: '#4ADE80', shape: 'ellipse',        label: '源码' },
+                test:     { color: '#DC2626', shape: 'vee',            label: '测试' },
+                view:     { color: '#3B82F6', shape: 'ellipse',        label: '视图' },
+                entry:    { color: '#10B981', shape: 'ellipse',        label: '入口' },
+                service:  { color: '#F59E0B', shape: 'ellipse',        label: '服务' },
+                utility:  { color: '#A855F7', shape: 'ellipse',        label: '工具' },
+                component:{ color: '#06B6D4', shape: 'ellipse',        label: '组件' },
+                framework:{ color: '#8B5CF6', shape: 'ellipse',        label: '框架' },
+                config:   { color: '#F97316', shape: 'rectangle',      label: '配置' },
+                state:    { color: '#EC4899', shape: 'ellipse',        label: '状态' },
+                event:    { color: '#EF4444', shape: 'ellipse',        label: '事件' },
+                method:   { color: '#6366F1', shape: 'ellipse',        label: '方法' },
+                doc:      { color: '#6B7280', shape: 'ellipse',        label: '文档' },
+                external: { color: '#9CA3AF', shape: 'ellipse',        label: '外部' },
+                storage:  { color: '#EC4899', shape: 'ellipse',        label: '存储' },
             };
 
-            const GROUP_COLORS = {
-                'L1-Views': '#3B82F6', 'L2-Services': '#F59E0B', 'L3-Framework': '#8B5CF6',
-                'Tests': '#EF4444', 'Documentation': '#6B7280', 'External': '#9CA3AF',
-                'L0-Entry': '#10B981', 'L1-AICR': '#3B82F6', 'L1-Claude': '#6366F1', 'L1-Story': '#8B5CF6',
-                'L2-DataOps': '#F59E0B', 'L2-Helpers': '#F97316', 'L2-Services': '#F59E0B',
-                'L2-Sync': '#F59E0B', 'L2-Config': '#F59E0B',
-                'L3-Framework': '#8B5CF6', 'L3-Utilities': '#A855F7',
-                'CDN-Icons': '#06B6D4', 'CDN-Components': '#06B6D4', 'CDN-Markdown': '#06B6D4',
-                'Storage': '#EC4899',
-                '视图工厂': '#8B5CF6', '组件系统': '#8B5CF6', '基础设施': '#8B5CF6',
-                '配置': '#F59E0B', '服务聚合': '#F59E0B', '数据操作': '#F59E0B',
-                '请求工具': '#F59E0B', '认证': '#F59E0B', '同步服务': '#F59E0B',
-                '视图入口': '#3B82F6', '共享工具': '#3B82F6',
-                '通用组件': '#06B6D4', '业务组件': '#06B6D4', '渲染系统': '#06B6D4',
-                '🔴 高风险': '#EF4444', '🟡 中风险': '#F59E0B', '🟢 低风险': '#10B981',
-                '⚠️ 违规': '#DC2626', '消费者': '#3B82F6',
-                '检查模式': '#3B82F6', '规则引擎': '#F59E0B', '输出': '#10B981',
-                '规则项': '#8B5CF6', '参照基线': '#6B7280',
-                '父故事': '#3B82F6', 'P0 子故事': '#10B981', 'P1 子故事': '#F59E0B', '独立故事': '#8B5CF6',
-                '①事件层':'#3B82F6','②方法层':'#6366F1','③状态层':'#8B5CF6','④派生层':'#A855F7',
-                '⑤数据层':'#F59E0B','⑥网络层':'#F97316','⑦认证层':'#EF4444','⑧错误层':'#DC2626',
-                '⑨校验层':'#10B981','⑩渲染层':'#06B6D4',
-                '输入面':'#EF4444','接口面':'#F59E0B','存储面':'#8B5CF6','认证面':'#EC4899','渲染面':'#06B6D4',
-                '文档':'#6B7280','测试':'#EF4444','外部':'#9CA3AF',
-            };
-
-            // 颜色分配：测试文件检测 > GROUP_COLORS > TYPE_COLORS > hash-derived hue
-            const resolveNodeColor = (n) => {
+            // 颜色 + 形状分配：TYPE_DEFS 查找，hash 兜底
+            const resolveNodeDef = (n) => {
                 const file = n.file || '';
-                // 检测测试源文件：路径匹配测试特征
                 const isTestFile = /[\/\\](test|tests|__tests__)[\/\\]/.test(file) ||
                     /\.(test|spec)\.\w+$/.test(file) ||
                     /[\/\\](test|spec)_\w+\.\w+$/.test(file) ||
                     /^test[\/\\]/.test(file) ||
                     n.type === 'test';
-                if (isTestFile) return '#DC2626'; // 深红 — 测试源文件
-                if (GROUP_COLORS[n.group]) return GROUP_COLORS[n.group];
-                if (GROUP_COLORS[n.type]) return GROUP_COLORS[n.type];
-                if (TYPE_COLORS[n.type]) return TYPE_COLORS[n.type];
-                // 基于 id 哈希的非灰色色相兜底
+                if (isTestFile) return { color: '#DC2626', shape: 'vee' };
+                if (TYPE_DEFS[n.type]) return { ...TYPE_DEFS[n.type] };
+                // 基于 id 哈希分配颜色
                 const hash = String(n.id || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
                 const hue = Math.abs(hash) % 360;
-                return `hsl(${hue}, 55%, 50%)`;
+                return { color: `hsl(${hue}, 55%, 50%)`, shape: 'ellipse' };
             };
 
-            // Calculate node importance from edge degree
+            // ── 度数统计 + 对数尺度节点大小 ──
             const degree = {};
             for (const e of data.edges) {
                 degree[e.source] = (degree[e.source] || 0) + 1;
                 degree[e.target] = (degree[e.target] || 0) + 1;
             }
             const maxDeg = Math.max(1, ...Object.values(degree));
+            const BASE_SIZES = { story: 28, scenario: 22, source: 16, test: 14 };
+            // 对数尺度: size = base + log2(1 + degree) * scale
+            const nodeSize = (type, d) => {
+                const base = BASE_SIZES[type] || 16;
+                const logScale = Math.log2(1 + d);
+                return base + logScale * 6;
+            };
 
             const elements = [];
             for (const n of data.nodes) {
                 const d = degree[n.id] || 0;
+                const { color, shape } = resolveNodeDef(n);
                 const isMatched = matchedIds ? matchedIds.has(n.id) : false;
-                const size = isMatched ? (24 + (d / maxDeg) * 22) : (18 + (d / maxDeg) * 16);
+                const size = isMatched ? nodeSize(n.type, d) + 8 : nodeSize(n.type, d);
                 elements.push({
                     group: 'nodes',
                     classes: isMatched ? 'matched' : '',
                     data: {
                         id: n.id, label: n.label || n.id,
-                        color: resolveNodeColor(n),
+                        color, shape,
                         file: n.file || '', description: n.description || '',
-                        degree: d, size: size, matched: isMatched,
+                        degree: d, size, matched: isMatched,
                         functions: (n.keyFunctions || []).join(', '),
                         type: n.type || '', group: n.group || '',
                         mdFiles: n.mdFiles || [],
@@ -1759,72 +1738,145 @@ const componentOptions = {
                 container,
                 elements,
                 style: [
+                    // ── 基础节点 ──
                     { selector: 'node', style: {
-                        'background-color': 'data(color)', 'label': 'data(label)',
-                        'color': '#E2E8F0', 'font-size': '11px', 'font-weight': '500',
+                        'background-color': 'data(color)',
+                        'background-opacity': 0.82,
+                        'label': 'data(label)',
+                        'color': '#F1F5F9', 'font-size': '12px', 'font-weight': '600',
                         'text-valign': 'bottom', 'text-halign': 'center',
-                        'text-margin-y': 6, 'text-max-width': '140px',
+                        'text-margin-y': 8, 'text-max-width': '160px',
                         'text-wrap': 'ellipsis',
                         'width': 'data(size)', 'height': 'data(size)',
-                        'border-width': 2, 'border-color': 'data(color)',
-                        'border-opacity': 0.35, 'shape': 'ellipse',
-                        'transition-property': 'border-color, border-width',
-                        'transition-duration': 150,
+                        'border-width': 2, 'border-color': '#FFFFFF',
+                        'border-opacity': 0.25, 'shape': 'data(shape)',
+                        'transition-property': 'border-color, border-width, border-opacity, width, height, background-opacity',
+                        'transition-duration': 200,
+                        'text-opacity': 0.85,
                     }},
+                    // ── 选中节点: 白色光环 + 强阴影 ──
                     { selector: 'node:selected', style: {
-                        'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.95,
-                        'shadow-blur': 12, 'shadow-color': 'data(color)', 'shadow-opacity': 0.4,
+                        'border-width': 5, 'border-color': '#FFFFFF', 'border-opacity': 1,
+                        'shadow-blur': 20, 'shadow-color': 'data(color)', 'shadow-opacity': 0.6,
+                        'shadow-offset-x': 0, 'shadow-offset-y': 0,
+                        'background-opacity': 0.95,
                     }},
+                    // ── 高亮节点: 白环 ──
                     { selector: 'node.highlighted', style: {
-                        'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9,
+                        'border-width': 5, 'border-color': '#FFFFFF', 'border-opacity': 0.95,
+                        'shadow-blur': 14, 'shadow-color': 'data(color)', 'shadow-opacity': 0.45,
+                        'background-opacity': 0.9,
                     }},
-                    { selector: 'node.dimmed', style: { 'opacity': 0.15 }},
+                    // ── 暗化: 几乎透明 ──
+                    { selector: 'node.dimmed', style: { 'opacity': 0.08, 'text-opacity': 0 }},
+                    // ── MD文件关联节点: 金色光环 ──
                     { selector: 'node.matched', style: {
-                        'border-width': 4, 'border-color': '#F59E0B', 'border-opacity': 0.95,
-                        'shadow-blur': 20, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.55,
-                        'shadow-spread': 8, 'z-index': 100,
+                        'border-width': 6, 'border-color': '#FBBF24', 'border-opacity': 1,
+                        'shadow-blur': 28, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.7,
+                        'shadow-spread': 12, 'z-index': 100, 'background-opacity': 0.95,
                     }},
                     { selector: 'edge', style: {
-                        'width': 1.4, 'line-color': '#475569', 'target-arrow-color': '#64748B',
-                        'target-arrow-shape': 'triangle', 'arrow-scale': 0.8,
-                        'curve-style': 'bezier', 'label': 'data(label)',
-                        'color': '#64748B', 'font-size': '8px',
-                        'text-rotation': 'autorotate', 'opacity': 0.5,
+                        'width': 1.6, 'line-color': '#475569', 'target-arrow-color': '#64748B',
+                        'target-arrow-shape': 'triangle', 'arrow-scale': 0.9,
+                        'curve-style': 'bezier', 'label': '',
+                        'color': '#64748B', 'font-size': '9px',
+                        'text-rotation': 'autorotate', 'opacity': 0.55,
+                        'transition-property': 'opacity, width, line-color, target-arrow-color',
+                        'transition-duration': 180,
                     }},
                     { selector: 'edge.highlighted', style: {
-                        'width': 2.5, 'line-color': '#E2E8F0', 'target-arrow-color': '#E2E8F0',
-                        'opacity': 0.9,
+                        'width': 3, 'line-color': '#E2E8F0', 'target-arrow-color': '#E2E8F0',
+                        'opacity': 0.95, 'label': 'data(label)',
                     }},
-                    { selector: 'edge.dimmed', style: { 'opacity': 0.05 }},
+                    { selector: 'edge.dimmed', style: { 'opacity': 0.03 }},
                     { selector: 'edge.matched', style: {
-                        'width': 2.5, 'line-color': '#F59E0B', 'target-arrow-color': '#F59E0B',
-                        'opacity': 0.85, 'z-index': 50,
+                        'width': 3, 'line-color': '#FBBF24', 'target-arrow-color': '#F59E0B',
+                        'opacity': 0.9, 'z-index': 50,
                     }},
                     { selector: 'node.hover', style: {
-                        'border-width': 4, 'border-color': '#FFFFFF', 'border-opacity': 0.65,
+                        'border-width': 5, 'border-color': '#FFFFFF', 'border-opacity': 0.8,
                         'z-index': 10,
+                        'transition-duration': 120,
                     }},
                     { selector: 'edge.hover', style: {
-                        'width': 2, 'line-color': '#60A5FA', 'target-arrow-color': '#60A5FA',
-                        'opacity': 0.7, 'z-index': 5,
+                        'width': 2.8, 'line-color': '#60A5FA', 'target-arrow-color': '#60A5FA',
+                        'opacity': 0.85, 'z-index': 5, 'label': 'data(label)',
                     }},
                 ],
                 layout: { name: 'preset' },
-                minZoom: 0.08, maxZoom: 4, wheelSensitivity: 0.25,
+                minZoom: 0.02, maxZoom: 10, wheelSensitivity: 0.3,
+                // Enable box selection for multi-node operations
+                boxSelectionEnabled: true,
+                selectionType: 'additive',
+                autounselectify: false,
             });
 
             this._cy = cy;
 
-            // Hover effects — use separate hover class, don't interfere with highlighted/dimmed
+            // ── 缩放自适应标签：缩小时隐藏标签，放大时显示 ──
+            const updateLabelVisibility = () => {
+                const zoom = cy.zoom();
+                if (zoom < 0.25) {
+                    cy.nodes().style({ 'font-size': '0px', 'text-margin-y': 0, 'text-opacity': 0 });
+                } else if (zoom < 0.5) {
+                    cy.nodes().style({ 'font-size': '9px', 'text-margin-y': 4, 'text-opacity': 0.6 });
+                } else if (zoom < 0.8) {
+                    cy.nodes().style({ 'font-size': '11px', 'text-margin-y': 6, 'text-opacity': 0.8 });
+                } else {
+                    cy.nodes().style({ 'font-size': '12px', 'text-margin-y': 8, 'text-opacity': 0.9 });
+                }
+            };
+            cy.on('zoom', updateLabelVisibility);
+
+            // ── 节点拖拽：允许手动调整布局 ──
+            cy.nodes().ungrabify(); // 默认不可拖拽，防止误操作
+            // Alt+拖拽 可移动节点
+            let _dragEnabled = false;
+            const toggleDrag = (e) => {
+                if (e.key === 'Alt') {
+                    if (e.type === 'keydown' && !_dragEnabled) {
+                        _dragEnabled = true;
+                        cy.nodes().grabify();
+                        container.style.cursor = 'grab';
+                    } else if (e.type === 'keyup' && _dragEnabled) {
+                        _dragEnabled = false;
+                        cy.nodes().ungrabify();
+                        container.style.cursor = '';
+                    }
+                }
+            };
+            window.addEventListener('keydown', toggleDrag);
+            window.addEventListener('keyup', toggleDrag);
+            // 清理函数存储到实例
+            cy._cleanupDragKeys = () => {
+                window.removeEventListener('keydown', toggleDrag);
+                window.removeEventListener('keyup', toggleDrag);
+            };
+
+            // Hover effects — separate hover class, with edge label reveal
             cy.on('mouseover', 'node', (evt) => {
                 const node = evt.target;
                 node.addClass('hover');
-                node.connectedEdges().addClass('hover');
+                const connected = node.connectedEdges();
+                connected.addClass('hover');
                 container.style.cursor = 'pointer';
             });
             cy.on('mouseout', 'node', (evt) => {
                 evt.target.removeClass('hover');
                 evt.target.connectedEdges().removeClass('hover');
+                container.style.cursor = '';
+            });
+            // Edge hover: show label
+            cy.on('mouseover', 'edge', (evt) => {
+                const edge = evt.target;
+                edge.style({ 'label': edge.data('label'), 'opacity': 0.9, 'width': 2.8, 'line-color': '#94A3B8', 'target-arrow-color': '#94A3B8', 'transition-duration': 120 });
+                container.style.cursor = 'crosshair';
+            });
+            cy.on('mouseout', 'edge', (evt) => {
+                const edge = evt.target;
+                if (!edge.hasClass('highlighted') && !edge.hasClass('matched')) {
+                    edge.style({ 'label': '', 'opacity': 0.55, 'width': 1.6, 'line-color': '#475569', 'target-arrow-color': '#64748B' });
+                }
                 container.style.cursor = '';
             });
 
@@ -1914,15 +1966,29 @@ const componentOptions = {
                 }
             });
 
-            // Run layout
+            // ── Run dynamic layout: COSE 力导向优先 → dagre → breadthfirst → grid ──
             const layouts = [
-                { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, nodeDimensionsIncludeLabels: true, animate: true, animationDuration: 400, fit: true, padding: 40 },
-                { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 40 },
-                { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 40, nodeRepulsion: 6000, idealEdgeLength: 100 },
-                { name: 'grid', animate: false, fit: true, padding: 40 },
+                { name: 'cose', animate: true, animationDuration: 800, fit: true, padding: 50,
+                    nodeRepulsion: 12000, idealEdgeLength: 120, edgeElasticity: 0.35,
+                    gravity: 0.25, numIter: 3000, initialTemp: 200, coolingFactor: 0.92,
+                    nodeDimensionsIncludeLabels: true, randomize: true },
+                { name: 'dagre', rankDir: 'TB', spacingFactor: 1.5, nodeDimensionsIncludeLabels: true, animate: true, animationDuration: 500, fit: true, padding: 50 },
+                { name: 'breadthfirst', directed: true, spacingFactor: 1.4, animate: true, fit: true, padding: 50 },
+                { name: 'cose', animate: true, fit: true, padding: 50, nodeRepulsion: 8000, idealEdgeLength: 100 },
+                { name: 'grid', animate: false, fit: true, padding: 50 },
             ];
+            let layoutApplied = false;
             for (const opts of layouts) {
-                try { cy.layout(opts).run(); break; } catch (_) {}
+                try {
+                    const run = cy.layout(opts);
+                    run.run();
+                    layoutApplied = true;
+                    break;
+                } catch (_) {}
+            }
+            // 如果所有布局都失败了，使用 preset 布局
+            if (!layoutApplied) {
+                try { cy.layout({ name: 'preset', fit: true, padding: 50 }).run(); } catch (_) {}
             }
 
             // MD 文件关联：高亮匹配节点 + dim 其余 + 聚焦匹配区域
@@ -2167,7 +2233,7 @@ const componentOptions = {
                     neighborMap[nbId].relations.push(isOut ? `→${cnLabel}` : `←${cnLabel}`);
                 }
             });
-            const neighbors = Object.values(neighborMap).slice(0, 15);
+            const neighbors = Object.values(neighborMap);
 
             // ── 面包屑联动过滤：仅展示当前场景/筛选范围内的邻居和边 ──
             const filterNodeIds = this.kgActiveFilterNodeIds;
@@ -2609,8 +2675,11 @@ const componentOptions = {
                     matched.addClass('matched');
                 }
                 const layouts = [
-                    { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 40 },
-                    { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 40 },
+                    { name: 'cose', animate: true, animationDuration: 600, fit: true, padding: 50,
+                        nodeRepulsion: 10000, idealEdgeLength: 120, edgeElasticity: 0.35,
+                        gravity: 0.25, numIter: 2000, nodeDimensionsIncludeLabels: true },
+                    { name: 'dagre', rankDir: 'TB', spacingFactor: 1.5, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 50 },
+                    { name: 'breadthfirst', directed: true, spacingFactor: 1.4, animate: true, fit: true, padding: 50 },
                 ];
                 for (const opts of layouts) {
                     try { this._cy.layout(opts).run(); return; } catch (_) {}
@@ -2632,8 +2701,8 @@ const componentOptions = {
                 const label = RELATION_LABELS[r] || r;
                 relationCounts[label] = (relationCounts[label] || 0) + 1;
             }
-            const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
-            const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
+            const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]);
             // story-deps.json uses "project.description"; per-story KG uses "story.description"
             const storyDesc = (data.story && data.story.description) || (data.project && data.project.description) || '';
             // story-deps.json scenes are pre-processed into this.kgSourceScenarios; per-story KG uses data.story.scenarios
@@ -2675,7 +2744,7 @@ const componentOptions = {
                     name,
                     desc: sceneDescs[name] || '',
                     count: nodeList.length,
-                    nodes: nodeList.slice(0, 12),
+                    nodes: nodeList,
                 }));
 
             // 构建 节点 → 场景来源 一览（每个节点被哪些场景引用）
@@ -2692,6 +2761,52 @@ const componentOptions = {
                 }))
                 .sort((a, b) => b.sceneCount - a.sceneCount);
 
+            // ── Build story cards from data.stories (story-deps.json) or data.story (per-story KG) ──
+            let storyCards = [];
+            let crossStoryEdgesCount = 0;
+            let storyDeps = [];
+            const version = data.version || '';
+
+            if (Array.isArray(data.stories) && data.stories.length > 0) {
+                // story-deps.json has rich story cards
+                storyCards = data.stories.map(s => ({
+                    id: s.id || '',
+                    label: s.label || s.id || '',
+                    summary: s.summary || '',
+                    complexity: s.complexity || 'simple',
+                    priority: s.priority || '',
+                    status: s.status || '',
+                    scenes: s.scenes || 0,
+                    nodes: s.nodes || 0,
+                    edges: s.edges || 0,
+                    layers: s.layers || 0,
+                    tags: s.tags || [],
+                }));
+                crossStoryEdgesCount = data.stats?.crossStoryEdges || 0;
+                storyDeps = (data.storyEdges || []).map(e => ({
+                    from: e.from || '',
+                    to: e.to || '',
+                    fromLabel: e.from || '',
+                    toLabel: e.to || '',
+                    typeLabel: e.type || e.label || '',
+                }));
+            } else if (data.story && data.story.name) {
+                // Per-story KG — single story card
+                storyCards = [{
+                    id: data.projectRoot || '',
+                    label: data.story.name,
+                    summary: data.story.description || '',
+                    complexity: (data.story.scenarios || []).length >= 5 ? 'complex' : 'moderate',
+                    priority: 'P0',
+                    status: 'baseline',
+                    scenes: (data.story.scenarios || []).length,
+                    nodes: nodes.length,
+                    edges: edges.length,
+                    layers: new Set(nodes.map(n => n.layer || n.group || '')).size,
+                    tags: data.story.tags || [],
+                }];
+            }
+
             return {
                 storyName: (data.story && data.story.name) || (data.project && data.project.name) || '',
                 description: storyDesc,
@@ -2705,6 +2820,10 @@ const componentOptions = {
                 hasFilter,
                 sceneNodes,
                 nodeSceneList,
+                version,
+                storyCards,
+                crossStoryEdges: crossStoryEdgesCount,
+                storyDeps,
             };
         },
 
@@ -2713,7 +2832,13 @@ const componentOptions = {
                 this._kgResizeObserver.disconnect();
                 this._kgResizeObserver = null;
             }
-            if (this._cy) { this._cy.destroy(); this._cy = null; }
+            if (this._cy) {
+                if (this._cy._cleanupDragKeys) {
+                    this._cy._cleanupDragKeys();
+                }
+                this._cy.destroy();
+                this._cy = null;
+            }
         },
 
         handleOpenMarkdownFile(detail) {

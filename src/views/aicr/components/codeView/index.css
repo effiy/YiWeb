@@ -480,23 +480,6 @@
     50% { opacity: 0.7; }
 }
 
-/* 详情分区 */
-.graph-node-detail-section {
-    margin-bottom: 14px;
-}
-
-.graph-node-detail-section:last-child {
-    margin-bottom: 0;
-}
-
-.graph-node-detail-section-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-}
 
 .graph-node-detail-desc {
     font-size: 13px;
@@ -1320,6 +1303,146 @@
     background: rgba(139, 92, 246, 0.1);
     color: #A78BFA;
     border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+/* ── 故事卡片 ── */
+.graph-overview-story-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.graph-overview-story-card {
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.15s ease;
+}
+.graph-overview-story-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.14);
+}
+.graph-overview-story-card.complexity-complex {
+    border-left: 3px solid #F59E0B;
+}
+.graph-overview-story-card.complexity-moderate {
+    border-left: 3px solid #3B82F6;
+}
+.graph-overview-story-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.graph-overview-story-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #E2E8F0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.graph-overview-story-card-priority {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.graph-overview-story-card-priority.priority-p0 {
+    background: rgba(239,68,68,0.15);
+    color: #FCA5A5;
+}
+.graph-overview-story-card-priority.priority-p1 {
+    background: rgba(245,158,11,0.15);
+    color: #FCD34D;
+}
+.graph-overview-story-card-status {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(16,185,129,0.12);
+    color: #6EE7B7;
+    flex-shrink: 0;
+}
+.graph-overview-story-card-summary {
+    font-size: 11px;
+    color: #94A3B8;
+    line-height: 1.5;
+    margin: 0 0 8px 0;
+}
+.graph-overview-story-card-stats {
+    display: flex;
+    gap: 14px;
+}
+.graph-overview-story-card-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.graph-overview-story-card-stat-num {
+    font-size: 16px;
+    font-weight: 700;
+    color: #E2E8F0;
+}
+.graph-overview-story-card-stat-label {
+    font-size: 9px;
+    color: #64748B;
+    text-transform: uppercase;
+}
+.graph-overview-story-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+.graph-overview-story-card-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    color: #64748B;
+}
+/* ── 跨故事依赖 ── */
+.graph-overview-story-deps {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.graph-overview-story-dep {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.03);
+    font-size: 11px;
+}
+.graph-overview-story-dep-from,
+.graph-overview-story-dep-to {
+    color: #E2E8F0;
+    font-weight: 500;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.graph-overview-story-dep-arrow {
+    color: #F59E0B;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+/* ── 版本标签 ── */
+.graph-overview-version {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(139,92,246,0.12);
+    color: #A78BFA;
+    flex-shrink: 0;
 }
 
 /* 尊重用户减少动画偏好 */
