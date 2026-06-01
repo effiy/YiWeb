@@ -204,19 +204,31 @@
           <span v-if="kgMatchedIds && kgMatchedIds.size" class="graph-reader-matched"> · 🎯 {{ kgMatchedIds.size }} 关联</span>
         </span>
         <div class="graph-reader-actions">
-          <button type="button" class="graph-reader-btn" @click="resetKgGraph" title="重置布局">↻</button>
+          <button type="button" class="graph-reader-btn" @click="fitView" title="适应视图">⊞</button>
           <button type="button" class="graph-reader-btn" @click="closeKnowledgeGraph" title="关闭">✕</button>
         </div>
       </div>
-      <!-- 面包屑导航 -->
-      <div v-if="kgBreadcrumb && kgBreadcrumb.length > 0" class="graph-breadcrumb">
-        <template v-for="(item, idx) in kgBreadcrumb" :key="idx">
-          <span v-if="idx > 0" class="graph-breadcrumb-sep">/</span>
-          <span class="graph-breadcrumb-item" :class="{ current: item.current }"
-                @click="navigateBreadcrumb(item)" :title="item.action === 'overview' ? '返回全景' : '定位: ' + item.label">
-            {{ item.label }}
-          </span>
-        </template>
+      <!-- 面包屑导航 + 层级切换 -->
+      <div v-if="kgBreadcrumb && kgBreadcrumb.path && kgBreadcrumb.path.length > 0" class="graph-breadcrumb">
+        <div class="graph-breadcrumb-path">
+          <template v-for="(item, idx) in kgBreadcrumb.path" :key="idx">
+            <span v-if="idx > 0" class="graph-breadcrumb-sep">/</span>
+            <span class="graph-breadcrumb-item" :class="{ current: item.current }"
+                  @click="navigateBreadcrumb(item)"
+                  :title="item.action === 'overview' ? '返回全景' : item.action === 'scenario' ? '筛选: ' + item.label : '定位: ' + item.label">
+              <span v-if="item.kind" class="graph-breadcrumb-kind">{{ item.kind }}</span>
+              <span v-if="item.kind" class="graph-breadcrumb-kind-sep">·</span>
+              {{ item.label }}
+            </span>
+          </template>
+        </div>
+        <div class="graph-breadcrumb-layers">
+          <span class="graph-breadcrumb-layer-label">层级</span>
+          <button v-for="l in [1,2,3]" :key="l"
+                  class="graph-breadcrumb-layer"
+                  :class="{ active: kgBreadcrumb.layer === l }"
+                  @click="switchToLayer(l)">L{{ l }}</button>
+        </div>
       </div>
       <div class="graph-reader-body">
         <div class="graph-reader-canvas" ref="kgCanvas"></div>
@@ -262,7 +274,7 @@
           </div>
 
           <!-- 3. 描述 -->
-          <p v-if="kgGraphOverview.description" class="graph-node-detail-desc">{{ kgGraphOverview.description }}</p>
+          <p v-if="kgGraphOverview.description" class="graph-node-detail-desc">{{ firstSentence(kgGraphOverview.description) }}</p>
 
           <!-- 4. 关联场景文档 -->
           <div class="graph-node-detail-section" v-if="kgGraphOverview.sceneNodes && kgGraphOverview.sceneNodes.length">
@@ -309,9 +321,6 @@
                   <span v-if="ns.group" class="graph-overview-node-scene-group">{{ ns.group }}</span>
                 </div>
                 <p v-if="ns.description" class="graph-overview-node-scene-desc">{{ ns.description }}</p>
-                <div class="graph-overview-node-scene-list">
-                  <span v-for="sn in ns.scenes" :key="sn" class="graph-overview-node-scene-tag">{{ sn }}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -375,7 +384,7 @@
           <!-- 3. 描述 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.description || kgSelectedNode.file || (kgSelectedNode.functionList && kgSelectedNode.functionList.length)">
             <div class="graph-node-detail-section-title">描述</div>
-            <p v-if="kgSelectedNode.description" class="graph-node-detail-desc">{{ kgSelectedNode.description }}</p>
+            <p v-if="kgSelectedNode.description" class="graph-node-detail-desc">{{ firstSentence(kgSelectedNode.description) }}</p>
             <div v-if="kgSelectedNode.relNarrative" class="graph-node-detail-narrative" v-html="kgSelectedNode.relNarrative"></div>
             <div v-if="kgSelectedNode.file" style="margin-top:8px;">
               <code class="graph-node-detail-file">{{ kgSelectedNode.file }}</code>
@@ -430,23 +439,45 @@
           <div class="graph-node-detail-section" v-if="kgSelectedNode.edgeGroups && kgSelectedNode.edgeGroups.length">
             <div class="graph-node-detail-section-title">
               关联边 ({{ kgSelectedNode.totalEdges }})
-              <span class="graph-node-detail-hint">点击高亮</span>
+              <span class="graph-node-detail-hint">点击高亮 · 出={{ kgSelectedNode.outgoing }} 入={{ kgSelectedNode.incoming }}</span>
             </div>
             <div class="graph-node-detail-edges">
               <div v-for="grp in kgSelectedNode.edgeGroups" :key="grp.relation" class="graph-node-edge-group">
                 <div class="graph-node-edge-group-header">
                   <span class="graph-node-edge-group-label">{{ grp.label }}</span>
-                  <span class="graph-node-edge-group-count">{{ grp.count }}</span>
+                  <span class="graph-node-edge-group-counts">
+                    <span v-if="grp.outgoingCount" class="graph-node-edge-dir-out">出 {{ grp.outgoingCount }}</span>
+                    <span v-if="grp.incomingCount" class="graph-node-edge-dir-in">入 {{ grp.incomingCount }}</span>
+                  </span>
                 </div>
-                <div v-for="(edge, i) in grp.edges" :key="i"
-                     class="graph-node-edge clickable"
-                     @click="highlightKgEdge(edge.edgeId)"
-                     :title="(edge.direction === '→' ? '依赖: ' : '被依赖: ') + edge.targetLabel">
-                  <span class="graph-node-edge-dir">{{ edge.direction }}</span>
-                  <span class="graph-node-edge-label" v-if="edge.label && edge.label !== edge.relation">{{ edge.label }}</span>
-                  <span class="graph-node-edge-target">{{ edge.targetLabel }}</span>
+                <!-- 出边 -->
+                <div v-if="grp._outShow.length" class="graph-node-edge-sub">
+                  <div class="graph-node-edge-sub-label">出边</div>
+                  <div v-for="(edge, i) in grp._outShow" :key="'out'+i"
+                       class="graph-node-edge clickable"
+                       @click="highlightKgEdge(edge.edgeId)"
+                       :title="edge.sourceLabel + ' → ' + edge.targetLabel">
+                    <span class="graph-node-edge-dir">→</span>
+                    <span class="graph-node-edge-label" v-if="edge.label && edge.label !== edge.relation">{{ edge.label }}</span>
+                    <span class="graph-node-edge-target">{{ edge.targetLabel }}</span>
+                  </div>
+                  <div v-if="grp._outMore && !grp._expanded" class="graph-node-edge-more clickable" @click="toggleEdgeGroup(grp)">+{{ grp._outMore }} 条更多出边</div>
                 </div>
-                <div v-if="grp.count > grp.edges.length" class="graph-node-edge-more">+{{ grp.count - grp.edges.length }} 条更多</div>
+                <!-- 入边 -->
+                <div v-if="grp._inShow.length" class="graph-node-edge-sub">
+                  <div class="graph-node-edge-sub-label">入边</div>
+                  <div v-for="(edge, i) in grp._inShow" :key="'in'+i"
+                       class="graph-node-edge clickable"
+                       @click="highlightKgEdge(edge.edgeId)"
+                       :title="edge.sourceLabel + ' → ' + edge.targetLabel">
+                    <span class="graph-node-edge-dir">←</span>
+                    <span class="graph-node-edge-label" v-if="edge.label && edge.label !== edge.relation">{{ edge.label }}</span>
+                    <span class="graph-node-edge-target">{{ edge.sourceLabel }}</span>
+                  </div>
+                  <div v-if="grp._inMore && !grp._expanded" class="graph-node-edge-more clickable" @click="toggleEdgeGroup(grp)">+{{ grp._inMore }} 条更多入边</div>
+                </div>
+                <!-- 已展开时显示收起 -->
+                <div v-if="grp._expanded && (grp._outMore || grp._inMore)" class="graph-node-edge-more clickable" @click="toggleEdgeGroup(grp)">▲ 收起</div>
               </div>
             </div>
           </div>

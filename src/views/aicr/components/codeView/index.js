@@ -121,6 +121,18 @@ const guessLanguage = (name) => {
     }
 };
 
+// ── 关系类型中文标签（模块级共享）──
+const RELATION_LABELS = {
+    imports: '导入', contains: '包含', depends_on: '依赖', tests: '测试',
+    re_exports: '重导出', creates: '创建', triggers: '触发', mutates: '变更',
+    calls: '调用', derives: '派生', checks: '校验', injects: '注入',
+    validates: '验证', manages: '管理', protects: '保护', cooperates: '协作',
+    reads: '读取', reads_writes: '读写', belongs_to: '归属', layer_depends: '层级依赖',
+    loads: '加载', registered_by: '被注册', used_by: '被使用', documents: '文档化',
+    parallel: '并行', compares: '对比', executes: '执行', drives: '驱动',
+    produces: '产出', implements: '实现',
+};
+
 const componentOptions = {
     name: 'CodeView',
     css: '/src/views/aicr/components/codeView/index.css',
@@ -172,7 +184,7 @@ const componentOptions = {
             kgMatchedIds: null,
             kgSourceScenarios: null,
             kgGraphOverview: null,
-            kgBreadcrumb: [],
+            kgBreadcrumb: { path: [], layer: 2 },
             kgActiveFilter: null,
             kgLayer: 2
         };
@@ -1574,7 +1586,7 @@ const componentOptions = {
         _initCyGraph(container) {
             if (this._cy) { this._cy.destroy(); this._cy = null; }
             this.kgSelectedNode = null;
-            this.kgBreadcrumb = [];
+            this.kgBreadcrumb = { path: [], layer: this.kgLayer };
 
             // 清理旧 resize 观察器
             if (this._kgResizeObserver) {
@@ -1880,6 +1892,23 @@ const componentOptions = {
             return 'source';
         },
 
+        firstSentence(text) {
+            if (!text) return '';
+            const s = String(text);
+            // 在第一个句末标点处截断
+            const m = s.match(/^(.+?)[.。；;！!\n](.*)/s);
+            if (m && m[1].length > 10) return m[1] + '。';
+            // 如果第一句太短或没找到标点，返回前 80 字
+            return s.length > 80 ? s.slice(0, 80) + '...' : s;
+        },
+
+        fitView() {
+            if (this._cy) {
+                this._cy.stop();
+                this._cy.fit(undefined, 40);
+            }
+        },
+
         // ── 按层级过滤图谱节点显示 ──
         _applyLayerFilter(cy) {
             const layer = this.kgLayer;
@@ -1923,6 +1952,20 @@ const componentOptions = {
         },
 
         /* ── 详情面板交互：点击关联边 / 邻居节点 → 图谱高亮 ── */
+
+        toggleEdgeGroup(grp) {
+            if (!grp || !this.kgSelectedNode) return;
+            grp._expanded = !grp._expanded;
+            if (grp._expanded) {
+                grp._outShow = grp.outgoing;
+                grp._inShow = grp.incoming;
+            } else {
+                grp._outShow = grp.outgoing.slice(0, 5);
+                grp._inShow = grp.incoming.slice(0, 5);
+            }
+            // 触发响应式更新
+            this.kgSelectedNode = { ...this.kgSelectedNode, edgeGroups: [...this.kgSelectedNode.edgeGroups] };
+        },
 
         highlightKgEdge(edgeId) {
             if (!this._cy || !edgeId) return;
@@ -1986,44 +2029,54 @@ const componentOptions = {
                 matched.addClass('matched');
             }
 
-            // ── 中文关系标签 ──
-            const RELATION_LABELS = {
-                imports: '导入', contains: '包含', depends_on: '依赖', tests: '测试',
-                re_exports: '重导出', creates: '创建', triggers: '触发', mutates: '变更',
-                calls: '调用', derives: '派生', checks: '校验', injects: '注入',
-                validates: '验证', manages: '管理', protects: '保护', cooperates: '协作',
-                reads: '读取', reads_writes: '读写', belongs_to: '归属', layer_depends: '层级依赖',
-                loads: '加载', registered_by: '被注册', used_by: '被使用', documents: '文档化',
-                parallel: '并行', compares: '对比', executes: '执行', drives: '驱动',
-                produces: '产出', implements: '实现',
-            };
-
-            // ── 关联边：按关系类型分组 ──
+            // ── 关联边：按关系类型分组，区分出边 / 入边 ──
             const connectedEdges = node.connectedEdges();
-            const edgeGroups = {}; // { relation: { label, count, edges[] } }
+            const edgeGroups = {}; // { relation: { label, outgoing: [], incoming: [], count, outgoingCount, incomingCount } }
             connectedEdges.forEach(e => {
                 const src = e.source().data();
                 const tgt = e.target().data();
                 const isOut = src.id === nd.id;
                 const rel = e.data('relation') || 'other';
                 if (!edgeGroups[rel]) {
-                    edgeGroups[rel] = { relation: rel, label: RELATION_LABELS[rel] || rel, count: 0, edges: [] };
-                }
-                edgeGroups[rel].count++;
-                if (edgeGroups[rel].edges.length < 8) {
-                    edgeGroups[rel].edges.push({
-                        edgeId: e.id(),
-                        label: e.data('label'),
+                    edgeGroups[rel] = {
                         relation: rel,
-                        sourceId: src.id,
-                        targetId: isOut ? tgt.id : src.id,
-                        targetLabel: isOut ? tgt.label : src.label,
-                        direction: isOut ? '→' : '←',
-                    });
+                        label: RELATION_LABELS[rel] || rel,
+                        outgoing: [],
+                        incoming: [],
+                        count: 0,
+                        outgoingCount: 0,
+                        incomingCount: 0,
+                    };
+                }
+                const grp = edgeGroups[rel];
+                grp.count++;
+                const edgeObj = {
+                    edgeId: e.id(),
+                    label: e.data('label'),
+                    relation: rel,
+                    sourceLabel: src.label,
+                    targetLabel: tgt.label,
+                    isOut: isOut,
+                };
+                if (isOut) {
+                    grp.outgoing.push(edgeObj);
+                    grp.outgoingCount++;
+                } else {
+                    grp.incoming.push(edgeObj);
+                    grp.incomingCount++;
                 }
             });
-            // 按边数量降序排列
-            const sortedEdgeGroups = Object.values(edgeGroups).sort((a, b) => b.count - a.count);
+            // 按边数量降序排列，每个组内最多默认展示 5 条
+            const sortedEdgeGroups = Object.values(edgeGroups)
+                .sort((a, b) => b.count - a.count)
+                .map(grp => ({
+                    ...grp,
+                    _expanded: false,
+                    _outShow: grp.outgoing.slice(0, 5),
+                    _outMore: Math.max(0, grp.outgoing.length - 5),
+                    _inShow: grp.incoming.slice(0, 5),
+                    _inMore: Math.max(0, grp.incoming.length - 5),
+                }));
             const totalEdges = connectedEdges.length;
 
             // ── 邻居节点（带关系方向）──
@@ -2136,56 +2189,53 @@ const componentOptions = {
             this._updateBreadcrumb();
         },
 
-        // ── 更新面包屑：与详情面板内容联动 ──
+        // ── 更新面包屑：路径（故事 → 场景 → 节点）与层级切换分离 ──
         _updateBreadcrumb() {
-            const items = [];
+            const path = [];
             const storyName = this.kgTitle || '知识图谱';
-            const layerNames = { 1: 'L1 故事·场景', 2: 'L2 全部', 3: 'L3 聚焦' };
 
-            // 场景筛选优先
+            // 第一级：故事名（始终显示）
+            path.push({ label: storyName, action: 'overview' });
+
+            // 第二级：场景筛选（如果存在）
             if (this.kgActiveFilter) {
-                items.push({ label: storyName, action: 'overview' });
-                items.push({ label: this.kgActiveFilter.value, action: 'scenario' });
-            } else if (this.kgSelectedNode) {
-                items.push({ label: storyName, action: 'overview' });
+                path.push({ label: this.kgActiveFilter.value, action: 'scenario' });
+            }
+
+            // 第三级：选中节点（如果存在）
+            if (this.kgSelectedNode) {
                 const kind = this._getNodeKind(this.kgSelectedNode);
                 const kindPrefix = kind === 'story' ? '故事' : kind === 'scenario' ? '场景' : '源码';
-                items.push({ label: `${kindPrefix} · ${this.kgSelectedNode.label}`, action: 'node', id: this.kgSelectedNode.id });
-            } else {
-                items.push({ label: storyName, action: 'overview', current: true });
+                path.push({ label: this.kgSelectedNode.label, action: 'node', id: this.kgSelectedNode.id, kind: kindPrefix });
             }
 
-            // 层级标签
-            items.push({ label: layerNames[this.kgLayer] || 'L1', action: 'layer', layer: this.kgLayer });
+            // 标记最后一个为 current
+            path.forEach((it, i) => { it.current = i === path.length - 1; });
 
-            // 标记最后一个非 layer 项为 current
-            const nonLayer = items.filter(it => it.action !== 'layer');
-            if (nonLayer.length > 0) {
-                items.forEach(it => { it.current = false; });
-                nonLayer[nonLayer.length - 1].current = true;
-            }
-            this.kgBreadcrumb = items;
+            this.kgBreadcrumb = { path, layer: this.kgLayer };
         },
 
-        // ── 面包屑点击导航 ──
+        // ── 面包屑导航 ──
         navigateBreadcrumb(item) {
             if (!item) return;
             if (item.action === 'overview') {
-                this.resetKgFilter();
+                this.kgSelectedNode = null;
+                this.kgActiveFilter = null;
+                this._updateBreadcrumb();
+                this.fitKgGraph();
             } else if (item.action === 'node' && item.id) {
                 this.focusKgNode(item.id);
             } else if (item.action === 'scenario') {
                 this.filterKgByScenario(item.label);
-            } else if (item.action === 'layer') {
-                if (!this._cy) return;
-                this.kgSelectedNode = null;
-                this.kgActiveFilter = null;
-                this.fitKgGraph();
-                this.$nextTick(() => {
-                    this.kgLayer = item.layer;
-                    this._applyLayerFilter(this._cy);
-                });
             }
+        },
+
+        // ── 层级切换 ──
+        switchToLayer(layer) {
+            if (!this._cy || this.kgLayer === layer) return;
+            this.kgLayer = layer;
+            this._applyLayerFilter(this._cy);
+            this._updateBreadcrumb();
         },
 
         // ── 按场景筛选图谱：高亮场景关联节点，其余 dim ──
@@ -2278,7 +2328,8 @@ const componentOptions = {
             }
             for (const e of edges) {
                 const r = e.relation || e.label || 'other';
-                relationCounts[r] = (relationCounts[r] || 0) + 1;
+                const label = RELATION_LABELS[r] || r;
+                relationCounts[label] = (relationCounts[label] || 0) + 1;
             }
             const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
             const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
