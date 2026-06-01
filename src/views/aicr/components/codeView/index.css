@@ -906,6 +906,21 @@
     margin-top: 2px;
 }
 
+/* 可点击统计卡片（故事筛选） */
+.graph-overview-stat.clickable {
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.graph-overview-stat.clickable:hover {
+    background: rgba(59,130,246,0.12);
+}
+.graph-overview-stat.clickable.active {
+    background: rgba(245,158,11,0.14);
+}
+.graph-overview-stat.clickable.active .graph-overview-stat-label {
+    color: #FBBF24;
+}
+
 /* 节点分组柱状图 */
 .graph-overview-bars {
     display: flex;

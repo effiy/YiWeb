@@ -99,6 +99,8 @@ const componentOptions = {
             _ftCy: null,
             _ftDrillNodeId: null,
             _ftResizeObserver: null,
+            ftFilterType: null,
+            ftGraphOverviewOriginal: null,
             ftSelectedNode: null,
             ftGraphOverview: null,
             ftGraphTitle: '文件图谱',

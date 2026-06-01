@@ -992,3 +992,89 @@
     font-size: 10px;
     color: #64748B;
 }
+
+/* 统计卡片可点击 */
+.file-graph-overview-stat.clickable {
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.file-graph-overview-stat.clickable:hover {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.3);
+}
+.file-graph-overview-stat.clickable.active {
+    background: rgba(245,158,11,0.12);
+    border-color: rgba(245,158,11,0.4);
+}
+.file-graph-overview-stat.clickable.active .file-graph-overview-stat-label {
+    color: #FBBF24;
+}
+
+/* 全部节点列表 */
+.file-graph-node-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.file-graph-node-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+    font-size: 11px;
+    transition: all 0.12s ease;
+}
+.file-graph-node-item:hover {
+    background: rgba(59,130,246,0.08);
+    border-color: rgba(59,130,246,0.2);
+}
+
+.file-graph-node-item-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.file-graph-node-item-label {
+    flex: 1;
+    color: #E2E8F0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-graph-node-item-type {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(59,130,246,0.12);
+    color: #60A5FA;
+}
+.file-graph-node-item-group {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(139,92,246,0.12);
+    color: #A78BFA;
+}
+.file-graph-node-item-kind {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.file-graph-node-item-ext {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(16,185,129,0.1);
+    color: #34D399;
+}
+.file-graph-node-item-degree {
+    font-size: 9px;
+    color: #64748B;
+    flex-shrink: 0;
+}

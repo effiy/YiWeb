@@ -1370,6 +1370,32 @@ const componentOptions = {
 
         /* ── 知识图谱 ── */
 
+        // 规范化图谱数据：兼容 Cytoscape 格式 { data: {...}, classes: "..." } → 扁平对象
+        _normalizeGraphNodes(rawNodes) {
+            if (!Array.isArray(rawNodes)) return [];
+            return rawNodes.map(n => {
+                // Cytoscape 格式：属性嵌套在 data 下
+                if (n.data && typeof n.data === 'object') {
+                    return { ...n.data, _classes: n.classes || '' };
+                }
+                return n;
+            });
+        },
+        _normalizeGraphEdges(rawEdges) {
+            if (!Array.isArray(rawEdges)) return [];
+            return rawEdges.map(e => {
+                if (e.data && typeof e.data === 'object') {
+                    const flat = { ...e.data, _classes: e.classes || '' };
+                    // 兼容 type → relation 映射
+                    if (!flat.relation && flat.type) flat.relation = flat.type;
+                    return flat;
+                }
+                // 扁平格式也做兼容映射
+                if (!e.relation && e.type) e.relation = e.type;
+                return e;
+            });
+        },
+
         toggleKnowledgeGraph() {
             if (this.showKnowledgeGraph) {
                 this.closeKnowledgeGraph();
@@ -1400,8 +1426,8 @@ const componentOptions = {
                 if (langType === 'json' && (fileName === 'knowledge-graph.json' || filePath.includes('knowledge-graph.json'))) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, this.kgSourceStoryDir));
-                    const nodes = data.graph?.nodes || [];
-                    const edges = data.graph?.edges || [];
+                    const nodes = this._normalizeGraphNodes(data.graph?.nodes || []);
+                    const edges = this._normalizeGraphEdges(data.graph?.edges || []);
                     this.kgGraphData = { nodes, edges };
                     this.kgTitle = (data.story && data.story.name) || fileName;
                     this.kgAllNodes = nodes;
@@ -1415,8 +1441,8 @@ const componentOptions = {
                 if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, ''));
-                    const nodes = data.graph?.nodes || [];
-                    const edges = data.graph?.edges || [];
+                    const nodes = this._normalizeGraphNodes(data.graph?.nodes || []);
+                    const edges = this._normalizeGraphEdges(data.graph?.edges || []);
                     this.kgGraphData = { nodes, edges };
                     this.kgTitle = (data.story && data.story.name) || '故事依赖关系图';
                     this.kgAllNodes = nodes;
@@ -1435,8 +1461,8 @@ const componentOptions = {
 
                 const kgFilePath = `docs/故事任务面板/${storyDir}/knowledge-graph.json`;
                 const data = await this._fetchKgJson(`/${kgFilePath}`);
-                const allNodes = data.graph?.nodes || [];
-                const allEdges = data.graph?.edges || [];
+                const allNodes = this._normalizeGraphNodes(data.graph?.nodes || []);
+                const allEdges = this._normalizeGraphEdges(data.graph?.edges || []);
                 this.kgAllNodes = allNodes;
                 this.kgSourceScenarios = (data.story && data.story.scenarios) || [];
 
@@ -2355,6 +2381,58 @@ const componentOptions = {
             this.$nextTick(() => this._refitCyGraph());
         },
 
+        // ── 按故事类型筛选图谱：高亮所有 story 类型节点 ──
+        filterKgByStoryType() {
+            if (!this._cy || !this.kgAllNodes) return;
+            const cy = this._cy;
+
+            // 如果已激活故事筛选，则取消
+            if (this.kgActiveFilter && this.kgActiveFilter.type === 'story') {
+                this.resetKgFilter();
+                return;
+            }
+
+            // 收集所有 story 类型节点
+            const storyNodeIds = new Set();
+            for (const n of this.kgAllNodes) {
+                if (n.type === 'story') storyNodeIds.add(n.id);
+            }
+            if (storyNodeIds.size === 0) return;
+
+            this.kgSelectedNode = null;
+            this.kgActiveFilter = { type: 'story', value: '故事节点' };
+            this._updateBreadcrumb();
+
+            cy.elements().removeClass('highlighted dimmed matched');
+            const matchedNodes = cy.nodes().filter(n => storyNodeIds.has(n.data('id')));
+            cy.nodes().not(matchedNodes).addClass('dimmed');
+            matchedNodes.addClass('matched highlighted');
+            // 故事节点间的边高亮
+            const storyEdges = matchedNodes.connectedEdges().filter(e => {
+                const srcId = e.source().data('id');
+                const tgtId = e.target().data('id');
+                return storyNodeIds.has(srcId) && storyNodeIds.has(tgtId);
+            });
+            storyEdges.addClass('matched');
+            matchedNodes.connectedEdges().not(storyEdges).addClass('dimmed');
+            cy.edges().not(matchedNodes.connectedEdges()).addClass('dimmed');
+
+            if (matchedNodes.length > 0) {
+                cy.animate({
+                    center: { eles: matchedNodes },
+                    zoom: Math.min(cy.zoom(), 1.2),
+                }, { duration: 500, easing: 'ease-in-out-cubic' });
+                setTimeout(() => { if (this._cy) this._smartFit(40); }, 550);
+            }
+
+            this.kgGraphOverview = this._buildGraphOverview(
+                this.kgAllNodes, this.kgGraphData?.edges || [],
+                { story: { name: `${this.kgTitle || ''} · 故事`, description: '', scenarios: this.kgSourceScenarios || [] } },
+                true, storyNodeIds.size
+            );
+            this.$nextTick(() => this._refitCyGraph());
+        },
+
         // ── 清除场景/关系筛选，恢复默认状态 ──
         resetKgFilter() {
             if (!this._cy) return;
@@ -2395,9 +2473,11 @@ const componentOptions = {
         _buildGraphOverview(nodes, edges, data, hasFilter, matchedCount) {
             const groupCounts = {};
             const relationCounts = {};
+            let storyNodeCount = 0;
             for (const n of nodes) {
                 const g = n.group || n.type || 'other';
                 groupCounts[g] = (groupCounts[g] || 0) + 1;
+                if (n.type === 'story') storyNodeCount++;
             }
             for (const e of edges) {
                 const r = e.relation || e.label || 'other';
@@ -2408,6 +2488,8 @@ const componentOptions = {
             const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
             const storyDesc = (data.story && data.story.description) || '';
             const scenarios = data.story?.scenarios || [];
+            // 故事数：优先统计节点中的 story 类型，否则以 data.story 存在为 1
+            const storyCount = storyNodeCount > 0 ? storyNodeCount : (data.story && data.story.name ? 1 : 0);
 
             // 构建 场景 → 节点 映射（每个场景引用了哪些图谱节点）
             const sceneNodeMap = {}; // { sceneName: [{ id, label, file, group, description }] }
@@ -2464,6 +2546,7 @@ const componentOptions = {
                 totalNodes: nodes.length,
                 totalEdges: edges.length,
                 matchedNodes: matchedCount,
+                storyCount,
                 scenarioCount: scenarios.length,
                 topGroups,
                 topRelations,

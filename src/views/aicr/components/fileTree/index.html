@@ -172,7 +172,10 @@
                                 <span class="file-graph-overview-stat-num">{{ ftGraphOverview.totalEdges }}</span>
                                 <span class="file-graph-overview-stat-label">边</span>
                             </div>
-                            <div v-if="ftGraphOverview.storyCount != null" class="file-graph-overview-stat">
+                            <div v-if="ftGraphOverview.storyCount != null" class="file-graph-overview-stat clickable"
+                                 :class="{ active: ftFilterType === 'story' }"
+                                 @click="ftFilterByStoryType"
+                                 title="点击筛选故事节点">
                                 <span class="file-graph-overview-stat-num">{{ ftGraphOverview.storyCount }}</span>
                                 <span class="file-graph-overview-stat-label">故事</span>
                             </div>
@@ -255,6 +258,28 @@
                                 <span class="file-graph-overview-folder-icon">📁</span>
                                 <span class="file-graph-overview-folder-name">{{ f.name }}</span>
                                 <span class="file-graph-overview-folder-count">{{ f.childCount }} 项</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 全部节点列表 -->
+                    <div class="file-graph-detail-section" v-if="ftGraphOverview.nodeList && ftGraphOverview.nodeList.length">
+                        <div class="file-graph-detail-section-title">
+                            全部节点 ({{ ftGraphOverview.nodeList.length }})
+                            <span class="file-graph-detail-hint">点击节点定位</span>
+                        </div>
+                        <div class="file-graph-node-list">
+                            <div v-for="node in ftGraphOverview.nodeList" :key="node.id"
+                                 class="file-graph-node-item clickable"
+                                 @click="ftFocusGraphNode(node.id)"
+                                 :title="(node.file || '') + (node.description ? '\n' + node.description : '')">
+                                <span class="file-graph-node-item-dot" :style="{background: node.color}"></span>
+                                <span class="file-graph-node-item-label">{{ node.label }}</span>
+                                <span v-if="node.type" class="file-graph-node-item-type">{{ node.type }}</span>
+                                <span v-if="node.group" class="file-graph-node-item-group">{{ node.group }}</span>
+                                <span v-if="node.kind" class="file-graph-node-item-kind">{{ node.kind === 'folder' ? '📁' : '📄' }}</span>
+                                <span v-if="node.ext" class="file-graph-node-item-ext">{{ node.ext }}</span>
+                                <span class="file-graph-node-item-degree">{{ node.degree }} 关联</span>
                             </div>
                         </div>
                     </div>

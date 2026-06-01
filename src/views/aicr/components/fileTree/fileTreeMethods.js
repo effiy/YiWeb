@@ -606,9 +606,13 @@ const fileTreeMethods = {
             this._updateFtBreadcrumb();
         });
 
-        // ── 交互：双击空白 → 退出下钻 ──
+        // ── 交互：双击空白 → 退出下钻 / 取消筛选 ──
         cy.on('dbltap', (evt) => {
             if (evt.target !== cy) return;
+            if (this.ftFilterType) {
+                this.ftFilterByStoryType();
+                return;
+            }
             this._ftDrillNodeId = null;
             cy.elements().removeClass('highlighted dimmed');
             cy.fit(undefined, 40);
@@ -652,10 +656,15 @@ const fileTreeMethods = {
         });
         this._ftResizeObserver.observe(container);
 
-        // ── 键盘：Esc 取消选中 / 退出下钻 ──
+        // ── 键盘：Esc 取消选中 / 退出下钻 / 取消筛选 ──
         this._onFtGraphKeydown = (e) => {
             if (!e || e.key !== 'Escape') return;
             if (!this._ftCy) return;
+            if (this.ftFilterType) {
+                e.preventDefault();
+                this.ftFilterByStoryType();
+                return;
+            }
             if (this._ftDrillNodeId) {
                 e.preventDefault();
                 this._ftDrillNodeId = null;
@@ -697,34 +706,38 @@ const fileTreeMethods = {
         let idCounter = 0;
 
         for (const n of (data.graph?.nodes || [])) {
+            // 兼容 Cytoscape 格式：属性嵌套在 data 下
+            const nd = (n.data && typeof n.data === 'object') ? n.data : n;
             // 按项目标签过滤：节点 file 路径的第一段匹配项目名
             if (hasTagFilter) {
-                const file = n.file || '';
+                const file = nd.file || '';
                 const topDir = file.split('/')[0];
                 if (!activeProjectTags.has(topDir)) continue;
             }
             const id = `dn${++idCounter}`;
-            nodeMap.set(n.id, id);
-            const color = GROUP_COLORS[n.group] || TYPE_COLORS[n.type] || '#64748B';
+            nodeMap.set(nd.id, id);
+            const color = GROUP_COLORS[nd.group] || TYPE_COLORS[nd.type] || '#64748B';
             nodes.push({
-                id, label: n.label || n.id,
-                kind: n.type || 'source',
-                color, type: n.type || '', group: n.group || '',
-                file: n.file || '', description: n.description || '',
-                keyFunctions: n.keyFunctions || [],
-                mdFiles: n.mdFiles || [],
-                relatedNodes: n.relatedNodes || [],
+                id, label: nd.label || nd.id,
+                kind: nd.type || 'source',
+                color, type: nd.type || '', group: nd.group || '',
+                file: nd.file || '', description: nd.description || '',
+                keyFunctions: nd.keyFunctions || [],
+                mdFiles: nd.mdFiles || [],
+                relatedNodes: nd.relatedNodes || [],
             });
         }
 
         for (const e of (data.graph?.edges || [])) {
-            const srcId = nodeMap.get(e.source);
-            const tgtId = nodeMap.get(e.target);
+            // 兼容 Cytoscape 格式
+            const ed = (e.data && typeof e.data === 'object') ? e.data : e;
+            const srcId = nodeMap.get(ed.source);
+            const tgtId = nodeMap.get(ed.target);
             if (srcId && tgtId) {
                 edges.push({
                     id: `de_${srcId}_${tgtId}`,
                     source: srcId, target: tgtId,
-                    label: e.label || '', relation: e.relation || '',
+                    label: ed.label || '', relation: ed.relation || ed.type || '',
                 });
             }
         }
@@ -740,6 +753,15 @@ const fileTreeMethods = {
         let scenarioCount = 0;
         let storyCount = 0;
 
+        // 计算度分布
+        const degree = {};
+        for (const e of edges) {
+            degree[e.source] = (degree[e.source] || 0) + 1;
+            degree[e.target] = (degree[e.target] || 0) + 1;
+        }
+
+        // 构建节点详情列表
+        const nodeList = [];
         for (const n of nodes) {
             const t = n.type || 'other';
             typeCounts[t] = (typeCounts[t] || 0) + 1;
@@ -747,7 +769,21 @@ const fileTreeMethods = {
             if (t === 'story') storyCount++;
             const g = n.group || 'other';
             groupCounts[g] = (groupCounts[g] || 0) + 1;
+            const d = degree[n.id] || 0;
+            nodeList.push({
+                id: n.id,
+                label: n.label || n.id,
+                type: n.type || '',
+                group: n.group || '',
+                file: n.file || '',
+                description: (n.description || '').substring(0, 80),
+                degree: d,
+                color: n.color || '#64748B',
+            });
         }
+        // 按关联度降序排列
+        nodeList.sort((a, b) => b.degree - a.degree);
+
         for (const e of edges) {
             const r = e.relation || 'other';
             relationCounts[r] = (relationCounts[r] || 0) + 1;
@@ -763,6 +799,7 @@ const fileTreeMethods = {
             totalEdges: edges.length,
             scenarioCount, storyCount,
             topTypes, topGroups, topRelations,
+            nodeList,
         };
     },
 
@@ -838,6 +875,15 @@ const fileTreeMethods = {
         let fileCount = 0;
         const topFolders = [];
 
+        // 计算度分布
+        const degree = {};
+        for (const e of edges) {
+            degree[e.source] = (degree[e.source] || 0) + 1;
+            degree[e.target] = (degree[e.target] || 0) + 1;
+        }
+
+        // 构建节点详情列表
+        const nodeList = [];
         for (const n of nodes) {
             if (n.kind === 'folder') {
                 folderCount++;
@@ -849,7 +895,25 @@ const fileTreeMethods = {
                 const ext = n.ext || '(无扩展名)';
                 extCounts[ext] = (extCounts[ext] || 0) + 1;
             }
+            const d = degree[n.id] || 0;
+            nodeList.push({
+                id: n.id,
+                label: n.label || n.id,
+                kind: n.kind || 'file',
+                ext: n.ext || '',
+                depth: n.depth || 0,
+                file: n.file || n.key || '',
+                childCount: n.childCount || 0,
+                degree: d,
+                color: n.color || '#64748B',
+            });
         }
+        // 文件夹在前，然后按关联度降序
+        nodeList.sort((a, b) => {
+            if (a.kind === 'folder' && b.kind !== 'folder') return -1;
+            if (a.kind !== 'folder' && b.kind === 'folder') return 1;
+            return b.degree - a.degree;
+        });
 
         const topExtensions = Object.entries(extCounts)
             .sort((a, b) => b[1] - a[1])
@@ -868,6 +932,7 @@ const fileTreeMethods = {
             fileCount,
             topExtensions,
             topFolders,
+            nodeList,
         };
     },
 
@@ -1020,6 +1085,59 @@ const fileTreeMethods = {
         }, 1500);
     },
 
+    /* ── 按故事类型筛选 ── */
+    ftFilterByStoryType() {
+        if (!this._ftCy) return;
+
+        // 切换：如果已激活则取消
+        if (this.ftFilterType === 'story') {
+            this.ftFilterType = null;
+            this.ftSelectedNode = null;
+            this._ftCy.elements().removeClass('highlighted dimmed matched');
+            this._ftCy.fit(undefined, 40);
+            // 恢复原始总览
+            this.ftGraphOverview = this.ftGraphOverviewOriginal
+                ? { ...this.ftGraphOverviewOriginal }
+                : this.ftGraphOverview;
+            this._updateFtBreadcrumb();
+            return;
+        }
+
+        const cy = this._ftCy;
+        const storyNodes = cy.nodes().filter(n => n.data('type') === 'story' || n.data('kind') === 'story');
+        if (!storyNodes.length) return;
+
+        this.ftFilterType = 'story';
+        this.ftSelectedNode = null;
+        // 保存原始总览
+        if (!this.ftGraphOverviewOriginal) {
+            this.ftGraphOverviewOriginal = { ...this.ftGraphOverview };
+        }
+
+        cy.elements().removeClass('highlighted dimmed matched');
+        storyNodes.addClass('matched highlighted');
+        cy.nodes().not(storyNodes).addClass('dimmed');
+        // 故事节点间的边高亮
+        const storyIds = new Set(storyNodes.map(n => n.data('id')));
+        const storyEdges = storyNodes.connectedEdges().filter(e => {
+            const s = e.source().data('id');
+            const t = e.target().data('id');
+            return storyIds.has(s) && storyIds.has(t);
+        });
+        storyEdges.addClass('matched');
+        storyNodes.connectedEdges().not(storyEdges).addClass('dimmed');
+        cy.edges().not(storyNodes.connectedEdges()).addClass('dimmed');
+
+        if (storyNodes.length > 0) {
+            cy.animate({
+                center: { eles: storyNodes },
+                zoom: Math.min(cy.zoom(), 1.3),
+            }, { duration: 500, easing: 'ease-in-out-cubic' });
+        }
+
+        this._updateFtBreadcrumb();
+    },
+
     /* ── 适应视图 ── */
     ftFitGraph() {
         if (!this._ftCy) return;
@@ -1044,8 +1162,10 @@ const fileTreeMethods = {
     ftResetGraph() {
         if (!this._ftCy) return;
         this._ftDrillNodeId = null;
+        this.ftFilterType = null;
+        this.ftGraphOverviewOriginal = null;
         this.ftSelectedNode = null;
-        this._ftCy.elements().removeClass('highlighted dimmed');
+        this._ftCy.elements().removeClass('highlighted dimmed matched');
         const layouts = [
             { name: 'dagre', rankDir: 'TB', spacingFactor: 1.35, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 40 },
             { name: 'breadthfirst', directed: true, spacingFactor: 1.25, animate: true, fit: true, padding: 40 },
@@ -1075,9 +1195,15 @@ const fileTreeMethods = {
         if (item.action === 'overview') {
             if (!this._ftCy) return;
             this._ftDrillNodeId = null;
+            this.ftFilterType = null;
             this.ftSelectedNode = null;
-            this._ftCy.elements().removeClass('highlighted dimmed');
+            this._ftCy.elements().removeClass('highlighted dimmed matched');
             this._ftCy.fit(undefined, 40);
+            // 恢复原始总览
+            if (this.ftGraphOverviewOriginal) {
+                this.ftGraphOverview = { ...this.ftGraphOverviewOriginal };
+                this.ftGraphOverviewOriginal = null;
+            }
             this._updateFtBreadcrumb();
         }
     },
@@ -1094,6 +1220,8 @@ const fileTreeMethods = {
         }
         if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
         this._ftDrillNodeId = null;
+        this.ftFilterType = null;
+        this.ftGraphOverviewOriginal = null;
     },
 };
 

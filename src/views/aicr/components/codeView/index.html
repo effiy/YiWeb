@@ -239,10 +239,17 @@
             <span class="graph-node-detail-label">{{ kgGraphOverview.storyName }}</span>
           </div>
 
-          <!-- 1. 图谱统计：场景、节点、边 -->
+          <!-- 1. 图谱统计：故事、场景、节点、边 -->
           <div class="graph-node-detail-section">
             <div class="graph-node-detail-section-title">图谱统计</div>
             <div class="graph-overview-stats">
+              <div class="graph-overview-stat clickable"
+                   :class="{ active: kgActiveFilter && kgActiveFilter.type === 'story' }"
+                   @click="filterKgByStoryType"
+                   title="点击筛选故事节点">
+                <span class="graph-overview-stat-num">{{ kgGraphOverview.storyCount }}</span>
+                <span class="graph-overview-stat-label">故事</span>
+              </div>
               <div class="graph-overview-stat">
                 <span class="graph-overview-stat-num">{{ kgGraphOverview.scenarioCount }}</span>
                 <span class="graph-overview-stat-label">场景</span>
