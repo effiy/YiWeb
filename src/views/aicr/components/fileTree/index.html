@@ -160,18 +160,68 @@
                                 <span class="file-graph-overview-stat-num">{{ ftGraphOverview.totalEdges }}</span>
                                 <span class="file-graph-overview-stat-label">边</span>
                             </div>
-                            <div class="file-graph-overview-stat">
+                            <div v-if="ftGraphOverview.storyCount != null" class="file-graph-overview-stat">
+                                <span class="file-graph-overview-stat-num">{{ ftGraphOverview.storyCount }}</span>
+                                <span class="file-graph-overview-stat-label">故事</span>
+                            </div>
+                            <div v-if="ftGraphOverview.scenarioCount != null" class="file-graph-overview-stat">
+                                <span class="file-graph-overview-stat-num">{{ ftGraphOverview.scenarioCount }}</span>
+                                <span class="file-graph-overview-stat-label">场景</span>
+                            </div>
+                            <div v-if="ftGraphOverview.folderCount != null" class="file-graph-overview-stat">
                                 <span class="file-graph-overview-stat-num">{{ ftGraphOverview.folderCount }}</span>
                                 <span class="file-graph-overview-stat-label">目录</span>
                             </div>
-                            <div class="file-graph-overview-stat">
+                            <div v-if="ftGraphOverview.fileCount != null" class="file-graph-overview-stat">
                                 <span class="file-graph-overview-stat-num">{{ ftGraphOverview.fileCount }}</span>
                                 <span class="file-graph-overview-stat-label">文件</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 文件类型分布 -->
+                    <!-- 节点类型分布 (story-deps 数据) -->
+                    <div class="file-graph-detail-section" v-if="ftGraphOverview.topTypes && ftGraphOverview.topTypes.length">
+                        <div class="file-graph-detail-section-title">节点类型分布</div>
+                        <div class="file-graph-overview-bars">
+                            <div v-for="t in ftGraphOverview.topTypes" :key="t[0]" class="file-graph-overview-bar">
+                                <span class="file-graph-overview-bar-label">{{ t[0] }}</span>
+                                <span class="file-graph-overview-bar-count">{{ t[1] }}</span>
+                                <div class="file-graph-overview-bar-track">
+                                    <div class="file-graph-overview-bar-fill" :style="{width: (t[1] / ftGraphOverview.totalNodes * 100) + '%'}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 节点分组分布 (story-deps 数据) -->
+                    <div class="file-graph-detail-section" v-if="ftGraphOverview.topGroups && ftGraphOverview.topGroups.length">
+                        <div class="file-graph-detail-section-title">节点分组分布</div>
+                        <div class="file-graph-overview-bars">
+                            <div v-for="g in ftGraphOverview.topGroups" :key="g[0]" class="file-graph-overview-bar">
+                                <span class="file-graph-overview-bar-label">{{ g[0] }}</span>
+                                <span class="file-graph-overview-bar-count">{{ g[1] }}</span>
+                                <div class="file-graph-overview-bar-track">
+                                    <div class="file-graph-overview-bar-fill" :style="{width: (g[1] / ftGraphOverview.totalNodes * 100) + '%'}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 边关系分布 (story-deps 数据) -->
+                    <div class="file-graph-detail-section" v-if="ftGraphOverview.topRelations && ftGraphOverview.topRelations.length">
+                        <div class="file-graph-detail-section-title">关系类型分布</div>
+                        <div class="file-graph-overview-bars">
+                            <div v-for="r in ftGraphOverview.topRelations" :key="r[0]" class="file-graph-overview-bar">
+                                <span class="file-graph-overview-bar-label">{{ r[0] }}</span>
+                                <span class="file-graph-overview-bar-count">{{ r[1] }}</span>
+                                <div class="file-graph-overview-bar-track">
+                                    <div class="file-graph-overview-bar-fill" :style="{width: (r[1] / ftGraphOverview.totalEdges * 100) + '%'}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文件类型分布 (file tree 数据) -->
                     <div class="file-graph-detail-section" v-if="ftGraphOverview.topExtensions && ftGraphOverview.topExtensions.length">
                         <div class="file-graph-detail-section-title">文件类型分布</div>
                         <div class="file-graph-overview-bars">
@@ -222,11 +272,13 @@
                     <!-- 元数据徽章 -->
                     <div class="file-graph-detail-meta">
                         <span v-if="ftSelectedNode._isDrilled" class="file-graph-badge drill" title="双击空白退出聚焦">🔍 已聚焦</span>
-                        <span class="file-graph-badge kind">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
-                        <span v-if="ftSelectedNode._kind === 'file' && ftSelectedNode._ext" class="file-graph-badge type">{{ ftSelectedNode._ext }}</span>
+                        <span v-if="ftSelectedNode._isDepsData && ftSelectedNode._type" class="file-graph-badge kind">{{ ftSelectedNode._type === 'source' ? '📄 源码' : ftSelectedNode._type === 'test' ? '🧪 测试' : ftSelectedNode._type === 'scenario' ? '📋 场景' : ftSelectedNode._type === 'story' ? '📖 故事' : ftSelectedNode._type }}</span>
+                        <span v-if="!ftSelectedNode._isDepsData" class="file-graph-badge kind">{{ ftSelectedNode._kind === 'folder' ? '📁 目录' : '📄 文件' }}</span>
+                        <span v-if="!ftSelectedNode._isDepsData && ftSelectedNode._kind === 'file' && ftSelectedNode._ext" class="file-graph-badge type">{{ ftSelectedNode._ext }}</span>
+                        <span v-if="ftSelectedNode._isDepsData && ftSelectedNode._group" class="file-graph-badge group">{{ ftSelectedNode._group }}</span>
                         <span v-if="ftSelectedNode._connections != null" class="file-graph-badge degree">{{ ftSelectedNode._connections }} 关联</span>
-                        <span v-if="ftSelectedNode._childCount != null" class="file-graph-badge children">{{ ftSelectedNode._childCount }} 子项</span>
-                        <span v-if="ftSelectedNode._depth != null" class="file-graph-badge depth">L{{ ftSelectedNode._depth }}</span>
+                        <span v-if="!ftSelectedNode._isDepsData && ftSelectedNode._childCount != null" class="file-graph-badge children">{{ ftSelectedNode._childCount }} 子项</span>
+                        <span v-if="!ftSelectedNode._isDepsData && ftSelectedNode._depth != null" class="file-graph-badge depth">L{{ ftSelectedNode._depth }}</span>
                     </div>
 
                     <!-- 架构角色 -->
@@ -235,12 +287,31 @@
                         <p class="file-graph-detail-role">{{ ftSelectedNode._roleSummary }}</p>
                     </div>
 
+                    <!-- story-deps: 关键函数 -->
+                    <div class="file-graph-detail-section" v-if="ftSelectedNode._keyFunctions && ftSelectedNode._keyFunctions.length">
+                        <div class="file-graph-detail-section-title">关键函数</div>
+                        <div class="file-graph-detail-funcs">
+                            <span v-for="fn in ftSelectedNode._keyFunctions" :key="fn" class="file-graph-detail-func-chip">{{ fn }}</span>
+                        </div>
+                    </div>
+
+                    <!-- story-deps: 关联场景文档 -->
+                    <div class="file-graph-detail-section" v-if="ftSelectedNode._mdFiles && ftSelectedNode._mdFiles.length">
+                        <div class="file-graph-detail-section-title">关联场景 ({{ ftSelectedNode._mdFiles.length }})</div>
+                        <div class="file-graph-detail-mdfiles">
+                            <div v-for="mf in ftSelectedNode._mdFiles.slice(0, 8)" :key="mf.file" class="file-graph-detail-mdfile">
+                                <span class="file-graph-detail-mdfile-dot">◆</span>
+                                <span class="file-graph-detail-mdfile-name">{{ mf.scenario || mf.file }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 依赖关系摘要 -->
                     <div class="file-graph-detail-section" v-if="ftSelectedNode._depText">
                         <div class="file-graph-detail-section-title">依赖关系</div>
                         <div class="file-graph-detail-depstats">
-                            <span v-if="ftSelectedNode._outgoing > 0" class="file-graph-depstat outgoing">↑ 包含 {{ ftSelectedNode._outgoing }} 个子项</span>
-                            <span v-if="ftSelectedNode._incoming > 0" class="file-graph-depstat incoming">↓ 属于 {{ ftSelectedNode._incoming }} 个父级</span>
+                            <span v-if="ftSelectedNode._outgoing > 0" class="file-graph-depstat outgoing">↑ 出边 {{ ftSelectedNode._outgoing }} 条</span>
+                            <span v-if="ftSelectedNode._incoming > 0" class="file-graph-depstat incoming">↓ 入边 {{ ftSelectedNode._incoming }} 条</span>
                             <span v-if="!ftSelectedNode._outgoing && !ftSelectedNode._incoming" class="file-graph-depstat none">无直接关联</span>
                         </div>
                     </div>

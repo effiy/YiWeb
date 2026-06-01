@@ -1727,9 +1727,9 @@ const componentOptions = {
                     }},
                     { selector: 'node.dimmed', style: { 'opacity': 0.15 }},
                     { selector: 'node.matched', style: {
-                        'border-width': 3, 'border-color': '#F59E0B', 'border-opacity': 0.9,
-                        'shadow-blur': 12, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.35,
-                        'z-index': 100,
+                        'border-width': 4, 'border-color': '#F59E0B', 'border-opacity': 0.95,
+                        'shadow-blur': 20, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.55,
+                        'shadow-spread': 8, 'z-index': 100,
                     }},
                     { selector: 'edge', style: {
                         'width': 1.4, 'line-color': '#475569', 'target-arrow-color': '#64748B',
@@ -1743,6 +1743,10 @@ const componentOptions = {
                         'opacity': 0.9,
                     }},
                     { selector: 'edge.dimmed', style: { 'opacity': 0.05 }},
+                    { selector: 'edge.matched', style: {
+                        'width': 2.5, 'line-color': '#F59E0B', 'target-arrow-color': '#F59E0B',
+                        'opacity': 0.85, 'z-index': 50,
+                    }},
                 ],
                 layout: { name: 'preset' },
                 minZoom: 0.08, maxZoom: 4, wheelSensitivity: 0.25,
@@ -1875,7 +1879,10 @@ const componentOptions = {
         _refitCyGraph() {
             if (this._cy) {
                 this._cy.resize();
-                this._cy.fit(undefined, 30);
+                // 有筛选时仅 resize，保留筛选聚焦的视角
+                if (!this.kgActiveFilter) {
+                    this._cy.fit(undefined, 30);
+                }
             }
         },
 
@@ -2258,16 +2265,32 @@ const componentOptions = {
             this.kgActiveFilter = { type: 'scenario', value: sceneName };
             this._updateBreadcrumb();
 
-            // Dim 所有节点，高亮场景关联节点
+            // Dim 所有非场景节点，双重高亮场景关联节点 (matched + highlighted)
             cy.elements().removeClass('highlighted dimmed matched');
             const matchedNodes = cy.nodes().filter(n => sceneNodeIds.has(n.data('id')));
-            matchedNodes.addClass('matched');
-            // 高亮关联节点的内部边
-            matchedNodes.connectedEdges().filter(e => {
+            // 非场景节点 dim
+            cy.nodes().not(matchedNodes).addClass('dimmed');
+            // 场景节点双重高亮: matched (琥珀色) + highlighted (白色边框)
+            matchedNodes.addClass('matched highlighted');
+            // 高亮场景内部边: matched (琥珀色边) + highlighted (白色边)
+            const sceneEdges = matchedNodes.connectedEdges().filter(e => {
                 const srcId = e.source().data('id');
                 const tgtId = e.target().data('id');
                 return sceneNodeIds.has(srcId) && sceneNodeIds.has(tgtId);
-            }).addClass('matched');
+            });
+            sceneEdges.addClass('matched');
+            // 场景对外边 dim
+            matchedNodes.connectedEdges().not(sceneEdges).addClass('dimmed');
+            // 其余边 dim
+            cy.edges().not(matchedNodes.connectedEdges()).addClass('dimmed');
+
+            // 动画聚焦到场景节点区域
+            if (matchedNodes.length > 0) {
+                cy.animate({
+                    center: { eles: matchedNodes },
+                    zoom: Math.min(cy.zoom(), 1.2),
+                }, { duration: 500, easing: 'ease-in-out-cubic' });
+            }
 
             this.kgSelectedNode = null;
             this.kgGraphOverview = this._buildGraphOverview(

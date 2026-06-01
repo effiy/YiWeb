@@ -625,6 +625,59 @@
 .file-graph-depstat.incoming { color: #34D399; background: rgba(16,185,129,0.08); }
 .file-graph-depstat.none { color: #64748B; }
 
+/* story-deps 关键函数 */
+.file-graph-detail-funcs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.file-graph-detail-func-chip {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(59,130,246,0.12);
+    color: #60A5FA;
+}
+
+/* story-deps 关联场景 */
+.file-graph-detail-mdfiles {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.file-graph-detail-mdfile {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: rgba(245,158,11,0.06);
+    font-size: 10px;
+}
+
+.file-graph-detail-mdfile-dot {
+    color: #F59E0B;
+    font-size: 7px;
+    flex-shrink: 0;
+}
+
+.file-graph-detail-mdfile-name {
+    color: #FBBF24;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* story-deps 分组徽章 */
+.file-graph-badge.group {
+    background: rgba(139,92,246,0.15);
+    color: #A78BFA;
+}
+
 /* 路径 */
 .file-graph-detail-path {
     font-family: 'JetBrains Mono', monospace;

@@ -112,6 +112,11 @@ const componentOptions = {
             } else {
                 this._destroyFtCy();
             }
+        },
+        selectedTags(_newTags, _oldTags) {
+            if (this.viewMode === 'graph') {
+                this.$nextTick(() => this.initFileTreeGraph());
+            }
         }
     },
     beforeUnmount() {

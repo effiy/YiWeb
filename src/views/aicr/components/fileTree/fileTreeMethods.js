@@ -381,7 +381,7 @@ const fileTreeMethods = {
 
     /* ====== 知识图谱视图 (Cytoscape) ====== */
 
-    initFileTreeGraph() {
+    async initFileTreeGraph() {
         if (typeof cytoscape === 'undefined') {
             console.warn('[FileTree] Cytoscape.js 未加载');
             return;
@@ -397,9 +397,45 @@ const fileTreeMethods = {
         if (this._ftResizeObserver) { this._ftResizeObserver.disconnect(); this._ftResizeObserver = null; }
         this._ftDrillNodeId = null;
 
-        const { nodes, edges } = this._buildFileTreeGraphData();
+        // 优先通过 read-file API 获取最新 story-deps.json 数据
+        let nodes, edges, fromApi = false;
+        try {
+            const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                ? String(window.API_URL).replace(/\/+$/, '')
+                : '';
+            if (apiBase) {
+                const res = await fetch(`${apiBase}/read-file`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_file: 'docs/故事任务面板/story-deps.json' })
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json && (json.code === 200 || json.code === 0) && json.data) {
+                        const raw = json.data.content;
+                        if (raw) {
+                            const data = JSON.parse(raw);
+                            const graphResult = this._buildGraphFromStoryDeps(data);
+                            nodes = graphResult.nodes;
+                            edges = graphResult.edges;
+                            fromApi = true;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            // API 不可用时静默回退
+        }
+
+        // 回退：使用本地文件树数据
+        if (!fromApi) {
+            const result = this._buildFileTreeGraphData();
+            nodes = result.nodes;
+            edges = result.edges;
+        }
+
         if (!nodes.length) {
-            console.warn('[FileTree] 图谱无数据: tree=', this.tree?.length, 'nodes=0');
+            console.warn('[FileTree] 图谱无数据');
             return;
         }
 
@@ -417,9 +453,14 @@ const fileTreeMethods = {
                 data: {
                     id: n.id, label: n.label,
                     color: n.color, kind: n.kind,
-                    key: n.key || '', file: n.file || '',
+                    key: n.key || n.file || '',
+                    file: n.file || '',
                     ext: n.ext || '', depth: n.depth || 0,
                     childCount: n.childCount || 0,
+                    type: n.type || '', group: n.group || '',
+                    description: n.description || '',
+                    keyFunctions: n.keyFunctions || [],
+                    mdFiles: n.mdFiles || [],
                     degree: d, size: size,
                 },
             });
@@ -561,14 +602,20 @@ const fileTreeMethods = {
         }
 
         // ── 标题 / 统计 ──
-        const topLevelName = (Array.isArray(this.tree) && this.tree.length === 1 && this.tree[0].type === 'folder')
-            ? this.tree[0].name
-            : '';
-        this.ftGraphTitle = topLevelName ? `📁 ${topLevelName}` : '文件图谱';
+        if (fromApi && this._ftStoryTitle) {
+            this.ftGraphTitle = this._ftStoryTitle;
+        } else {
+            const topLevelName = (Array.isArray(this.tree) && this.tree.length === 1 && this.tree[0].type === 'folder')
+                ? this.tree[0].name
+                : '';
+            this.ftGraphTitle = topLevelName ? `📁 ${topLevelName}` : '文件图谱';
+        }
         this.ftGraphStatsText = `${nodes.length} 节点 · ${edges.length} 边`;
 
         // ── 构建总览数据 ──
-        this.ftGraphOverview = this._buildFtGraphOverview(nodes, edges);
+        this.ftGraphOverview = fromApi
+            ? this._buildFtGraphOverviewFromDeps(nodes, edges)
+            : this._buildFtGraphOverview(nodes, edges);
 
         // ── 自适应视图：ResizeObserver ──
         this._ftResizeObserver = new ResizeObserver(() => {
@@ -595,6 +642,102 @@ const fileTreeMethods = {
             }
         };
         document.addEventListener('keydown', this._onFtGraphKeydown, true);
+    },
+
+    /* ── 从 story-deps.json API 数据构建图谱 ── */
+    _buildGraphFromStoryDeps(data) {
+        const TYPE_COLORS = {
+            source: '#3B82F6',
+            test: '#10B981',
+            scenario: '#F59E0B',
+            story: '#8B5CF6',
+        };
+        const GROUP_COLORS = {
+            'L1-View': '#3B82F6', 'L2-Config': '#6366F1', 'L2-Service': '#8B5CF6',
+            'L3-Foundation': '#06B6D4', 'Other': '#64748B',
+        };
+
+        this._ftStoryTitle = (data.story && data.story.name) || '依赖关系图';
+
+        const activeProjectTags = new Set();
+        if (Array.isArray(this.selectedTags)) {
+            this.selectedTags.forEach(t => activeProjectTags.add(t));
+        }
+        const hasTagFilter = activeProjectTags.size > 0;
+
+        const nodes = [];
+        const edges = [];
+        const nodeMap = new Map();
+        let idCounter = 0;
+
+        for (const n of (data.graph?.nodes || [])) {
+            // 按项目标签过滤：节点 file 路径的第一段匹配项目名
+            if (hasTagFilter) {
+                const file = n.file || '';
+                const topDir = file.split('/')[0];
+                if (!activeProjectTags.has(topDir)) continue;
+            }
+            const id = `dn${++idCounter}`;
+            nodeMap.set(n.id, id);
+            const color = GROUP_COLORS[n.group] || TYPE_COLORS[n.type] || '#64748B';
+            nodes.push({
+                id, label: n.label || n.id,
+                kind: n.type || 'source',
+                color, type: n.type || '', group: n.group || '',
+                file: n.file || '', description: n.description || '',
+                keyFunctions: n.keyFunctions || [],
+                mdFiles: n.mdFiles || [],
+                relatedNodes: n.relatedNodes || [],
+            });
+        }
+
+        for (const e of (data.graph?.edges || [])) {
+            const srcId = nodeMap.get(e.source);
+            const tgtId = nodeMap.get(e.target);
+            if (srcId && tgtId) {
+                edges.push({
+                    id: `de_${srcId}_${tgtId}`,
+                    source: srcId, target: tgtId,
+                    label: e.label || '', relation: e.relation || '',
+                });
+            }
+        }
+
+        return { nodes, edges };
+    },
+
+    /* ── 从 story-deps 构建总览 ── */
+    _buildFtGraphOverviewFromDeps(nodes, edges) {
+        const typeCounts = {};
+        const groupCounts = {};
+        const relationCounts = {};
+        let scenarioCount = 0;
+        let storyCount = 0;
+
+        for (const n of nodes) {
+            const t = n.type || 'other';
+            typeCounts[t] = (typeCounts[t] || 0) + 1;
+            if (t === 'scenario') scenarioCount++;
+            if (t === 'story') storyCount++;
+            const g = n.group || 'other';
+            groupCounts[g] = (groupCounts[g] || 0) + 1;
+        }
+        for (const e of edges) {
+            const r = e.relation || 'other';
+            relationCounts[r] = (relationCounts[r] || 0) + 1;
+        }
+
+        const topTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+        const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+        return {
+            title: this._ftStoryTitle || '依赖关系图',
+            totalNodes: nodes.length,
+            totalEdges: edges.length,
+            scenarioCount, storyCount,
+            topTypes, topGroups, topRelations,
+        };
     },
 
     /* ── 构建图谱数据 ── */
@@ -751,26 +894,42 @@ const fileTreeMethods = {
         // 子节点数（仅目录）
         const childEdges = connectedEdges.filter(e => e.source().id() === nd.id);
 
+        // 检测数据类型：story-deps 数据有 type/group 字段
+        const isDepsData = !!(nd.type || nd.group);
+
         // 架构角色描述
-        const kindLabel = nd.kind === 'folder' ? '📁 目录' : '📄 文件';
-        const depthLabel = nd.depth != null ? `深度 L${nd.depth}` : '';
-        const sizeLabel = nd.degree != null ? `${nd.degree} 个关联` : '';
-        const roleParts = [kindLabel, depthLabel, sizeLabel].filter(Boolean);
-        const roleSummary = roleParts.length ? roleParts.join(' · ') : '';
+        let roleSummary;
+        if (isDepsData) {
+            const typeLabel = nd.type === 'source' ? '📄 源文件' :
+                nd.type === 'test' ? '🧪 测试' :
+                nd.type === 'scenario' ? '📋 场景' :
+                nd.type === 'story' ? '📖 故事' : nd.type;
+            const parts = [typeLabel];
+            if (nd.group) parts.push(nd.group);
+            if (nd.description) parts.push(nd.description);
+            roleSummary = parts.join(' · ');
+        } else {
+            const kindLabel = nd.kind === 'folder' ? '📁 目录' : '📄 文件';
+            const depthLabel = nd.depth != null ? `深度 L${nd.depth}` : '';
+            const sizeLabel = nd.degree != null ? `${nd.degree} 个关联` : '';
+            const roleParts = [kindLabel, depthLabel, sizeLabel].filter(Boolean);
+            roleSummary = roleParts.length ? roleParts.join(' · ') : '';
+        }
 
         // 依赖关系文本
         const outgoing = connected.filter(c => c.direction === '→').length;
         const incoming = connected.length - outgoing;
         const depParts = [];
-        if (outgoing > 0) depParts.push(`包含 ${outgoing} 个子项`);
-        if (incoming > 0) depParts.push(`属于 ${incoming} 个父级`);
-        const depText = depParts.length ? depParts.join('，') : '';
+        if (outgoing > 0) depParts.push(`出边 ${outgoing} 条`);
+        if (incoming > 0) depParts.push(`入边 ${incoming} 条`);
+        const depText = depParts.length ? depParts.join('，') : '孤立节点';
 
         this.ftSelectedNode = {
             _label: nd.label,
             _color: nd.color,
             _kind: nd.kind,
             _key: nd.key || nd.file || '',
+            _file: nd.file || '',
             _ext: nd.ext || '',
             _depth: nd.depth,
             _connections: connected.length,
@@ -782,6 +941,13 @@ const fileTreeMethods = {
             _incoming: incoming,
             _edges: connected.slice(0, 20),
             _neighbors: neighbors.slice(0, 20),
+            // story-deps 扩展字段
+            _type: nd.type || '',
+            _group: nd.group || '',
+            _description: nd.description || '',
+            _keyFunctions: nd.keyFunctions || [],
+            _mdFiles: nd.mdFiles || [],
+            _isDepsData: isDepsData,
         };
     },
 
