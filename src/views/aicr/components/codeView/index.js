@@ -171,7 +171,9 @@ const componentOptions = {
             kgSelectedNode: null,
             kgMatchedIds: null,
             kgSourceScenarios: null,
-            kgGraphOverview: null
+            kgGraphOverview: null,
+            kgDrillStack: [],
+            kgActiveFilter: null
         };
     },
     computed: {
@@ -1377,8 +1379,7 @@ const componentOptions = {
                 // Case 1: File is already a knowledge-graph.json → parse from loaded content
                 if (langType === 'json' && (fileName === 'knowledge-graph.json' || filePath.includes('knowledge-graph.json'))) {
                     const raw = String(this.rawContent || '');
-                    if (!raw) throw new Error('文件内容为空');
-                    const data = JSON.parse(raw);
+                    const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath));
                     const nodes = data.graph?.nodes || [];
                     const edges = data.graph?.edges || [];
                     this.kgGraphData = { nodes, edges };
@@ -1393,8 +1394,7 @@ const componentOptions = {
                 // Case 2: File is story-deps.json → parse from loaded content
                 if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
                     const raw = String(this.rawContent || '');
-                    if (!raw) throw new Error('文件内容为空');
-                    const data = JSON.parse(raw);
+                    const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath));
                     const nodes = data.graph?.nodes || [];
                     const edges = data.graph?.edges || [];
                     this.kgGraphData = { nodes, edges };
@@ -1414,12 +1414,7 @@ const componentOptions = {
                 }
 
                 const kgFilePath = `docs/故事任务面板/${storyDir}/knowledge-graph.json`;
-
-                // 直接从本地路径获取 JSON 文件（docs/ 目录作为静态资源可访问）
-                const resp = await fetch(`/${kgFilePath}`);
-                if (!resp.ok) throw new Error(`无法加载知识图谱: HTTP ${resp.status}`);
-
-                const data = await resp.json();
+                const data = await this._fetchKgJson(`/${kgFilePath}`);
                 const allNodes = data.graph?.nodes || [];
                 const allEdges = data.graph?.edges || [];
                 this.kgAllNodes = allNodes;
@@ -1526,6 +1521,25 @@ const componentOptions = {
             }
         },
 
+        async _fetchKgJson(url) {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`无法加载知识图谱: HTTP ${resp.status}`);
+            const ct = resp.headers.get('content-type') || '';
+            if (!ct.includes('application/json') && !ct.includes('text/json')) {
+                throw new Error(`知识图谱文件响应非 JSON 格式（${ct || '未知'}），URL: ${url}`);
+            }
+            return resp.json();
+        },
+
+        _resolveKgUrl(filePath) {
+            // filePath 可能来自文件树（无 docs/ 前缀）或完整路径
+            // 统一补全为 docs/ 前缀的静态文件路径
+            const fp = String(filePath || '');
+            if (fp.startsWith('docs/')) return `/${fp}`;
+            if (fp.startsWith('故事任务面板/')) return `/docs/${fp}`;
+            return `/${fp}`;
+        },
+
         closeKnowledgeGraph() {
             this.showKnowledgeGraph = false;
             this._destroyCyGraph();
@@ -1548,7 +1562,7 @@ const componentOptions = {
         _initCyGraph(container) {
             if (this._cy) { this._cy.destroy(); this._cy = null; }
             this.kgSelectedNode = null;
-            this._kgDrillNodeId = null;  // 下钻状态：当前聚焦的节点 ID，null 表示全图
+            this.kgDrillStack = [];  // 下钻栈：最多 3 层，每层为节点 ID
 
             // 清理旧 resize 观察器
             if (this._kgResizeObserver) {
@@ -1692,21 +1706,38 @@ const componentOptions = {
                 this._selectKgNodeDetail(evt.target, cy);
             });
 
-            // Tap background → deselect (退出下钻模式则恢复全图)
+            // Tap background → deselect (下钻模式中退回一层)
             cy.on('tap', (evt) => {
                 if (evt.target === cy) {
-                    if (this._kgDrillNodeId) {
-                        // 在下钻模式中点击空白 → 退出下钻
-                        this._kgDrillNodeId = null;
-                        cy.elements().removeClass('highlighted dimmed');
-                        if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
-                            const matchedNodes = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
-                            matchedNodes.addClass('matched');
-                            cy.nodes().not(matchedNodes).addClass('dimmed');
-                            cy.edges().addClass('dimmed');
-                            matchedNodes.connectedEdges().removeClass('dimmed');
+                    if (this.kgDrillStack.length > 0) {
+                        // 在下钻模式中点击空白 → 退回上一层
+                        this.kgDrillStack.pop();
+                        if (this.kgDrillStack.length === 0) {
+                            // 完全退出下钻
+                            cy.elements().removeClass('highlighted dimmed');
+                            if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                                const matchedNodes = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                                matchedNodes.addClass('matched');
+                                cy.nodes().not(matchedNodes).addClass('dimmed');
+                                cy.edges().addClass('dimmed');
+                                matchedNodes.connectedEdges().removeClass('dimmed');
+                            }
+                            cy.fit(undefined, 40);
+                        } else {
+                            // 还原到上一层：聚焦栈顶节点
+                            const parentId = this.kgDrillStack[this.kgDrillStack.length - 1];
+                            const parentNode = cy.getElementById(parentId);
+                            if (parentNode.length) {
+                                cy.elements().removeClass('highlighted dimmed');
+                                const neighbors = parentNode.closedNeighborhood();
+                                cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+                                cy.edges().not(neighbors.edges()).addClass('dimmed');
+                                parentNode.addClass('highlighted');
+                                neighbors.nodes().removeClass('dimmed');
+                                neighbors.edges().removeClass('dimmed').addClass('highlighted');
+                                cy.fit(neighbors.nodes(), 50);
+                            }
                         }
-                        cy.fit(undefined, 40);
                     } else {
                         cy.elements().removeClass('highlighted dimmed');
                         if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
@@ -1721,11 +1752,15 @@ const componentOptions = {
                 }
             });
 
-            // Double-click node → 下钻：聚焦该节点及其直接邻居
+            // Double-click node → 下钻：聚焦该节点及其直接邻居（最多 3 层）
             cy.on('dbltap', 'node', (evt) => {
                 const node = evt.target;
                 const nd = node.data();
-                this._kgDrillNodeId = nd.id;
+
+                // 限制最多下钻 3 层
+                if (this.kgDrillStack.length >= 3) return;
+
+                this.kgDrillStack.push(nd.id);
 
                 // 视觉反馈：节点脉冲动画
                 node.style({
@@ -1761,10 +1796,10 @@ const componentOptions = {
                 this._selectKgNodeDetail(node, cy);
             });
 
-            // Double-click 空白背景 → 退出下钻，恢复全图
+            // Double-click 空白背景 → 完全退出下钻，恢复全图
             cy.on('dbltap', (evt) => {
                 if (evt.target !== cy) return;
-                this._kgDrillNodeId = null;
+                this.kgDrillStack = [];
                 cy.elements().removeClass('highlighted dimmed');
                 // 恢复 matched 高亮（如果有）
                 if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
@@ -1878,8 +1913,9 @@ const componentOptions = {
             const nd = node.data();
 
             // 如果处于下钻模式，保持下钻 dim 状态
-            if (this._kgDrillNodeId) {
-                const drillNode = cy.getElementById(this._kgDrillNodeId);
+            if (this.kgDrillStack.length > 0) {
+                const drillNodeId = this.kgDrillStack[this.kgDrillStack.length - 1];
+                const drillNode = cy.getElementById(drillNodeId);
                 if (drillNode.length && drillNode.id() !== nd.id) {
                     // 点击非下钻节点：清除旧高亮，高亮新节点
                     cy.elements().removeClass('highlighted');
@@ -1900,26 +1936,65 @@ const componentOptions = {
                 }
             }
 
-            // 构建详情数据 — 关联边（带 edgeId 支持点击高亮）
-            const connected = node.connectedEdges().map(e => {
+            // ── 中文关系标签 ──
+            const RELATION_LABELS = {
+                imports: '导入', contains: '包含', depends_on: '依赖', tests: '测试',
+                re_exports: '重导出', creates: '创建', triggers: '触发', mutates: '变更',
+                calls: '调用', derives: '派生', checks: '校验', injects: '注入',
+                validates: '验证', manages: '管理', protects: '保护', cooperates: '协作',
+                reads: '读取', reads_writes: '读写', belongs_to: '归属', layer_depends: '层级依赖',
+                loads: '加载', registered_by: '被注册', used_by: '被使用', documents: '文档化',
+                parallel: '并行', compares: '对比', executes: '执行', drives: '驱动',
+                produces: '产出', implements: '实现',
+            };
+
+            // ── 关联边：按关系类型分组 ──
+            const connectedEdges = node.connectedEdges();
+            const edgeGroups = {}; // { relation: { label, count, edges[] } }
+            connectedEdges.forEach(e => {
                 const src = e.source().data();
                 const tgt = e.target().data();
                 const isOut = src.id === nd.id;
-                return {
-                    edgeId: e.id(),
-                    label: e.data('label'),
-                    relation: e.data('relation'),
-                    sourceId: src.id,
-                    targetId: isOut ? tgt.id : src.id,
-                    targetLabel: isOut ? tgt.label : src.label,
-                    direction: isOut ? '→' : '←',
-                };
+                const rel = e.data('relation') || 'other';
+                if (!edgeGroups[rel]) {
+                    edgeGroups[rel] = { relation: rel, label: RELATION_LABELS[rel] || rel, count: 0, edges: [] };
+                }
+                edgeGroups[rel].count++;
+                if (edgeGroups[rel].edges.length < 8) {
+                    edgeGroups[rel].edges.push({
+                        edgeId: e.id(),
+                        label: e.data('label'),
+                        relation: rel,
+                        sourceId: src.id,
+                        targetId: isOut ? tgt.id : src.id,
+                        targetLabel: isOut ? tgt.label : src.label,
+                        direction: isOut ? '→' : '←',
+                    });
+                }
             });
-            const neighborIds = new Set(connected.map(c => c.targetId));
-            const neighbors = cy.nodes().filter(n => neighborIds.has(n.data('id'))).map(n => ({
-                id: n.data('id'), label: n.data('label'), color: n.data('color'),
-            }));
-            // 解析 mdFiles（可能是 JSON 字符串）
+            // 按边数量降序排列
+            const sortedEdgeGroups = Object.values(edgeGroups).sort((a, b) => b.count - a.count);
+            const totalEdges = connectedEdges.length;
+
+            // ── 邻居节点（带关系方向）──
+            const neighborMap = {}; // { id: { id, label, color, relations: [] } }
+            connectedEdges.forEach(e => {
+                const src = e.source().data();
+                const tgt = e.target().data();
+                const rel = e.data('relation') || '';
+                const isOut = src.id === nd.id;
+                const nbId = isOut ? tgt.id : src.id;
+                if (!neighborMap[nbId]) {
+                    neighborMap[nbId] = { id: nbId, label: isOut ? tgt.label : src.label, color: isOut ? tgt.color : src.color, relations: [] };
+                }
+                const cnLabel = RELATION_LABELS[rel] || rel;
+                if (cnLabel && !neighborMap[nbId].relations.includes(cnLabel)) {
+                    neighborMap[nbId].relations.push(isOut ? `→${cnLabel}` : `←${cnLabel}`);
+                }
+            });
+            const neighbors = Object.values(neighborMap).slice(0, 15);
+
+            // ── 解析 mdFiles ──
             let mdFiles = [];
             try {
                 const raw = nd.mdFiles;
@@ -1931,54 +2006,73 @@ const componentOptions = {
             } catch (_) { mdFiles = []; }
 
             // ── 架构角色描述 ──
-            const typeLabels = { view: '视图', service: '服务', utility: '工具', component: '组件', config: '配置', doc: '文档', framework: '框架', test: '测试', entry: '入口', external: '外部' };
+            const typeLabels = { view: '视图', service: '服务', utility: '工具', component: '组件', config: '配置', doc: '文档', framework: '框架', test: '测试', entry: '入口', external: '外部', state: '状态', event: '事件', method: '方法' };
             const typeLabel = typeLabels[nd.type] || nd.type || '';
             const roleParts = [];
-            if (typeLabel) roleParts.push(typeLabel);
-            if (nd.group) roleParts.push(`归属: ${nd.group}`);
-            if (nd.degree != null) roleParts.push(`${nd.degree} 个关联`);
+            if (typeLabel) roleParts.push(`**${typeLabel}**`);
+            if (nd.group) roleParts.push(`归属 ${nd.group}`);
             const roleSummary = roleParts.join(' · ');
 
-            // ── 场景来源汇总 — 附带场景描述 ──
-            const scenarios = this.kgSourceScenarios || [];
-            const sceneDescMap = {};
-            for (const sc of scenarios) {
-                sceneDescMap[sc.name || ''] = sc.description || '';
-            }
-            const enrichedMdFiles = mdFiles.map(mf => ({
-                ...mf,
-                _desc: sceneDescMap[mf.scenario || ''] || '',
-            }));
-            const sceneSourceText = enrichedMdFiles.length
-                ? `被 ${enrichedMdFiles.length} 个场景文档引用`
-                : '暂无关联场景文档';
-
-            // ── 架构关系说明（叙事化描述）──
-            const connectedEdges = node.connectedEdges();
+            // ── 依赖关系统计 ──
             const outgoing = connectedEdges.filter(e => e.source().id() === nd.id).length;
-            const incoming = connectedEdges.length - outgoing;
+            const incoming = totalEdges - outgoing;
             const depParts = [];
             if (outgoing > 0) depParts.push(`依赖 ${outgoing} 个模块`);
             if (incoming > 0) depParts.push(`被 ${incoming} 个模块依赖`);
             const depText = depParts.length ? depParts.join('，') : '无直接依赖关系';
 
+            // ── 场景来源汇总 — 附带场景描述和索引 ──
+            const scenarios = this.kgSourceScenarios || [];
+            const sceneDescMap = {};
+            const sceneIndexMap = {};
+            for (let si = 0; si < scenarios.length; si++) {
+                const sc = scenarios[si];
+                sceneDescMap[sc.name || ''] = sc.description || '';
+                sceneIndexMap[sc.name || ''] = si;
+            }
+            const enrichedMdFiles = mdFiles.map(mf => ({
+                ...mf,
+                _desc: sceneDescMap[mf.scenario || ''] || '',
+                _sceneIdx: sceneIndexMap[mf.scenario || ''],
+            }));
+            const sceneSourceText = enrichedMdFiles.length
+                ? `被 ${enrichedMdFiles.length} 个场景文档引用`
+                : '暂无关联场景文档';
+
+            // ── 场景名称列表 ──
             const sceneNames = enrichedMdFiles.map(m => m.scenario || '').filter(Boolean);
+
+            // ── 架构关系叙事 ──
             const relNarrative = [
                 `**模块类型**：${typeLabel || '未分类'}`,
                 `**依赖关系**：${depText}`,
-                sceneNames.length ? `**场景溯源**：此模块在 ${sceneNames.length} 个场景文档的 §7 关联源码中被引用，作为关键实现文件出现` : '',
+                totalEdges > 0 ? `**关联总数**：${totalEdges} 条边，分布于 ${sortedEdgeGroups.length} 种关系类型` : '',
+                sceneNames.length ? `**场景溯源**：此模块在 ${sceneNames.length} 个场景文档的 §7 关联源码中被引用` : '',
                 nd.description ? `**功能描述**：${nd.description}` : '',
             ].filter(Boolean).join('\n\n');
+
+            // ── 关键函数拆分为列表 ──
+            let functionList = [];
+            try {
+                const fns = nd.keyFunctions || nd.functions;
+                if (Array.isArray(fns)) {
+                    functionList = fns;
+                } else if (typeof fns === 'string' && fns) {
+                    functionList = fns.split(/[,，;；\n]+/).map(f => f.trim()).filter(Boolean);
+                }
+            } catch (_) { functionList = []; }
 
             this.kgSelectedNode = {
                 label: nd.label, type: nd.type, group: nd.group,
                 description: nd.description, file: nd.file,
-                functions: nd.functions, degree: nd.degree,
-                id: nd.id, size: Math.round(nd.size || 0),
+                functions: functionList.length ? functionList.join(', ') : '',
+                functionList: functionList,
+                degree: nd.degree, id: nd.id, size: Math.round(nd.size || 0),
                 color: nd.color,
-                isDrilled: !!this._kgDrillNodeId,
-                edges: connected.slice(0, 20),
-                neighbors: neighbors.slice(0, 15),
+                isDrilled: this.kgDrillStack.length > 0,
+                edgeGroups: sortedEdgeGroups,
+                totalEdges: totalEdges,
+                neighbors: neighbors,
                 mdFiles: enrichedMdFiles,
                 roleSummary: roleSummary,
                 sceneSourceText: sceneSourceText,
@@ -1989,24 +2083,74 @@ const componentOptions = {
             };
         },
 
+        // ── 按场景筛选图谱：高亮场景关联节点，其余 dim ──
+        filterKgByScenario(sceneName) {
+            if (!this._cy || !this.kgAllNodes) return;
+            const cy = this._cy;
+            const scenarios = this.kgSourceScenarios || [];
+
+            // 找到对应场景的 graphNodes
+            let sceneNodeIds = new Set();
+            for (const sc of scenarios) {
+                if ((sc.name || '') === sceneName) {
+                    for (const nid of (sc.graphNodes || [])) {
+                        sceneNodeIds.add(nid);
+                    }
+                    break;
+                }
+            }
+
+            if (sceneNodeIds.size === 0) return;
+
+            // 更新 filter 状态，清除下钻
+            this.kgDrillStack = [];
+            this.kgActiveFilter = { type: 'scenario', value: sceneName };
+
+            // Dim 所有节点，高亮场景关联节点
+            cy.elements().removeClass('highlighted dimmed matched');
+            const matchedNodes = cy.nodes().filter(n => sceneNodeIds.has(n.data('id')));
+            matchedNodes.addClass('matched');
+            // 高亮关联节点的内部边
+            matchedNodes.connectedEdges().filter(e => {
+                const srcId = e.source().data('id');
+                const tgtId = e.target().data('id');
+                return sceneNodeIds.has(srcId) && sceneNodeIds.has(tgtId);
+            }).addClass('matched');
+
+            this.kgSelectedNode = null;
+            this.kgGraphOverview = this._buildGraphOverview(
+                this.kgAllNodes, this.kgGraphData?.edges || [],
+                { story: { name: `${this.kgTitle || ''} · ${sceneName}`, description: '', scenarios: scenarios } },
+                true, sceneNodeIds.size
+            );
+            this.$nextTick(() => this._refitCyGraph());
+        },
+
+        // ── 清除场景/关系筛选，恢复默认状态 ──
+        resetKgFilter() {
+            if (!this._cy) return;
+            this.kgDrillStack = [];
+            this.kgActiveFilter = null;
+            const cy = this._cy;
+            cy.elements().removeClass('highlighted dimmed matched');
+            // 恢复默认 matched 状态
+            if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                const matched = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                matched.addClass('matched');
+            }
+            this.kgSelectedNode = null;
+            this.fitKgGraph();
+        },
+
         fitKgGraph() {
             if (this._cy) {
-                this._kgDrillNodeId = null;
+                this.kgDrillStack = [];
                 this.kgSelectedNode = null;
                 this._cy.elements().removeClass('highlighted dimmed');
                 if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
                     const matched = this._cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
                     matched.addClass('matched');
                 }
-                this._cy.fit(undefined, 30);
-            }
-        },
-
-        resetKgGraph() {
-            if (this._cy) {
-                this._kgDrillNodeId = null;
-                this.kgSelectedNode = null;
-                this._cy.elements().removeClass('highlighted dimmed');
                 const layouts = [
                     { name: 'dagre', rankDir: 'TB', spacingFactor: 1.4, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 40 },
                     { name: 'breadthfirst', directed: true, spacingFactor: 1.3, animate: true, fit: true, padding: 40 },
@@ -2015,6 +2159,10 @@ const componentOptions = {
                     try { this._cy.layout(opts).run(); return; } catch (_) {}
                 }
             }
+        },
+
+        fitKgGraph() {
+            this.resetKgGraph();
         },
 
         _buildGraphOverview(nodes, edges, data, hasFilter, matchedCount) {

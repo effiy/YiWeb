@@ -204,10 +204,21 @@
           <span v-if="kgMatchedIds && kgMatchedIds.size" class="graph-reader-matched"> · 🎯 {{ kgMatchedIds.size }} 关联</span>
         </span>
         <div class="graph-reader-actions">
-          <button type="button" class="graph-reader-btn" @click="fitKgGraph" title="适应视图">⊞</button>
           <button type="button" class="graph-reader-btn" @click="resetKgGraph" title="重置布局">↻</button>
           <button type="button" class="graph-reader-btn" @click="closeKnowledgeGraph" title="关闭">✕</button>
         </div>
+      </div>
+      <!-- 面包屑导航 -->
+      <div v-if="kgDrillStack && kgDrillStack.length > 0" class="graph-breadcrumb">
+        <span class="graph-breadcrumb-item" @click="resetKgFilter()" title="返回全图">🏠</span>
+        <template v-for="(nodeId, idx) in kgDrillStack" :key="nodeId">
+          <span class="graph-breadcrumb-sep">/</span>
+          <span class="graph-breadcrumb-item" :class="{ current: idx === kgDrillStack.length - 1 }"
+                @click="focusKgNode(nodeId)" :title="'回到 ' + nodeId">
+            {{ nodeId }}
+          </span>
+        </template>
+        <span class="graph-breadcrumb-level">L{{ kgDrillStack.length }}</span>
       </div>
       <div class="graph-reader-body">
         <div class="graph-reader-canvas" ref="kgCanvas"></div>
@@ -262,16 +273,26 @@
 
           <!-- 场景 ↔ 节点映射 -->
           <div class="graph-node-detail-section" v-if="kgGraphOverview.sceneNodes && kgGraphOverview.sceneNodes.length">
-            <div class="graph-node-detail-section-title">📄 场景与图谱节点映射 ({{ kgGraphOverview.sceneNodes.length }} 个场景)</div>
+            <div class="graph-node-detail-section-title">
+              📄 场景与图谱节点映射 ({{ kgGraphOverview.sceneNodes.length }} 个场景)
+              <span class="graph-node-detail-hint">点击场景筛选 · 点击节点定位</span>
+            </div>
             <div class="graph-overview-scenes">
-              <div v-for="scene in kgGraphOverview.sceneNodes" :key="scene.name" class="graph-overview-scene">
+              <div v-for="scene in kgGraphOverview.sceneNodes" :key="scene.name"
+                   class="graph-overview-scene clickable"
+                   :class="{ active: kgActiveFilter && kgActiveFilter.value === scene.name }"
+                   @click="filterKgByScenario(scene.name)">
                 <div class="graph-overview-scene-header">
                   <span class="graph-overview-scene-name">{{ scene.name }}</span>
                   <span class="graph-overview-scene-count">{{ scene.count }} 节点</span>
+                  <span class="graph-overview-scene-filter-icon">🔍</span>
                 </div>
                 <p v-if="scene.desc" class="graph-overview-scene-desc">{{ scene.desc }}</p>
                 <div class="graph-overview-scene-nodes">
-                  <span v-for="n in scene.nodes" :key="n.id" class="graph-overview-scene-node" :title="n.file + (n.description ? '\n' + n.description : '')">
+                  <span v-for="n in scene.nodes" :key="n.id"
+                        class="graph-overview-scene-node clickable"
+                        :title="n.file + (n.description ? '\n' + n.description : '')"
+                        @click.stop="focusKgNode(n.id)">
                     <span class="graph-overview-scene-node-label">{{ n.label }}</span>
                     <span v-if="n.group" class="graph-overview-scene-node-group">{{ n.group }}</span>
                   </span>
@@ -282,13 +303,19 @@
 
           <!-- 节点场景来源一览（每个节点 → 引用它的场景） -->
           <div class="graph-node-detail-section" v-if="kgGraphOverview.nodeSceneList && kgGraphOverview.nodeSceneList.length">
-            <div class="graph-node-detail-section-title">🔗 节点场景来源一览 ({{ kgGraphOverview.nodeSceneList.length }} 个节点)</div>
+            <div class="graph-node-detail-section-title">
+              🔗 节点场景来源一览 ({{ kgGraphOverview.nodeSceneList.length }} 个节点)
+              <span class="graph-node-detail-hint">点击节点定位</span>
+            </div>
             <div class="graph-overview-node-scenes">
-              <div v-for="ns in kgGraphOverview.nodeSceneList" :key="ns.id" class="graph-overview-node-scene">
+              <div v-for="ns in kgGraphOverview.nodeSceneList" :key="ns.id"
+                   class="graph-overview-node-scene clickable"
+                   @click="focusKgNode(ns.id)">
                 <div class="graph-overview-node-scene-header">
                   <code class="graph-overview-node-scene-label">{{ ns.label }}</code>
                   <span class="graph-overview-node-scene-badge">{{ ns.sceneCount }} 场景</span>
                   <span v-if="ns.group" class="graph-overview-node-scene-group">{{ ns.group }}</span>
+                  <span class="graph-overview-node-scene-goto">→</span>
                 </div>
                 <p v-if="ns.description" class="graph-overview-node-scene-desc">{{ ns.description }}</p>
                 <div class="graph-overview-node-scene-list">
@@ -303,8 +330,10 @@
             <ul class="graph-overview-tips">
               <li>🖱️ 滚轮缩放 · 拖拽平移</li>
               <li>👆 单击节点查看详情</li>
-              <li>👆👆 双击节点下钻查看子图</li>
-              <li>⌨️ ⊞ 适应视图 · ↻ 重置布局</li>
+              <li>👆👆 双击节点下钻（最多 3 层）</li>
+              <li>👆 单击空白退回上一层</li>
+              <li>👆👆 双击空白退出下钻</li>
+              <li>⌨️ ↻ 重置布局</li>
             </ul>
           </div>
         </div>
@@ -318,17 +347,25 @@
             </div>
             <button class="graph-reader-btn" @click="kgSelectedNode = null" title="关闭">✕</button>
           </div>
+
+          <!-- 筛选提示 -->
+          <div v-if="kgActiveFilter" class="graph-node-filter-banner">
+            <span class="graph-node-filter-text">🔍 筛选: {{ kgActiveFilter.value }}</span>
+            <button class="graph-node-filter-clear" @click="resetKgFilter()" title="清除筛选">✕</button>
+          </div>
+
           <div class="graph-node-detail-meta">
             <span v-if="kgSelectedNode.isDrilled" class="graph-node-badge drill" title="双击空白退出下钻">🔍 下钻</span>
             <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.type }}</span>
             <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
-            <span v-if="kgSelectedNode.degree" class="graph-node-badge degree">{{ kgSelectedNode.degree }} 连接</span>
+            <span v-if="kgSelectedNode.totalEdges" class="graph-node-badge degree">{{ kgSelectedNode.totalEdges }} 连接</span>
+            <span v-if="kgSelectedNode.size > 0" class="graph-node-badge size">{{ kgSelectedNode.size }}px</span>
           </div>
 
           <!-- 架构角色 -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.roleSummary">
             <div class="graph-node-detail-section-title">架构角色</div>
-            <p class="graph-node-detail-role">{{ kgSelectedNode.roleSummary }}</p>
+            <p class="graph-node-detail-role" v-html="kgSelectedNode.roleSummary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')"></p>
           </div>
 
           <!-- 依赖关系摘要 -->
@@ -338,6 +375,7 @@
               <span v-if="kgSelectedNode.outgoing > 0" class="graph-node-depstat outgoing">↑ 依赖 {{ kgSelectedNode.outgoing }} 个模块</span>
               <span v-if="kgSelectedNode.incoming > 0" class="graph-node-depstat incoming">↓ 被 {{ kgSelectedNode.incoming }} 个模块依赖</span>
               <span v-if="!kgSelectedNode.outgoing && !kgSelectedNode.incoming" class="graph-node-depstat none">无直接依赖</span>
+              <span v-if="kgSelectedNode.totalEdges > 0" class="graph-node-depstat info">{{ kgSelectedNode.edgeGroups.length }} 种关系类型</span>
             </div>
           </div>
 
@@ -359,10 +397,12 @@
             <p class="graph-node-detail-desc">{{ kgSelectedNode.description }}</p>
           </div>
 
-          <!-- 关键函数 -->
-          <div class="graph-node-detail-section" v-if="kgSelectedNode.functions">
-            <div class="graph-node-detail-section-title">关键函数</div>
-            <p class="graph-node-detail-funcs">{{ kgSelectedNode.functions }}</p>
+          <!-- 关键函数 (chip 样式) -->
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.functionList && kgSelectedNode.functionList.length">
+            <div class="graph-node-detail-section-title">关键函数 ({{ kgSelectedNode.functionList.length }})</div>
+            <div class="graph-node-func-chips">
+              <span v-for="(fn, i) in kgSelectedNode.functionList" :key="i" class="graph-node-func-chip">{{ fn }}</span>
+            </div>
           </div>
 
           <!-- 文件路径 -->
@@ -371,40 +411,70 @@
             <code class="graph-node-detail-file">{{ kgSelectedNode.file }}</code>
           </div>
 
-          <!-- 关联场景文档 (MD文件) -->
+          <!-- 关联场景文档 (可点击筛选图谱) -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.mdFiles && kgSelectedNode.mdFiles.length">
-            <div class="graph-node-detail-section-title">📄 关联场景文档 ({{ kgSelectedNode.mdFiles.length }})</div>
+            <div class="graph-node-detail-section-title">
+              📄 关联场景文档 ({{ kgSelectedNode.mdFiles.length }})
+              <span class="graph-node-detail-hint">点击筛选图谱</span>
+            </div>
             <div class="graph-node-detail-mdfiles">
-              <div v-for="mf in kgSelectedNode.mdFiles" :key="mf.file" class="graph-node-mdfile">
+              <div v-for="mf in kgSelectedNode.mdFiles" :key="mf.file"
+                   class="graph-node-mdfile clickable"
+                   :class="{ active: kgActiveFilter && kgActiveFilter.value === mf.scenario }"
+                   @click="filterKgByScenario(mf.scenario)"
+                   :title="'点击筛选场景: ' + (mf.scenario || mf.file)">
                 <div class="graph-node-mdfile-header">
                   <span class="graph-node-mdfile-dot">◆</span>
                   <span class="graph-node-mdfile-name">{{ mf.scenario || mf.file }}</span>
                   <span class="graph-node-mdfile-section">{{ mf.section || '' }}</span>
+                  <span v-if="mf._sceneIdx != null" class="graph-node-mdfile-idx">场景{{ mf._sceneIdx + 1 }}</span>
                 </div>
                 <p v-if="mf._desc" class="graph-node-mdfile-desc">{{ mf._desc }}</p>
               </div>
             </div>
           </div>
 
-          <!-- 关联边 -->
-          <div class="graph-node-detail-section" v-if="kgSelectedNode.edges && kgSelectedNode.edges.length">
-            <div class="graph-node-detail-section-title">关联边 ({{ kgSelectedNode.edges.length }}) <span class="graph-node-detail-hint">点击高亮</span></div>
+          <!-- 关联边 (按关系类型分组) -->
+          <div class="graph-node-detail-section" v-if="kgSelectedNode.edgeGroups && kgSelectedNode.edgeGroups.length">
+            <div class="graph-node-detail-section-title">
+              关联边 ({{ kgSelectedNode.totalEdges }})
+              <span class="graph-node-detail-hint">悬停高亮 · 点击定位</span>
+            </div>
             <div class="graph-node-detail-edges">
-              <div v-for="(edge, i) in kgSelectedNode.edges" :key="i" class="graph-node-edge clickable" @click="highlightKgEdge(edge.edgeId)" :title="'点击在图谱中高亮 ' + (edge.label || edge.relation)">
-                <span class="graph-node-edge-dir">{{ edge.direction }}</span>
-                <span class="graph-node-edge-label">{{ edge.label || edge.relation }}</span>
-                <span class="graph-node-edge-target">{{ edge.targetLabel }}</span>
+              <div v-for="grp in kgSelectedNode.edgeGroups" :key="grp.relation" class="graph-node-edge-group">
+                <div class="graph-node-edge-group-header">
+                  <span class="graph-node-edge-group-label">{{ grp.label }}</span>
+                  <span class="graph-node-edge-group-count">{{ grp.count }}</span>
+                </div>
+                <div v-for="(edge, i) in grp.edges" :key="i"
+                     class="graph-node-edge clickable"
+                     @click="highlightKgEdge(edge.edgeId)"
+                     @mouseenter="highlightKgEdge(edge.edgeId)"
+                     :title="(edge.direction === '→' ? '依赖: ' : '被依赖: ') + edge.targetLabel">
+                  <span class="graph-node-edge-dir">{{ edge.direction }}</span>
+                  <span class="graph-node-edge-label" v-if="edge.label && edge.label !== edge.relation">{{ edge.label }}</span>
+                  <span class="graph-node-edge-target">{{ edge.targetLabel }}</span>
+                </div>
+                <div v-if="grp.count > grp.edges.length" class="graph-node-edge-more">+{{ grp.count - grp.edges.length }} 条更多</div>
               </div>
             </div>
           </div>
 
-          <!-- 邻居节点 -->
+          <!-- 邻居节点 (带关系方向) -->
           <div class="graph-node-detail-section" v-if="kgSelectedNode.neighbors && kgSelectedNode.neighbors.length">
             <div class="graph-node-detail-section-title">邻居节点 ({{ kgSelectedNode.neighbors.length }}) <span class="graph-node-detail-hint">点击定位</span></div>
             <div class="graph-node-detail-neighbors">
-              <span v-for="n in kgSelectedNode.neighbors" :key="n.id" class="graph-node-neighbor-tag clickable" :style="{borderColor: n.color}" @click="focusKgNode(n.id)" :title="'点击在图谱中定位 ' + n.label">
-                {{ n.label }}
-              </span>
+              <div v-for="n in kgSelectedNode.neighbors" :key="n.id"
+                   class="graph-node-neighbor-card clickable"
+                   :style="{borderColor: n.color || '#4B5563'}"
+                   @click="focusKgNode(n.id)"
+                   :title="'点击定位: ' + n.label">
+                <span class="graph-node-neighbor-label">{{ n.label }}</span>
+                <span v-if="n.relations && n.relations.length" class="graph-node-neighbor-rels">
+                  <span v-for="r in n.relations.slice(0, 3)" :key="r" class="graph-node-neighbor-rel">{{ r }}</span>
+                  <span v-if="n.relations.length > 3" class="graph-node-neighbor-rel-more">+{{ n.relations.length - 3 }}</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>

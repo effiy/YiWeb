@@ -179,6 +179,57 @@
     flex-shrink: 0;
 }
 
+/* ── 面包屑导航 ── */
+.graph-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-shrink: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.graph-breadcrumb-item {
+    font-size: 11px;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.12s;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.graph-breadcrumb-item:hover {
+    color: #E2E8F0;
+    background: rgba(255,255,255,0.08);
+}
+.graph-breadcrumb-item.current {
+    color: #FBBF24;
+    font-weight: 600;
+    cursor: default;
+}
+.graph-breadcrumb-item.current:hover {
+    background: transparent;
+}
+.graph-breadcrumb-sep {
+    font-size: 10px;
+    color: #475569;
+    flex-shrink: 0;
+}
+.graph-breadcrumb-level {
+    font-size: 9px;
+    color: #475569;
+    background: rgba(245,158,11,0.12);
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
 .graph-reader-title {
     font-size: 14px;
     font-weight: 600;
@@ -877,6 +928,241 @@
     color: var(--yi-primary, #3B82F6);
     background: rgba(59, 130, 246, 0.12);
     border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* ── 筛选提示条 ── */
+.graph-node-filter-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.graph-node-filter-text {
+    font-size: 11px;
+    color: #60A5FA;
+    font-weight: 500;
+}
+.graph-node-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    color: #94A3B8;
+    font-size: 9px;
+    cursor: pointer;
+    padding: 0;
+}
+.graph-node-filter-clear:hover {
+    background: rgba(239,68,68,0.3);
+    color: #FCA5A5;
+}
+
+/* ── 关键函数 chip 样式 ── */
+.graph-node-func-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.graph-node-func-chip {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(96, 165, 250, 0.1);
+    color: #93C5FD;
+    border: 1px solid rgba(96, 165, 250, 0.15);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── 边分组样式 ── */
+.graph-node-edge-group {
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+    overflow: hidden;
+}
+.graph-node-edge-group:last-child {
+    margin-bottom: 0;
+}
+.graph-node-edge-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.graph-node-edge-group-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.graph-node-edge-group-count {
+    font-size: 10px;
+    color: #64748B;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+.graph-node-edge-more {
+    font-size: 10px;
+    color: #64748B;
+    padding: 2px 8px;
+    text-align: center;
+}
+
+/* ── 邻居节点卡片样式 ── */
+.graph-node-detail-neighbors {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.graph-node-neighbor-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    border-left: 3px solid;
+    background: rgba(255,255,255,0.02);
+    transition: all 0.12s;
+}
+.graph-node-neighbor-card.clickable {
+    cursor: pointer;
+}
+.graph-node-neighbor-card.clickable:hover {
+    background: rgba(59, 130, 246, 0.08);
+    border-left-color: #60A5FA !important;
+}
+.graph-node-neighbor-label {
+    font-size: 11px;
+    color: #E2E8F0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+.graph-node-neighbor-rels {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    max-width: 50%;
+}
+.graph-node-neighbor-rel {
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    color: #64748B;
+    white-space: nowrap;
+}
+.graph-node-neighbor-rel-more {
+    font-size: 8px;
+    color: #475569;
+    padding: 1px 3px;
+}
+
+/* ── 关联场景文档可点击 · 筛选高亮 ── */
+.graph-node-mdfile.clickable {
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.graph-node-mdfile.clickable:hover {
+    background: rgba(245, 158, 11, 0.12);
+    border-left-color: rgba(245, 158, 11, 0.6);
+}
+.graph-node-mdfile.active {
+    background: rgba(59, 130, 246, 0.12);
+    border-left-color: #3B82F6;
+}
+.graph-node-mdfile-idx {
+    font-size: 9px;
+    color: #64748B;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+/* ── 概述面板可点击项 ── */
+.graph-overview-scene.clickable {
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.graph-overview-scene.clickable:hover {
+    background: rgba(59, 130, 246, 0.06);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+.graph-overview-scene.active {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+.graph-overview-scene-filter-icon {
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.graph-overview-scene.clickable:hover .graph-overview-scene-filter-icon {
+    opacity: 0.7;
+}
+.graph-overview-scene.active .graph-overview-scene-filter-icon {
+    opacity: 1;
+}
+
+.graph-overview-scene-node.clickable {
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.graph-overview-scene-node.clickable:hover {
+    background: rgba(96, 165, 250, 0.15);
+    transform: translateY(-1px);
+}
+
+.graph-overview-node-scene.clickable {
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.graph-overview-node-scene.clickable:hover {
+    background: rgba(59, 130, 246, 0.06);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+.graph-overview-node-scene-goto {
+    font-size: 10px;
+    color: #64748B;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.graph-overview-node-scene.clickable:hover .graph-overview-node-scene-goto {
+    opacity: 1;
+    color: #60A5FA;
+}
+
+/* ── 依赖关系 info badge ── */
+.graph-node-depstat.info {
+    background: rgba(139, 92, 246, 0.1);
+    color: #A78BFA;
+    border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 /* 尊重用户减少动画偏好 */
