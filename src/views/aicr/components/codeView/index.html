@@ -349,23 +349,37 @@
           <div class="graph-node-detail-header">
             <div class="graph-node-detail-header-left">
               <span class="graph-node-detail-dot" :style="{background: kgSelectedNode.color || '#94A3B8'}"></span>
-              <span class="graph-node-detail-label">{{ kgSelectedNode.label }}</span>
+              <div class="graph-node-detail-header-info">
+                <span class="graph-node-detail-label">{{ kgSelectedNode.label }}</span>
+                <span v-if="kgSelectedNode.contextPath && kgSelectedNode.contextPath.length > 1" class="graph-node-detail-context">
+                  <template v-for="(seg, idx) in kgSelectedNode.contextPath" :key="idx">
+                    <span v-if="idx > 0" class="graph-node-detail-context-sep">/</span>
+                    <span class="graph-node-detail-context-seg" :class="{ current: idx === kgSelectedNode.contextPath.length - 1 }">{{ seg }}</span>
+                  </template>
+                </span>
+              </div>
             </div>
-            <button class="graph-reader-btn" @click="kgSelectedNode = null" title="关闭">✕</button>
+            <button class="graph-reader-btn" @click="closeNodeDetail()" title="返回上一级">✕</button>
           </div>
 
-          <!-- 筛选提示 -->
-          <div v-if="kgActiveFilter" class="graph-node-filter-banner">
-            <span class="graph-node-filter-text">筛选: {{ kgActiveFilter.value }}</span>
+          <!-- 筛选提示 + 统计 -->
+          <div v-if="kgSelectedNode.hasActiveFilter" class="graph-node-filter-banner">
+            <span class="graph-node-filter-text">🔍 筛选上下文：{{ kgActiveFilter.value }}（{{ kgSelectedNode.activeFilteredCount }} 个节点）</span>
             <button class="graph-node-filter-clear" @click="resetKgFilter()" title="清除筛选">✕</button>
           </div>
 
-          <!-- 1. 图谱统计：场景、节点、边 -->
+          <!-- 1. 图谱统计 -->
           <div class="graph-node-detail-section">
             <div class="graph-node-detail-section-title">图谱统计</div>
             <div class="graph-overview-stats">
-              <div class="graph-overview-stat">
-                <span class="graph-overview-stat-num">{{ kgSelectedNode.sceneCount }}</span>
+              <div class="graph-overview-stat"
+                   :class="{ highlight: kgSelectedNode.hasActiveFilter }">
+                <span class="graph-overview-stat-num">
+                  <template v-if="kgSelectedNode.hasActiveFilter && kgSelectedNode.totalSceneCount !== kgSelectedNode.sceneCount">
+                    {{ kgSelectedNode.sceneCount }}/{{ kgSelectedNode.totalSceneCount }}
+                  </template>
+                  <template v-else>{{ kgSelectedNode.sceneCount }}</template>
+                </span>
                 <span class="graph-overview-stat-label">场景</span>
               </div>
               <div class="graph-overview-stat">
@@ -379,8 +393,32 @@
             </div>
           </div>
 
-          <!-- 2. 节点分组 -->
-          <div class="graph-node-detail-section">
+          <!-- 2. 场景节点特殊内容 -->
+          <div v-if="kgSelectedNode.isSceneNode" class="graph-node-detail-section">
+            <div v-if="kgSelectedNode.sceneOwnDescription" class="graph-node-detail-section">
+              <div class="graph-node-detail-section-title">场景描述</div>
+              <p class="graph-node-detail-desc">{{ kgSelectedNode.sceneOwnDescription }}</p>
+            </div>
+            <div v-if="kgSelectedNode.sceneContainedNodes && kgSelectedNode.sceneContainedNodes.length" class="graph-node-detail-section">
+              <div class="graph-node-detail-section-title">
+                包含节点 ({{ kgSelectedNode.sceneContainedNodes.length }})
+                <span class="graph-node-detail-hint">点击定位</span>
+              </div>
+              <div class="graph-node-detail-neighbors">
+                <div v-for="n in kgSelectedNode.sceneContainedNodes" :key="n.id"
+                     class="graph-node-neighbor-card clickable"
+                     :style="{borderColor: n.color || '#4B5563'}"
+                     @click="focusKgNode(n.id)"
+                     :title="'点击定位: ' + n.label">
+                  <span class="graph-node-neighbor-label">{{ n.label }}</span>
+                  <span v-if="n.type" class="graph-node-neighbor-type-tag">{{ n.type }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 节点分组（非场景节点） -->
+          <div v-if="!kgSelectedNode.isSceneNode" class="graph-node-detail-section">
             <div class="graph-node-detail-section-title">节点分组</div>
             <div class="graph-node-detail-meta">
               <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.typeLabel }}</span>

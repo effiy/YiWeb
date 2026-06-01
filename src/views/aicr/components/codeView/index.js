@@ -186,6 +186,7 @@ const componentOptions = {
             kgGraphOverview: null,
             kgBreadcrumb: { path: [], layer: 1 },
             kgActiveFilter: null,
+            kgActiveFilterNodeIds: null,
             kgLayer: 1,
             kgFullscreen: false
         };
@@ -1441,13 +1442,24 @@ const componentOptions = {
                 if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, ''));
-                    const nodes = this._normalizeGraphNodes(data.graph?.nodes || []);
-                    const edges = this._normalizeGraphEdges(data.graph?.edges || []);
+                    // story-deps.json uses "knowledgeGraph" key (not "graph")
+                    const nodes = this._normalizeGraphNodes(data.knowledgeGraph?.nodes || []);
+                    const edges = this._normalizeGraphEdges(data.knowledgeGraph?.edges || []);
                     this.kgGraphData = { nodes, edges };
-                    this.kgTitle = (data.story && data.story.name) || '故事依赖关系图';
+                    // story-deps.json has "project.name" for display title
+                    this.kgTitle = (data.project && data.project.name) || '故事依赖关系图';
                     this.kgAllNodes = nodes;
                     this.kgMatchedIds = null;
-                    this.kgSourceScenarios = (data.story && data.story.scenarios) || [];
+                    // story-deps.json uses "scenes" (map) instead of "story.scenarios" (array)
+                    const scenesMap = data.scenes || {};
+                    this.kgSourceScenarios = Object.entries(scenesMap).map(([id, sc]) => ({
+                        id,
+                        name: sc.name || id,
+                        description: sc.description || '',
+                        graphNodes: sc.nodes || [],
+                        story: sc.story || '',
+                        storyLabel: sc.storyLabel || '',
+                    }));
                     this.kgGraphOverview = this._buildGraphOverview(nodes, edges, data, false, 0);
                     return;
                 }
@@ -2114,6 +2126,8 @@ const componentOptions = {
                     relation: rel,
                     sourceLabel: src.label,
                     targetLabel: tgt.label,
+                    sourceId: src.id,
+                    targetId: tgt.id,
                     isOut: isOut,
                 };
                 if (isOut) {
@@ -2155,7 +2169,43 @@ const componentOptions = {
             });
             const neighbors = Object.values(neighborMap).slice(0, 15);
 
-            // ── 解析 mdFiles ──
+            // ── 面包屑联动过滤：仅展示当前场景/筛选范围内的邻居和边 ──
+            const filterNodeIds = this.kgActiveFilterNodeIds;
+            if (filterNodeIds && filterNodeIds.size > 0) {
+                // 过滤 edgeGroups：出边看 targetId，入边看 sourceId 是否在筛选范围内
+                const filteredEdgeGroups = {};
+                let filteredTotalEdges = 0;
+                for (const grp of sortedEdgeGroups) {
+                    const filteredOut = grp.outgoing.filter(e => filterNodeIds.has(e.targetId));
+                    const filteredIn = grp.incoming.filter(e => filterNodeIds.has(e.sourceId));
+                    const totalFiltered = filteredOut.length + filteredIn.length;
+                    if (totalFiltered > 0) {
+                        const newGrp = {
+                            ...grp,
+                            outgoing: filteredOut,
+                            incoming: filteredIn,
+                            count: totalFiltered,
+                            outgoingCount: filteredOut.length,
+                            incomingCount: filteredIn.length,
+                            _outShow: filteredOut.slice(0, 5),
+                            _outMore: Math.max(0, filteredOut.length - 5),
+                            _inShow: filteredIn.slice(0, 5),
+                            _inMore: Math.max(0, filteredIn.length - 5),
+                        };
+                        filteredEdgeGroups[grp.relation] = newGrp;
+                        filteredTotalEdges += totalFiltered;
+                    }
+                }
+                sortedEdgeGroups.length = 0;
+                sortedEdgeGroups.push(...Object.values(filteredEdgeGroups).sort((a, b) => b.count - a.count));
+                // neighbors 也过滤到筛选范围内的节点
+                const filteredNeighbors = neighbors.filter(n => filterNodeIds.has(n.id));
+                this._filteredEdgesTotal = filteredTotalEdges || connectedEdges.length;
+                this._filteredNeighbors = filteredNeighbors.length > 0 ? filteredNeighbors : neighbors;
+            } else {
+                this._filteredEdgesTotal = null;
+                this._filteredNeighbors = null;
+            }
             let mdFiles = [];
             try {
                 const raw = nd.mdFiles;
@@ -2175,8 +2225,14 @@ const componentOptions = {
             const roleSummary = roleParts.join(' · ');
 
             // ── 依赖关系统计 ──
-            const outgoing = connectedEdges.filter(e => e.source().id() === nd.id).length;
-            const incoming = totalEdges - outgoing;
+            const rawOutgoing = connectedEdges.filter(e => e.source().id() === nd.id).length;
+            const rawIncoming = connectedEdges.length - rawOutgoing;
+            const outgoing = this._filteredEdgesTotal != null
+                ? sortedEdgeGroups.reduce((sum, grp) => sum + grp.outgoingCount, 0)
+                : rawOutgoing;
+            const incoming = this._filteredEdgesTotal != null
+                ? sortedEdgeGroups.reduce((sum, grp) => sum + grp.incomingCount, 0)
+                : rawIncoming;
             const depParts = [];
             if (outgoing > 0) depParts.push(`依赖 ${outgoing} 个模块`);
             if (incoming > 0) depParts.push(`被 ${incoming} 个模块依赖`);
@@ -2191,11 +2247,32 @@ const componentOptions = {
                 sceneDescMap[sc.name || ''] = sc.description || '';
                 sceneIndexMap[sc.name || ''] = si;
             }
-            const enrichedMdFiles = mdFiles.map(mf => ({
+            let enrichedMdFiles = mdFiles.map(mf => ({
                 ...mf,
                 _desc: sceneDescMap[mf.scenario || ''] || '',
                 _sceneIdx: sceneIndexMap[mf.scenario || ''],
             }));
+
+            // ── 上下文过滤：有激活的场景筛选 或 选中的是场景节点时，只保留当前场景的内容 ──
+            const activeSceneName = (this.kgActiveFilter && this.kgActiveFilter.value) || '';
+            const isSceneNode = nd.type === 'scene';
+            if (activeSceneName) {
+                // 只显示与当前筛选场景相关的 mdFiles
+                enrichedMdFiles = enrichedMdFiles.filter(mf =>
+                    (mf.scenario || '') === activeSceneName ||
+                    (mf.scenario || '').includes(activeSceneName) ||
+                    activeSceneName.includes(mf.scenario || '')
+                );
+                // 邻居节点也只保留当前场景内的（scene → contains → source）
+                if (isSceneNode) {
+                    // 场景节点自身：显示所包含的源节点
+                    // neighbors 已从 connectedEdges 计算，保持不变
+                }
+            } else if (isSceneNode) {
+                // 选中场景节点时，mdFiles 通常会自身引用自身，已足够
+                // 无需额外过滤
+            }
+
             const sceneSourceText = enrichedMdFiles.length
                 ? `被 ${enrichedMdFiles.length} 个场景文档引用`
                 : '暂无关联场景文档';
@@ -2223,6 +2300,42 @@ const componentOptions = {
                 }
             } catch (_) { functionList = []; }
 
+            // ── 使用过滤后的边总数和邻居（如有面包屑联动过滤）──
+            const displayTotalEdges = this._filteredEdgesTotal != null ? this._filteredEdgesTotal : totalEdges;
+            const displayNeighbors = this._filteredNeighbors || neighbors;
+
+            // ── 面包屑上下文路径（用于 header 显示）──
+            const contextPath = [];
+            if (this.kgTitle) contextPath.push(this.kgTitle);
+            if (activeSceneName) contextPath.push(activeSceneName);
+            contextPath.push(nd.label);
+
+            // ── 场景节点特有信息 ──
+            let sceneOwnDescription = '';
+            let sceneContainedNodes = [];
+            if (isSceneNode && this.kgSourceScenarios) {
+                for (const sc of this.kgSourceScenarios) {
+                    if ((sc.name || '') === nd.label || nd.label.includes(sc.name || '') || (sc.name || '').includes(nd.label)) {
+                        sceneOwnDescription = sc.description || '';
+                        // 收集该场景包含的节点详情
+                        const containedIds = new Set(sc.graphNodes || []);
+                        for (const n of this.kgAllNodes || []) {
+                            if (containedIds.has(n.id)) {
+                                sceneContainedNodes.push({
+                                    id: n.id,
+                                    label: n.label || n.id,
+                                    type: n.type || '',
+                                    group: n.group || '',
+                                    file: n.file || '',
+                                    color: nd.color || '#7DD3FC',
+                                });
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
             this.kgSelectedNode = {
                 label: nd.label, type: nd.type, group: nd.group,
                 typeLabel: typeLabel,
@@ -2232,10 +2345,11 @@ const componentOptions = {
                 degree: nd.degree, id: nd.id, size: Math.round(nd.size || 0),
                 color: nd.color,
                 edgeGroups: sortedEdgeGroups,
-                totalEdges: totalEdges,
-                neighbors: neighbors,
+                totalEdges: displayTotalEdges,
+                neighbors: displayNeighbors,
                 sceneCount: enrichedMdFiles.length,
-                neighborCount: 1 + neighbors.length,
+                totalSceneCount: (this.kgSourceScenarios || []).length,
+                neighborCount: 1 + displayNeighbors.length,
                 mdFiles: enrichedMdFiles,
                 roleSummary: roleSummary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
                 sceneSourceText: sceneSourceText,
@@ -2243,8 +2357,37 @@ const componentOptions = {
                 outgoing: outgoing,
                 incoming: incoming,
                 relNarrative: relNarrative.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n\n/g, '<br><br>'),
+                // 面包屑联动上下文
+                contextPath: contextPath,
+                isSceneNode: isSceneNode,
+                sceneOwnDescription: sceneOwnDescription,
+                sceneContainedNodes: sceneContainedNodes,
+                hasActiveFilter: !!this.kgActiveFilter,
+                activeFilteredCount: this.kgActiveFilterNodeIds ? this.kgActiveFilterNodeIds.size : 0,
             };
             this._updateBreadcrumb();
+        },
+
+        // ── 关闭节点详情：按面包屑层级回退 ──
+        closeNodeDetail() {
+            if (this.kgActiveFilter) {
+                // 有激活筛选 + 选中节点 → 退回到筛选概览（保留筛选）
+                this.kgSelectedNode = null;
+                this._updateBreadcrumb();
+                // 重新显示筛选后的概览
+                if (this.kgGraphOverview) {
+                    this.kgGraphOverview = this._buildGraphOverview(
+                        this.kgAllNodes, this.kgGraphData?.edges || [],
+                        { story: { name: this.kgTitle || '', description: '', scenarios: this.kgSourceScenarios || [] } },
+                        true, this.kgActiveFilterNodeIds ? this.kgActiveFilterNodeIds.size : 0
+                    );
+                }
+            } else if (this.kgSelectedNode) {
+                // 无筛选 + 选中节点 → 退回到全景概览
+                this.kgSelectedNode = null;
+                this._updateBreadcrumb();
+                this.fitKgGraph();
+            }
         },
 
         // ── 更新面包屑：路径（故事 → 场景 → 节点）与层级切换分离 ──
@@ -2279,6 +2422,7 @@ const componentOptions = {
             if (item.action === 'overview') {
                 this.kgSelectedNode = null;
                 this.kgActiveFilter = null;
+                this.kgActiveFilterNodeIds = null;
                 this._updateBreadcrumb();
                 this.fitKgGraph();
             } else if (item.action === 'node' && item.id) {
@@ -2342,6 +2486,7 @@ const componentOptions = {
             // 更新 filter 状态
             this.kgSelectedNode = null;
             this.kgActiveFilter = { type: 'scenario', value: sceneName };
+            this.kgActiveFilterNodeIds = sceneNodeIds;
             this._updateBreadcrumb();
 
             // Dim 所有非场景节点，双重高亮场景关联节点 (matched + highlighted)
@@ -2401,6 +2546,7 @@ const componentOptions = {
 
             this.kgSelectedNode = null;
             this.kgActiveFilter = { type: 'story', value: '故事节点' };
+            this.kgActiveFilterNodeIds = storyNodeIds;
             this._updateBreadcrumb();
 
             cy.elements().removeClass('highlighted dimmed matched');
@@ -2437,6 +2583,7 @@ const componentOptions = {
         resetKgFilter() {
             if (!this._cy) return;
             this.kgActiveFilter = null;
+            this.kgActiveFilterNodeIds = null;
             this.kgSelectedNode = null;
             this.kgLayer = 1;
             this._applyLayerFilter(this._cy);
@@ -2454,6 +2601,7 @@ const componentOptions = {
             if (this._cy) {
                 this.kgSelectedNode = null;
                 this.kgActiveFilter = null;
+                this.kgActiveFilterNodeIds = null;
                 this._updateBreadcrumb();
                 this._cy.elements().removeClass('highlighted dimmed');
                 if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
@@ -2486,10 +2634,14 @@ const componentOptions = {
             }
             const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
             const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
-            const storyDesc = (data.story && data.story.description) || '';
-            const scenarios = data.story?.scenarios || [];
-            // 故事数：优先统计节点中的 story 类型，否则以 data.story 存在为 1
-            const storyCount = storyNodeCount > 0 ? storyNodeCount : (data.story && data.story.name ? 1 : 0);
+            // story-deps.json uses "project.description"; per-story KG uses "story.description"
+            const storyDesc = (data.story && data.story.description) || (data.project && data.project.description) || '';
+            // story-deps.json scenes are pre-processed into this.kgSourceScenarios; per-story KG uses data.story.scenarios
+            const scenarios = (data.story && data.story.scenarios) || this.kgSourceScenarios || [];
+            // 故事数：优先统计节点中的 story 类型，其次 data.stories 数组长度，否则以 data.story 存在为 1
+            const storyCount = storyNodeCount > 0 ? storyNodeCount
+                : (Array.isArray(data.stories) ? data.stories.length : 0)
+                || (data.story && data.story.name ? 1 : 0);
 
             // 构建 场景 → 节点 映射（每个场景引用了哪些图谱节点）
             const sceneNodeMap = {}; // { sceneName: [{ id, label, file, group, description }] }
@@ -2541,7 +2693,7 @@ const componentOptions = {
                 .sort((a, b) => b.sceneCount - a.sceneCount);
 
             return {
-                storyName: (data.story && data.story.name) || '',
+                storyName: (data.story && data.story.name) || (data.project && data.project.name) || '',
                 description: storyDesc,
                 totalNodes: nodes.length,
                 totalEdges: edges.length,
