@@ -2218,12 +2218,36 @@ const componentOptions = {
 
             // 找到对应场景的 graphNodes
             let sceneNodeIds = new Set();
+            // 策略 A: 精确匹配 sc.name
             for (const sc of scenarios) {
                 if ((sc.name || '') === sceneName) {
                     for (const nid of (sc.graphNodes || [])) {
                         sceneNodeIds.add(nid);
                     }
                     break;
+                }
+            }
+            // 策略 B: 模糊匹配 — sc.name 是 sceneName 的子串，或反之
+            if (sceneNodeIds.size === 0) {
+                for (const sc of scenarios) {
+                    const scName = sc.name || '';
+                    if (scName && (sceneName.includes(scName) || scName.includes(sceneName))) {
+                        for (const nid of (sc.graphNodes || [])) {
+                            sceneNodeIds.add(nid);
+                        }
+                        break;
+                    }
+                }
+            }
+            // 策略 C: 从节点 mdFiles 直接查找 — mdFiles[].scenario 匹配 sceneName
+            if (sceneNodeIds.size === 0) {
+                for (const n of this.kgAllNodes) {
+                    for (const mf of (n.mdFiles || [])) {
+                        if ((mf.scenario || '') === sceneName) {
+                            sceneNodeIds.add(n.id);
+                            break;
+                        }
+                    }
                 }
             }
 
