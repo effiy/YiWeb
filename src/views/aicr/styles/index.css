@@ -224,12 +224,25 @@ html, body {
     padding: var(--spacing-lg);
 }
 
+.aicr-code.fullscreen-mode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--yi-dark-surface);
+}
+
 .aicr-code.fullscreen-mode .code-view-container {
     height: 100%;
+    padding: 0;
 }
 
 .aicr-code.fullscreen-mode .code-content {
     height: 100%;
+    border-radius: 0;
+    border: none;
 }
 
 .aicr-code .action-button {

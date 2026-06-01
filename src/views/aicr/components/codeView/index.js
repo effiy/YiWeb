@@ -174,7 +174,7 @@ const componentOptions = {
             kgGraphOverview: null,
             kgBreadcrumb: [],
             kgActiveFilter: null,
-            kgLayer: 1
+            kgLayer: 2
         };
     },
     computed: {
@@ -1110,12 +1110,14 @@ const componentOptions = {
 
                 const sidebar = document.querySelector('.aicr-sidebar');
                 const chatPanel = document.querySelector('.aicr-code-chat');
+                const chatToggle = document.querySelector('.chat-panel-toggle');
                 const codeMain = document.querySelector('.aicr-code-main');
 
                 if (this.isFullscreen) {
                     // 进入全屏模式
                     if (sidebar) sidebar.style.display = 'none';
                     if (chatPanel) chatPanel.style.display = 'none';
+                    if (chatToggle) chatToggle.style.display = 'none';
                     if (codeMain) {
                         codeMain.style.flex = '1';
                         codeMain.style.maxWidth = '100%';
@@ -1130,6 +1132,7 @@ const componentOptions = {
                     // 退出全屏模式
                     if (sidebar) sidebar.style.display = '';
                     if (chatPanel) chatPanel.style.display = '';
+                    if (chatToggle) chatToggle.style.display = '';
                     if (codeMain) {
                         codeMain.style.flex = '';
                         codeMain.style.maxWidth = '';
@@ -1627,8 +1630,16 @@ const componentOptions = {
                 '文档':'#6B7280','测试':'#EF4444','外部':'#9CA3AF',
             };
 
-            // 颜色分配：GROUP_COLORS > TYPE_COLORS > hash-derived hue
+            // 颜色分配：测试文件检测 > GROUP_COLORS > TYPE_COLORS > hash-derived hue
             const resolveNodeColor = (n) => {
+                const file = n.file || '';
+                // 检测测试源文件：路径匹配测试特征
+                const isTestFile = /[\/\\](test|tests|__tests__)[\/\\]/.test(file) ||
+                    /\.(test|spec)\.\w+$/.test(file) ||
+                    /[\/\\](test|spec)_\w+\.\w+$/.test(file) ||
+                    /^test[\/\\]/.test(file) ||
+                    n.type === 'test';
+                if (isTestFile) return '#DC2626'; // 深红 — 测试源文件
                 if (GROUP_COLORS[n.group]) return GROUP_COLORS[n.group];
                 if (GROUP_COLORS[n.type]) return GROUP_COLORS[n.type];
                 if (TYPE_COLORS[n.type]) return TYPE_COLORS[n.type];
@@ -1810,7 +1821,7 @@ const componentOptions = {
                     this.kgLayer--;
                     this._applyLayerFilter(cy);
                 } else {
-                    this.resetKgGraph();
+                    this.resetKgFilter();
                 }
             });
 
@@ -1849,8 +1860,7 @@ const componentOptions = {
             });
             this._kgResizeObserver.observe(container);
 
-            // 初始应用层级过滤
-            this.kgLayer = 1;
+            // 初始应用层级过滤（默认 L2 显示全部节点）
             this.$nextTick(() => this._applyLayerFilter(cy));
         },
 
@@ -1873,6 +1883,8 @@ const componentOptions = {
         // ── 按层级过滤图谱节点显示 ──
         _applyLayerFilter(cy) {
             const layer = this.kgLayer;
+            let visibleNodeCount = 0;
+            let visibleEdgeCount = 0;
             cy.batch(() => {
                 // 清除所有高亮/dim 状态
                 cy.elements().removeClass('highlighted dimmed');
@@ -1886,13 +1898,26 @@ const componentOptions = {
                     cy.nodes().hide();
                     visibleNodes.show();
                     cy.edges().hide();
-                    cy.edges().filter(e => visIds.has(e.source().id()) && visIds.has(e.target().id())).show();
+                    const visibleEdges = cy.edges().filter(e => visIds.has(e.source().id()) && visIds.has(e.target().id()));
+                    visibleEdges.show();
+                    visibleNodeCount = visibleNodes.length;
+                    visibleEdgeCount = visibleEdges.length;
                 } else {
                     // 显示所有节点和边
                     cy.elements().show();
+                    visibleNodeCount = cy.nodes().length;
+                    visibleEdgeCount = cy.edges().length;
                 }
                 this._updateBreadcrumb();
             });
+            // 重建概述统计以匹配画布实际显示的节点/边数
+            if (this.kgGraphOverview) {
+                this.kgGraphOverview = {
+                    ...this.kgGraphOverview,
+                    totalNodes: visibleNodeCount,
+                    totalEdges: visibleEdgeCount,
+                };
+            }
             // 图层切换后重新适应视图
             cy.fit(undefined, 40);
         },
@@ -2089,6 +2114,7 @@ const componentOptions = {
 
             this.kgSelectedNode = {
                 label: nd.label, type: nd.type, group: nd.group,
+                typeLabel: typeLabel,
                 description: nd.description, file: nd.file,
                 functions: functionList.length ? functionList.join(', ') : '',
                 functionList: functionList,
@@ -2097,13 +2123,15 @@ const componentOptions = {
                 edgeGroups: sortedEdgeGroups,
                 totalEdges: totalEdges,
                 neighbors: neighbors,
+                sceneCount: enrichedMdFiles.length,
+                neighborCount: 1 + neighbors.length,
                 mdFiles: enrichedMdFiles,
-                roleSummary: roleSummary,
+                roleSummary: roleSummary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
                 sceneSourceText: sceneSourceText,
                 depText: depText,
                 outgoing: outgoing,
                 incoming: incoming,
-                relNarrative: relNarrative,
+                relNarrative: relNarrative.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n\n/g, '<br><br>'),
             };
             this._updateBreadcrumb();
         },
@@ -2209,7 +2237,7 @@ const componentOptions = {
             if (!this._cy) return;
             this.kgActiveFilter = null;
             this.kgSelectedNode = null;
-            this.kgLayer = 1;
+            this.kgLayer = 2;
             this._applyLayerFilter(this._cy);
             const cy = this._cy;
             cy.elements().removeClass('highlighted dimmed matched');
@@ -2239,10 +2267,6 @@ const componentOptions = {
                     try { this._cy.layout(opts).run(); return; } catch (_) {}
                 }
             }
-        },
-
-        fitKgGraph() {
-            this.resetKgGraph();
         },
 
         _buildGraphOverview(nodes, edges, data, hasFilter, matchedCount) {
