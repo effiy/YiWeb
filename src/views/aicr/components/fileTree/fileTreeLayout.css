@@ -494,6 +494,65 @@
     border-color: #334155;
 }
 
+/* 面包屑导航 */
+.file-graph-breadcrumb {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-shrink: 0;
+    min-height: 30px;
+}
+
+.file-graph-breadcrumb-path {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    overflow: hidden;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-graph-breadcrumb-item {
+    font-size: 11px;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: all 0.12s;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-graph-breadcrumb-item:hover {
+    color: #E2E8F0;
+    background: rgba(255,255,255,0.08);
+}
+
+.file-graph-breadcrumb-item.current {
+    color: #FBBF24;
+    font-weight: 600;
+    cursor: default;
+    max-width: 260px;
+}
+
+.file-graph-breadcrumb-item.current:hover {
+    background: transparent;
+}
+
+.file-graph-breadcrumb-sep {
+    font-size: 10px;
+    color: #475569;
+    flex-shrink: 0;
+    margin: 0 1px;
+}
+
 /* 主体：画布 + 侧面板 */
 .file-graph-body {
     flex: 1;

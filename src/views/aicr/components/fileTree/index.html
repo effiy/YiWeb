@@ -138,6 +138,18 @@
                 </div>
             </div>
 
+            <!-- 面包屑导航 -->
+            <div v-if="ftBreadcrumb.drillNodeId" class="file-graph-breadcrumb">
+                <div class="file-graph-breadcrumb-path">
+                    <span class="file-graph-breadcrumb-item"
+                          @click="navigateFtBreadcrumb({ action: 'overview' })"
+                          title="返回全景">全景</span>
+                    <span class="file-graph-breadcrumb-sep">/</span>
+                    <span class="file-graph-breadcrumb-item current"
+                          :title="ftBreadcrumb.drillLabel">{{ ftBreadcrumb.drillLabel }}</span>
+                </div>
+            </div>
+
             <!-- 主体：画布 + 侧面板 -->
             <div class="file-graph-body">
                 <div class="file-graph-canvas" ref="ftGraphContainer"></div>

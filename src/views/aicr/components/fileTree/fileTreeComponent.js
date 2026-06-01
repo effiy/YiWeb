@@ -102,7 +102,8 @@ const componentOptions = {
             ftSelectedNode: null,
             ftGraphOverview: null,
             ftGraphTitle: '文件图谱',
-            ftGraphStatsText: ''
+            ftGraphStatsText: '',
+            ftBreadcrumb: { drillNodeId: null, drillLabel: '' }
         };
     },
     watch: {

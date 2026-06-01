@@ -396,6 +396,7 @@ const fileTreeMethods = {
         if (this._ftCy) { this._ftCy.destroy(); this._ftCy = null; }
         if (this._ftResizeObserver) { this._ftResizeObserver.disconnect(); this._ftResizeObserver = null; }
         this._ftDrillNodeId = null;
+        this._updateFtBreadcrumb();
 
         // 优先通过 read-file API 获取最新 story-deps.json 数据
         let nodes, edges, fromApi = false;
@@ -511,6 +512,14 @@ const fileTreeMethods = {
                     'opacity': 0.85,
                 }},
                 { selector: 'edge.dimmed', style: { 'opacity': 0.04 }},
+                { selector: 'node.hover', style: {
+                    'border-width': 4, 'border-color': '#FFFFFF', 'border-opacity': 0.6,
+                    'z-index': 10,
+                }},
+                { selector: 'edge.hover', style: {
+                    'width': 2, 'line-color': '#60A5FA', 'target-arrow-color': '#60A5FA',
+                    'opacity': 0.65, 'z-index': 5,
+                }},
             ],
             layout: { name: 'preset' },
             minZoom: 0.06, maxZoom: 3.5, wheelSensitivity: 0.25,
@@ -518,33 +527,39 @@ const fileTreeMethods = {
 
         this._ftCy = cy;
 
-        // ── 交互：Hover ──
+        // ── 交互：Hover（独立 class，不干扰 highlighted/dimmed）──
         cy.on('mouseover', 'node', (evt) => {
             const node = evt.target;
-            cy.nodes().not(node).addClass('dimmed');
-            cy.edges().addClass('dimmed');
-            node.connectedEdges().removeClass('dimmed').addClass('highlighted');
-            node.connectedEdges().connectedNodes().removeClass('dimmed');
-            node.addClass('highlighted');
+            node.addClass('hover');
+            node.connectedEdges().addClass('hover');
             container.style.cursor = 'pointer';
         });
-        cy.on('mouseout', 'node', () => {
-            cy.elements().removeClass('highlighted dimmed');
+        cy.on('mouseout', 'node', (evt) => {
+            evt.target.removeClass('hover');
+            evt.target.connectedEdges().removeClass('hover');
             container.style.cursor = '';
         });
 
-        // ── 交互：单击 → 选中并展示详情 ──
+        // ── 单击 / 双击去抖 ──
+        let _ftTapTimer = null;
+
         cy.on('tap', 'node', (evt) => {
-            this._selectFtNodeDetail(evt.target, cy);
+            if (_ftTapTimer) { clearTimeout(_ftTapTimer); _ftTapTimer = null; }
+            const node = evt.target;
+            _ftTapTimer = setTimeout(() => {
+                _ftTapTimer = null;
+                if (!node.removed()) this._selectFtNodeDetail(node, cy);
+            }, 280);
         });
 
-        // ── 交互：单击空白 → 取消选中（若处于下钻则退出） ──
+        // ── 交互：单击空白 → 取消选中（若处于下钻则退出）──
         cy.on('tap', (evt) => {
             if (evt.target === cy) {
                 if (this._ftDrillNodeId) {
                     this._ftDrillNodeId = null;
                     cy.elements().removeClass('highlighted dimmed');
                     cy.fit(undefined, 40);
+                    this._updateFtBreadcrumb();
                 }
                 this.ftSelectedNode = null;
             }
@@ -552,33 +567,43 @@ const fileTreeMethods = {
 
         // ── 交互：双击节点 → 下钻聚焦邻域 ──
         cy.on('dbltap', 'node', (evt) => {
+            if (_ftTapTimer) { clearTimeout(_ftTapTimer); _ftTapTimer = null; }
             const node = evt.target;
             const nd = node.data();
             this._ftDrillNodeId = nd.id;
 
-            // 脉冲动画
-            node.style({
-                'border-width': 6, 'border-color': '#FFFFFF', 'border-opacity': 1,
-                'transition-duration': 100,
-            });
-            setTimeout(() => {
-                if (!node.removed()) {
-                    node.style({
-                        'border-width': 3, 'border-color': '#FBBF24', 'border-opacity': 0.9,
-                    });
-                }
-            }, 300);
-
-            // 下钻视图
-            cy.elements().removeClass('highlighted dimmed');
             const neighbors = node.closedNeighborhood();
-            cy.nodes().not(neighbors.nodes()).addClass('dimmed');
-            cy.edges().not(neighbors.edges()).addClass('dimmed');
+            cy.elements().removeClass('highlighted dimmed');
             node.addClass('highlighted');
             neighbors.nodes().removeClass('dimmed');
             neighbors.edges().removeClass('dimmed').addClass('highlighted');
+            cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+            cy.edges().not(neighbors.edges()).addClass('dimmed');
+
+            // 脉冲：白 → 金 → 白
+            node.style({ 'border-width': 8, 'border-color': '#FFFFFF', 'border-opacity': 1, 'transition-duration': 80 });
+            setTimeout(() => {
+                if (!node.removed()) {
+                    node.style({ 'border-width': 5, 'border-color': '#FBBF24', 'border-opacity': 0.95, 'shadow-blur': 16, 'shadow-color': '#FBBF24', 'shadow-opacity': 0.5, 'transition-duration': 180 });
+                }
+            }, 100);
+            setTimeout(() => {
+                if (!node.removed()) {
+                    node.style({ 'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9, 'shadow-blur': 0, 'shadow-opacity': 0, 'transition-duration': 250 });
+                }
+            }, 350);
+
+            // 平滑缩放过渡
+            cy.stop();
             cy.fit(neighbors.nodes(), 50);
+            const tZoom = cy.zoom();
+            const tPan = cy.pan();
+            cy.zoom(tZoom * 0.82);
+            cy.pan(tPan);
+            cy.animate({ zoom: tZoom, pan: tPan }, { duration: 420, easing: 'ease-in-out-cubic' });
+
             this._selectFtNodeDetail(node, cy);
+            this._updateFtBreadcrumb();
         });
 
         // ── 交互：双击空白 → 退出下钻 ──
@@ -588,6 +613,7 @@ const fileTreeMethods = {
             cy.elements().removeClass('highlighted dimmed');
             cy.fit(undefined, 40);
             this.ftSelectedNode = null;
+            this._updateFtBreadcrumb();
         });
 
         // ── 布局（多策略 fallback） ──
@@ -996,11 +1022,21 @@ const fileTreeMethods = {
 
     /* ── 适应视图 ── */
     ftFitGraph() {
-        if (this._ftCy) {
-            this._ftDrillNodeId = null;
-            this.ftSelectedNode = null;
-            this._ftCy.elements().removeClass('highlighted dimmed');
-            this._ftCy.fit(undefined, 30);
+        if (!this._ftCy) return;
+        const cy = this._ftCy;
+        if (this._ftDrillNodeId) {
+            const drillNode = cy.getElementById(this._ftDrillNodeId);
+            if (drillNode.length) {
+                const neighbors = drillNode.closedNeighborhood();
+                cy.fit(neighbors.nodes(), 50);
+                return;
+            }
+        }
+        const highlighted = cy.elements('.highlighted');
+        if (highlighted.length > 0) {
+            cy.fit(highlighted, 40);
+        } else {
+            cy.fit(undefined, 30);
         }
     },
 
@@ -1017,6 +1053,32 @@ const fileTreeMethods = {
         ];
         for (const opts of layouts) {
             try { this._ftCy.layout(opts).run(); return; } catch (_) {}
+        }
+        this._updateFtBreadcrumb();
+    },
+
+    /* ── 面包屑导航 ── */
+    _updateFtBreadcrumb() {
+        if (this._ftDrillNodeId && this._ftCy) {
+            const node = this._ftCy.getElementById(this._ftDrillNodeId);
+            this.ftBreadcrumb = {
+                drillNodeId: this._ftDrillNodeId,
+                drillLabel: node.length ? (node.data('label') || '') : ''
+            };
+        } else {
+            this.ftBreadcrumb = { drillNodeId: null, drillLabel: '' };
+        }
+    },
+
+    navigateFtBreadcrumb(item) {
+        if (!item) return;
+        if (item.action === 'overview') {
+            if (!this._ftCy) return;
+            this._ftDrillNodeId = null;
+            this.ftSelectedNode = null;
+            this._ftCy.elements().removeClass('highlighted dimmed');
+            this._ftCy.fit(undefined, 40);
+            this._updateFtBreadcrumb();
         }
     },
 

@@ -196,7 +196,7 @@
       </div>
     </div>
 
-    <div v-else-if="showKnowledgeGraph && kgGraphData" class="graph-reader" ref="graphReader">
+    <div v-else-if="showKnowledgeGraph && kgGraphData" class="graph-reader" :class="{ 'graph-reader--fullscreen': kgFullscreen }" ref="graphReader">
       <div class="graph-reader-header">
         <span class="graph-reader-title">{{ kgTitle }}</span>
         <span class="graph-reader-stats">
@@ -205,6 +205,7 @@
         </span>
         <div class="graph-reader-actions">
           <button type="button" class="graph-reader-btn" @click="fitView" title="适应视图">⊞</button>
+          <button type="button" class="graph-reader-btn" @click="toggleKgFullscreen" :title="kgFullscreen ? '退出全屏' : '全屏'">{{ kgFullscreen ? '⊠' : '⛶' }}</button>
           <button type="button" class="graph-reader-btn" @click="closeKnowledgeGraph" title="关闭">✕</button>
         </div>
       </div>

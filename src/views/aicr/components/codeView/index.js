@@ -186,7 +186,8 @@ const componentOptions = {
             kgGraphOverview: null,
             kgBreadcrumb: { path: [], layer: 1 },
             kgActiveFilter: null,
-            kgLayer: 1
+            kgLayer: 1,
+            kgFullscreen: false
         };
     },
     computed: {
@@ -417,6 +418,9 @@ const componentOptions = {
                 if (this.showSearchBar) {
                     e.preventDefault();
                     this.toggleSearchBar();
+                } else if (this.kgFullscreen) {
+                    e.preventDefault();
+                    this.toggleKgFullscreen();
                 } else if (this.isFullscreen) {
                     e.preventDefault();
                     this.toggleFullscreen();
@@ -1566,7 +1570,18 @@ const componentOptions = {
 
         closeKnowledgeGraph() {
             this.showKnowledgeGraph = false;
+            this.kgFullscreen = false;
             this._destroyCyGraph();
+        },
+
+        toggleKgFullscreen() {
+            this.kgFullscreen = !this.kgFullscreen;
+            this.$nextTick(() => {
+                if (this._cy) {
+                    this._cy.resize();
+                    this._smartFit(40);
+                }
+            });
         },
 
         /* ── 图谱渲染 ── */
@@ -1747,6 +1762,14 @@ const componentOptions = {
                         'width': 2.5, 'line-color': '#F59E0B', 'target-arrow-color': '#F59E0B',
                         'opacity': 0.85, 'z-index': 50,
                     }},
+                    { selector: 'node.hover', style: {
+                        'border-width': 4, 'border-color': '#FFFFFF', 'border-opacity': 0.65,
+                        'z-index': 10,
+                    }},
+                    { selector: 'edge.hover', style: {
+                        'width': 2, 'line-color': '#60A5FA', 'target-arrow-color': '#60A5FA',
+                        'opacity': 0.7, 'z-index': 5,
+                    }},
                 ],
                 layout: { name: 'preset' },
                 minZoom: 0.08, maxZoom: 4, wheelSensitivity: 0.25,
@@ -1754,27 +1777,31 @@ const componentOptions = {
 
             this._cy = cy;
 
-            // Hover effects
+            // Hover effects — use separate hover class, don't interfere with highlighted/dimmed
             cy.on('mouseover', 'node', (evt) => {
                 const node = evt.target;
-                cy.nodes().not(node).addClass('dimmed');
-                cy.edges().addClass('dimmed');
-                node.connectedEdges().removeClass('dimmed').addClass('highlighted');
-                node.connectedEdges().connectedNodes().removeClass('dimmed');
-                node.addClass('highlighted');
+                node.addClass('hover');
+                node.connectedEdges().addClass('hover');
                 container.style.cursor = 'pointer';
             });
-            cy.on('mouseout', 'node', () => {
-                cy.elements().removeClass('highlighted dimmed');
+            cy.on('mouseout', 'node', (evt) => {
+                evt.target.removeClass('hover');
+                evt.target.connectedEdges().removeClass('hover');
                 container.style.cursor = '';
             });
 
-            // Node click → select + show detail
+            // ── 单击 / 双击去抖 ──
+            let _tapTimer = null;
+
             cy.on('tap', 'node', (evt) => {
-                this._selectKgNodeDetail(evt.target, cy);
+                if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; }
+                const node = evt.target;
+                _tapTimer = setTimeout(() => {
+                    _tapTimer = null;
+                    if (!node.removed()) this._selectKgNodeDetail(node, cy);
+                }, 280);
             });
 
-            // Tap background → deselect
             cy.on('tap', (evt) => {
                 if (evt.target === cy) {
                     cy.elements().removeClass('highlighted dimmed');
@@ -1790,43 +1817,55 @@ const componentOptions = {
                 }
             });
 
-            // Double-click node → 展开到下一层
             cy.on('dbltap', 'node', (evt) => {
+                if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; }
                 const node = evt.target;
                 const nd = node.data();
                 const kind = this._getNodeKind(nd);
+                const neighbors = node.closedNeighborhood();
 
-                // 层级推进：双击源码节点 → 聚焦子图
                 if (this.kgLayer === 1 && kind === 'source') {
                     this.kgLayer = 2;
                     cy.elements().removeClass('highlighted dimmed');
-                    const neighbors = node.closedNeighborhood();
-                    cy.nodes().not(neighbors.nodes()).addClass('dimmed');
-                    cy.edges().not(neighbors.edges()).addClass('dimmed');
                     node.addClass('highlighted');
                     neighbors.nodes().removeClass('dimmed');
                     neighbors.edges().removeClass('dimmed').addClass('highlighted');
-                    cy.fit(neighbors.nodes(), 50);
+                    cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+                    cy.edges().not(neighbors.edges()).addClass('dimmed');
                 } else {
-                    // 视觉反馈 + 聚焦
-                    node.style({
-                        'border-width': 6, 'border-color': '#FFFFFF', 'border-opacity': 1, 'transition-duration': 100,
-                    });
-                    setTimeout(() => {
-                        if (!node.removed()) {
-                            node.style({
-                                'border-width': 3, 'border-color': '#F59E0B', 'border-opacity': 0.9,
-                            });
-                        }
-                    }, 300);
-                    const neighbors = node.closedNeighborhood();
-                    cy.fit(neighbors.nodes(), 50);
+                    cy.elements().removeClass('highlighted dimmed');
+                    node.addClass('highlighted');
+                    neighbors.nodes().removeClass('dimmed');
+                    neighbors.edges().removeClass('dimmed').addClass('highlighted');
+                    cy.nodes().not(neighbors.nodes()).addClass('dimmed');
+                    cy.edges().not(neighbors.edges()).addClass('dimmed');
                 }
 
-                this._selectKgNodeDetail(node, cy);
+                // 脉冲动画：白 → 金 → 白
+                node.style({ 'border-width': 8, 'border-color': '#FFFFFF', 'border-opacity': 1, 'transition-duration': 80 });
+                setTimeout(() => {
+                    if (!node.removed()) {
+                        node.style({ 'border-width': 5, 'border-color': '#F59E0B', 'border-opacity': 0.95, 'shadow-blur': 18, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.55, 'transition-duration': 180 });
+                    }
+                }, 100);
+                setTimeout(() => {
+                    if (!node.removed()) {
+                        node.style({ 'border-width': 3, 'border-color': '#FFFFFF', 'border-opacity': 0.9, 'shadow-blur': 0, 'shadow-opacity': 0, 'transition-duration': 250 });
+                    }
+                }, 350);
+
+                // 平滑缩放过渡
+                cy.stop();
+                cy.fit(neighbors.nodes(), 50);
+                const tZoom = cy.zoom();
+                const tPan = cy.pan();
+                cy.zoom(tZoom * 0.82);
+                cy.pan(tPan);
+                cy.animate({ zoom: tZoom, pan: tPan }, { duration: 420, easing: 'ease-in-out-cubic' });
+
+                if (!node.removed()) this._selectKgNodeDetail(node, cy);
             });
 
-            // Double-click 空白背景 → 退回上一层
             cy.on('dbltap', (evt) => {
                 if (evt.target !== cy) return;
                 if (this.kgLayer > 1) {
@@ -1867,7 +1906,7 @@ const componentOptions = {
             this._kgResizeObserver = new ResizeObserver(() => {
                 if (this._cy) {
                     this._cy.resize();
-                    this._cy.fit(undefined, 30);
+                    this._smartFit(30);
                 }
             });
             this._kgResizeObserver.observe(container);
@@ -1879,9 +1918,8 @@ const componentOptions = {
         _refitCyGraph() {
             if (this._cy) {
                 this._cy.resize();
-                // 有筛选时仅 resize，保留筛选聚焦的视角
                 if (!this.kgActiveFilter) {
-                    this._cy.fit(undefined, 30);
+                    this._smartFit(30);
                 }
             }
         },
@@ -1908,8 +1946,23 @@ const componentOptions = {
         fitView() {
             if (this._cy) {
                 this._cy.stop();
-                this._cy.fit(undefined, 40);
+                this._smartFit(40);
             }
+        },
+
+        _smartFit(padding = 40) {
+            if (!this._cy) return;
+            const highlighted = this._cy.elements('.highlighted');
+            if (highlighted.length > 0) {
+                this._cy.fit(highlighted, padding);
+                return;
+            }
+            const matched = this._cy.elements('.matched');
+            if (matched.length > 0) {
+                this._cy.fit(matched, padding);
+                return;
+            }
+            this._cy.fit(undefined, padding);
         },
 
         // ── 按层级过滤图谱节点显示 ──
@@ -2284,12 +2337,13 @@ const componentOptions = {
             // 其余边 dim
             cy.edges().not(matchedNodes.connectedEdges()).addClass('dimmed');
 
-            // 动画聚焦到场景节点区域
+            // 动画聚焦到场景节点区域，动画结束后自适应视图
             if (matchedNodes.length > 0) {
                 cy.animate({
                     center: { eles: matchedNodes },
                     zoom: Math.min(cy.zoom(), 1.2),
                 }, { duration: 500, easing: 'ease-in-out-cubic' });
+                setTimeout(() => { if (this._cy) this._smartFit(40); }, 550);
             }
 
             this.kgSelectedNode = null;
