@@ -7,52 +7,52 @@
     "description": "",
     "scenarios": [
       {
-        "name": "场景1 · 影响评估 — 查矩阵知全貌",
+        "name": "场景1-影响评估",
         "description": "确定目标模块 → 在依赖矩阵中查该模块所在行 → 逐列查看依赖标记 → 统计直接下游数量 → 0下游(直接修改) / 1-3下游(逐一验证) / >3下游(分阶段修改)",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/modules/crud.js",
             "keyContent": "`getData()` `postData()` `streamPrompt()`",
             "description": "🔴 最高风险",
             "code": "// 提供 CRUD 操作的模块\n// 作者：liangliang\n\n// 模块依赖改为全局方式\n// import { \n//   window.getRequest, \n//   window.postRequest, \n//   window.putRequest, \n//   window.patchRequest, \n//   window.deleteRequest \n// } from '/src/core/services/helper/requestHelper.js';\n// import { window.logInfo, logWarn, window.logError } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logError 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用\nimport '/src/core/services/helper/requestHelper.js';\n// 导入认证工具\nimport { getAuthHeaders, getStoredModel } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { handle401Error, isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { createError, ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 简单的内存缓存\n */"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/utils/view/baseView.js",
             "keyContent": "`createBaseView()` `mountApp()`",
             "description": "🔴 全部视图依赖",
             "code": "/**\n * 通用视图工厂函数\n * 提供统一的Vue应用创建和挂载逻辑\n * author: liangliang\n */\n\n// 模块依赖改为全局方式\n// import { window.safeExecute } from './error.js';\n// import { window.logInfo, window.logWarn, window.logError } from './log.js';\n// 导入日志工具，确保 window.logError 等函数可用\nimport { logError, logInfo, logWarn, timeEnd, timeStart } from '/cdn/utils/core/log.js';\nimport { createError, ErrorCodes, ErrorTypes, safeExecute } from '/cdn/utils/core/error.js';\nimport { loadCSS } from '/cdn/utils/view/componentLoader.js';\n\n/**\n * 视图配置选项\n */\nconst ViewConfig = {\n    // 默认组件注册列表\n    DEFAULT_COMPONENTS: [],\n    \n    // 默认插件加载列表\n    DEFAULT_PLUGINS: [],\n    \n    // 默认错误处理"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/requestHelper.js",
             "keyContent": "`sendRequest()` `retryRequest()`",
             "description": "请求封装核心",
             "code": "/**\n * 发送 HTTP 请求的辅助函数 - 简化版本\n * 作者：liangliang\n */\n\n// 模块依赖改为全局方式\n// import { window.checkStatus, window.isJsonResponse } from '/src/core/services/helper/window.checkStatus.js';\n// import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用\nimport '/src/core/services/helper/checkStatus.js';\n// 导入认证工具，确保 getAuthHeaders 函数可用\nimport { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 默认请求配置\n */\nconst DEFAULT_CONFIG = {\n  timeout: 5 * 60 * 1000, // 5分钟\n  headers: {\n    'Content-Type': 'application/json',"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/utils/filterHelpers.js",
             "keyContent": "`getFirstLevelNames()`",
             "description": "🟡 跨视图依赖",
             "code": "/**\n * 筛选工具函数 — 三级联动筛选共享模块\n */\n\n/**\n * 构建子→父映射：递归将所有嵌套目录映射到其根项目目录\n * O(n) 构建一次，后续 O(1) 查询\n * @param {Array} fileTree — 文件树根节点数组\n * @returns {Map<string, string>} childName → rootProjectName\n */\nexport function buildParentChildMap(fileTree) {\n    const map = new Map();\n    if (!fileTree || !Array.isArray(fileTree)) return map;\n\n    const mapRecursive = (items, rootParent) => {\n        if (!Array.isArray(items)) return;\n        for (const item of items) {\n            if (item.type === 'folder') {\n                map.set(item.name, rootParent);\n                if (item.children) mapRecursive(item.children, rootParent);\n            }\n        }\n    };\n\n    for (const item of fileTree) {"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/utils/core/error.js",
             "keyContent": "`safeExecute()` `createError()`",
             "description": "🟡 多模块依赖",
             "code": "/**\n * 错误处理工具函数\n * 提供统一的错误处理、日志记录和用户提示功能\n * author: liangliang\n */\n\n/**\n * 错误类型枚举\n */\nexport const ErrorTypes = {\n    NETWORK: 'NETWORK',\n    VALIDATION: 'VALIDATION',\n    API: 'API',\n    RUNTIME: 'RUNTIME',\n    UNKNOWN: 'UNKNOWN'\n};\n\nexport const ErrorCodes = {\n    UNKNOWN: 'UNKNOWN',\n    AUTH_401: 'AUTH_401',\n    HTTP_ERROR: 'HTTP_ERROR',\n    REQUEST_TIMEOUT: 'REQUEST_TIMEOUT',\n    NETWORK_FETCH_FAILED: 'NETWORK_FETCH_FAILED',\n    CORS_BLOCKED: 'CORS_BLOCKED',\n    STREAM_API_ERROR: 'STREAM_API_ERROR',"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/services/crud.test.js",
             "keyContent": "CRUD 测试",
             "description": "验证高风险模块"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/cdn/baseView.test.js",
             "keyContent": "视图工厂测试",
             "description": "验证高风险模块"
@@ -70,25 +70,25 @@
         ]
       },
       {
-        "name": "场景2 · 健康度检查 — 定期扫描架构违规",
+        "name": "场景2-健康度检查",
         "description": "检查违规依赖清单 → 有新增违规? → 逐项评估严重度(P0立即修复/P1计划修复) → 检查高风险模块清单 → 有变化? → 评估是否需要拆分或加固 → 检查依赖总数量 → 输出健康度报告",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/aicr/sessionSyncService.js",
             "keyContent": "L2→L1 违规",
             "description": "⚠️ 需修复",
             "code": "/**\n * 会话同步服务\n * 实现 aicr 文件系统与 YiPet 会话系统的双向同步\n * \n * 映射规则：\n * - 文件名 -> 会话标题 (pageTitle)\n * - 目录路径 -> 会话标签 (tags)\n * - 文件内容 -> 页面上下文 (pageContent)\n * \n * 统一接口和字段格式：\n * - 使用 /session/save 接口（POST）\n * - messages 格式：{type: 'user'|'pet', message: string, timestamp: number, imageDataUrl?: string}\n * - 时间戳：毫秒数（number），不是 ISO 字符串\n * - 使用统一的认证头（X-Token）\n */\n\nimport { postData, getData } from '/src/core/services/index.js';\nimport { buildServiceUrl, SERVICE_MODULE } from '/src/core/services/helper/requestHelper.js';\nimport { safeExecuteAsync } from '/cdn/utils/core/error.js';\nimport { normalizeFileObject, extractFileName, extractTagsFromPath } from '/src/views/aicr/utils/fileFieldNormalizer.js';\nimport { COLLECTIONS, URL_PROTOCOLS, MESSAGE_TYPES, FILE_TYPES } from '/src/views/aicr/constants/index.js';\n\nclass SessionSyncService {\n    constructor() {\n        this.apiUrl = window.API_URL || 'https://api.effiy.cn';"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/utils/filterHelpers.js",
             "keyContent": "被 story 跨视图引用",
             "description": "共享工具",
             "code": "/**\n * 筛选工具函数 — 三级联动筛选共享模块\n */\n\n/**\n * 构建子→父映射：递归将所有嵌套目录映射到其根项目目录\n * O(n) 构建一次，后续 O(1) 查询\n * @param {Array} fileTree — 文件树根节点数组\n * @returns {Map<string, string>} childName → rootProjectName\n */\nexport function buildParentChildMap(fileTree) {\n    const map = new Map();\n    if (!fileTree || !Array.isArray(fileTree)) return map;\n\n    const mapRecursive = (items, rootParent) => {\n        if (!Array.isArray(items)) return;\n        for (const item of items) {\n            if (item.type === 'folder') {\n                map.set(item.name, rootParent);\n                if (item.children) mapRecursive(item.children, rootParent);\n            }\n        }\n    };\n\n    for (const item of fileTree) {"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/constants/index.js",
             "keyContent": "被 sessionSyncService 引用",
             "description": "应迁移",
@@ -103,17 +103,17 @@
         ]
       },
       {
-        "name": "场景3 · 新增依赖评估 — 确定依赖合理性",
+        "name": "场景3-新增依赖评估",
         "description": "列出计划引用的全部模块 → 查依赖矩阵确认每项引用的方向合规 → 方向合规? → 确认不会形成循环依赖 → 会形成循环? → 提取公共依赖打破循环 / 依赖评估通过可添加",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "依赖方向约束表",
             "keyContent": "6 条规则",
             "description": "新增依赖判定依据"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "分层边界定义 (yiweb-arch-layers)",
             "keyContent": "四层拓扑模型",
             "description": "层级归属判定"
@@ -126,25 +126,25 @@
         ]
       },
       {
-        "name": "场景4 · 重构规划 — 评估高风险模块拆分",
+        "name": "场景4-重构规划",
         "description": "选取高风险模块 → 从矩阵中提取其全部下游 → 分析下游的使用模式(读/写/事件/配置) → 按使用模式制定拆分方案(稳定接口+可变实现) → 拆分后更新矩阵重新计算依赖数 → 依赖数降低?(拆分有效) / 依赖数反增?(重新评估)",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/modules/crud.js",
             "keyContent": "`getData()` `postData()` `streamPrompt()` `batchOperations()`",
             "description": "拆分目标",
             "code": "// 提供 CRUD 操作的模块\n// 作者：liangliang\n\n// 模块依赖改为全局方式\n// import { \n//   window.getRequest, \n//   window.postRequest, \n//   window.putRequest, \n//   window.patchRequest, \n//   window.deleteRequest \n// } from '/src/core/services/helper/requestHelper.js';\n// import { window.logInfo, logWarn, window.logError } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logError 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用\nimport '/src/core/services/helper/requestHelper.js';\n// 导入认证工具\nimport { getAuthHeaders, getStoredModel } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { handle401Error, isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { createError, ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 简单的内存缓存\n */"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/hooks/methods/aiSearchMethods.js",
             "keyContent": "SSE 流式消费者",
             "description": "拆分后需适配",
             "code": "/**\n * AI 增强搜索方法模块\n * 通过调用 services.ai.chat_service 解析自然语言搜索意图，\n * 结合 services.database.data_service → query_documents 查询文档，\n * 自动应用筛选条件。\n */\nimport { safeExecute, safeExecuteAsync } from '/cdn/utils/core/error.js';\nimport { getAuthHeaders, getStoredModel } from '/src/core/services/helper/authUtils.js';\nimport { getData } from '/src/core/services/index.js';\nimport { buildServiceUrl, SERVICE_MODULE } from '/src/core/services/helper/requestHelper.js';\n\nconst AI_SEARCH_SYSTEM_PROMPT = `你是一个搜索意图解析器。根据用户的自然语言查询，返回一个 JSON 对象，包含筛选条件。\n\n可用筛选键：\n- tags: 项目名称数组（一级目录名）\n- storyTags: 故事名称数组（二级目录名）\n- suffixTags: 后缀数组（可选值：\"故事任务\"、\"使用场景\"、\"技术评审\"、\"自改进复盘\"）\n- prefixTags: 前缀数组\n- searchQuery: 文本搜索字符串\n- noTags: 布尔值，筛选无标签的文件\n- clearAll: 布尔值，清除所有筛选\n\n示例：\n- \"显示所有的故事任务\" → {\"suffixTags\": [\"故事任务\"]}\n- \"显示项目A的故事任务\" → {\"tags\": [\"项目A\"], \"suffixTags\": [\"故事任务\"]}"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/services/crud.test.js",
             "keyContent": "CRUD 测试",
             "description": "拆分后需更新"
@@ -164,7 +164,7 @@
       {
         "id": "crud",
         "label": "crud.js",
-        "type": "service",
+        "type": "source",
         "group": "L2-DataOps",
         "file": "src/core/services/modules/crud.js",
         "description": "🔴 最高风险",
@@ -195,7 +195,7 @@
       {
         "id": "baseView",
         "label": "baseView.js",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "cdn/utils/view/baseView.js",
         "description": "🔴 全部视图依赖",
@@ -218,7 +218,7 @@
       {
         "id": "requestHelper",
         "label": "requestHelper.js",
-        "type": "service",
+        "type": "source",
         "group": "L2-Helpers",
         "file": "src/core/services/helper/requestHelper.js",
         "description": "请求封装核心",
@@ -244,7 +244,7 @@
       {
         "id": "filterHelpers",
         "label": "filterHelpers.js",
-        "type": "view",
+        "type": "source",
         "group": "L1-AICR",
         "file": "src/views/aicr/utils/filterHelpers.js",
         "description": "🟡 跨视图依赖",
@@ -270,7 +270,7 @@
       {
         "id": "error",
         "label": "error.js",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "cdn/utils/core/error.js",
         "description": "🟡 多模块依赖",
@@ -297,8 +297,8 @@
       {
         "id": "crud-test",
         "label": "crud.test.js",
-        "type": "service",
-        "group": "Other",
+        "type": "test",
+        "group": "Tests",
         "file": "tests/services/crud.test.js",
         "description": "验证高风险模块",
         "keyFunctions": [
@@ -324,8 +324,8 @@
       {
         "id": "baseView-test",
         "label": "baseView.test.js",
-        "type": "framework",
-        "group": "Other",
+        "type": "test",
+        "group": "Tests",
         "file": "tests/cdn/baseView.test.js",
         "description": "验证高风险模块",
         "keyFunctions": [
@@ -344,7 +344,7 @@
       {
         "id": "sessionSyncService",
         "label": "sessionSyncService.js",
-        "type": "service",
+        "type": "source",
         "group": "L2-Sync",
         "file": "src/core/services/aicr/sessionSyncService.js",
         "description": "⚠️ 需修复",
@@ -369,7 +369,7 @@
       {
         "id": "index",
         "label": "index.js",
-        "type": "view",
+        "type": "source",
         "group": "L1-AICR",
         "file": "src/views/aicr/constants/index.js",
         "description": "应迁移",
@@ -394,7 +394,7 @@
       {
         "id": "-------",
         "label": "依赖方向约束表",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "依赖方向约束表",
         "description": "新增依赖判定依据",
@@ -415,7 +415,7 @@
       {
         "id": "--------yiweb-arch-layers-",
         "label": "分层边界定义 (yiweb-arch-layers)",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "分层边界定义 (yiweb-arch-layers)",
         "description": "层级归属判定",
@@ -435,7 +435,7 @@
       {
         "id": "aiSearchMethods",
         "label": "aiSearchMethods.js",
-        "type": "view",
+        "type": "source",
         "group": "L1-AICR",
         "file": "src/views/aicr/hooks/methods/aiSearchMethods.js",
         "description": "拆分后需适配",
@@ -487,7 +487,7 @@
       {
         "id": "yiweb-arch-deps-scene-1",
         "label": "场景1 · 影响评估 — 查矩阵知全貌",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景1-影响评估.md",
         "description": "flowchart TD",
@@ -513,7 +513,7 @@
       {
         "id": "yiweb-arch-deps-scene-2",
         "label": "场景2 · 健康度检查 — 定期扫描架构违规",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景2-健康度检查.md",
         "description": "flowchart LR",
@@ -535,7 +535,7 @@
       {
         "id": "yiweb-arch-deps-scene-3",
         "label": "场景3 · 新增依赖评估 — 确定依赖合理性",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景3-新增依赖评估.md",
         "description": "flowchart LR",
@@ -556,7 +556,7 @@
       {
         "id": "yiweb-arch-deps-scene-4",
         "label": "场景4 · 重构规划 — 评估高风险模块拆分",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-deps/场景4-重构规划.md",
         "description": "flowchart LR",

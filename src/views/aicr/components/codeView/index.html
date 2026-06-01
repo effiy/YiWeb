@@ -224,7 +224,7 @@
         </div>
         <div class="graph-breadcrumb-layers">
           <span class="graph-breadcrumb-layer-label">层级</span>
-          <button v-for="l in [1,2,3]" :key="l"
+          <button v-for="l in [1,2]" :key="l"
                   class="graph-breadcrumb-layer"
                   :class="{ active: kgBreadcrumb.layer === l }"
                   @click="switchToLayer(l)">L{{ l }}</button>

@@ -184,9 +184,9 @@ const componentOptions = {
             kgMatchedIds: null,
             kgSourceScenarios: null,
             kgGraphOverview: null,
-            kgBreadcrumb: { path: [], layer: 2 },
+            kgBreadcrumb: { path: [], layer: 1 },
             kgActiveFilter: null,
-            kgLayer: 2
+            kgLayer: 1
         };
     },
     computed: {
@@ -1600,6 +1600,10 @@ const componentOptions = {
 
             // 类型色板：按节点 type 分配高区分度颜色
             const TYPE_COLORS = {
+                story: '#F59E0B',      // 金 — 故事
+                scenario: '#7DD3FC',   // 浅蓝 — 场景
+                source: '#4ADE80',     // 绿 — 开发源文件
+                test: '#DC2626',       // 深红 — 测试源文件
                 view: '#3B82F6',       // 蓝 — 视图
                 entry: '#10B981',      // 绿 — 入口
                 service: '#F59E0B',    // 琥珀 — 服务
@@ -1610,7 +1614,6 @@ const componentOptions = {
                 state: '#EC4899',      // 粉 — 状态
                 event: '#EF4444',      // 红 — 事件
                 method: '#6366F1',     // 靛蓝 — 方法
-                test: '#DC2626',       // 深红 — 测试
                 doc: '#6B7280',        // 灰 — 文档
                 external: '#9CA3AF',   // 浅灰 — 外部
                 storage: '#EC4899',    // 粉 — 存储
@@ -1789,16 +1792,9 @@ const componentOptions = {
                 const nd = node.data();
                 const kind = this._getNodeKind(nd);
 
-                // 层级推进：双击故事/场景节点展开显示源码
-                if (this.kgLayer === 1 && (kind === 'story' || kind === 'scenario')) {
+                // 层级推进：双击源码节点 → 聚焦子图
+                if (this.kgLayer === 1 && kind === 'source') {
                     this.kgLayer = 2;
-                    this._applyLayerFilter(cy);
-                    // 聚焦到该节点及其邻居
-                    const neighbors = node.closedNeighborhood();
-                    cy.fit(neighbors.nodes(), 50);
-                } else if (this.kgLayer === 2 && kind === 'source') {
-                    // 源码节点 → 第三层（本节点+直接邻居焦点视图）
-                    this.kgLayer = 3;
                     cy.elements().removeClass('highlighted dimmed');
                     const neighbors = node.closedNeighborhood();
                     cy.nodes().not(neighbors.nodes()).addClass('dimmed');
@@ -1888,7 +1884,7 @@ const componentOptions = {
             const type = nd.type || '';
             const file = nd.file || '';
             if (type === 'story') return 'story';
-            if (type === 'doc' || file.endsWith('.md')) return 'scenario';
+            if (type === 'scenario' || type === 'doc' || file.endsWith('.md')) return 'scenario';
             return 'source';
         },
 
@@ -1911,43 +1907,19 @@ const componentOptions = {
 
         // ── 按层级过滤图谱节点显示 ──
         _applyLayerFilter(cy) {
-            const layer = this.kgLayer;
-            let visibleNodeCount = 0;
-            let visibleEdgeCount = 0;
             cy.batch(() => {
-                // 清除所有高亮/dim 状态
                 cy.elements().removeClass('highlighted dimmed');
-                if (layer === 1) {
-                    // 仅显示故事 + 场景节点 + 它们之间的边
-                    const visibleNodes = cy.nodes().filter(n => {
-                        const k = this._getNodeKind(n.data());
-                        return k === 'story' || k === 'scenario';
-                    });
-                    const visIds = new Set(visibleNodes.map(n => n.id()));
-                    cy.nodes().hide();
-                    visibleNodes.show();
-                    cy.edges().hide();
-                    const visibleEdges = cy.edges().filter(e => visIds.has(e.source().id()) && visIds.has(e.target().id()));
-                    visibleEdges.show();
-                    visibleNodeCount = visibleNodes.length;
-                    visibleEdgeCount = visibleEdges.length;
-                } else {
-                    // 显示所有节点和边
-                    cy.elements().show();
-                    visibleNodeCount = cy.nodes().length;
-                    visibleEdgeCount = cy.edges().length;
-                }
+                cy.elements().show();
                 this._updateBreadcrumb();
             });
-            // 重建概述统计以匹配画布实际显示的节点/边数
+            // 更新概述统计匹配画布实际显示的节点/边数
             if (this.kgGraphOverview) {
                 this.kgGraphOverview = {
                     ...this.kgGraphOverview,
-                    totalNodes: visibleNodeCount,
-                    totalEdges: visibleEdgeCount,
+                    totalNodes: cy.nodes().length,
+                    totalEdges: cy.edges().length,
                 };
             }
-            // 图层切换后重新适应视图
             cy.fit(undefined, 40);
         },
 
@@ -2287,7 +2259,7 @@ const componentOptions = {
             if (!this._cy) return;
             this.kgActiveFilter = null;
             this.kgSelectedNode = null;
-            this.kgLayer = 2;
+            this.kgLayer = 1;
             this._applyLayerFilter(this._cy);
             const cy = this._cy;
             cy.elements().removeClass('highlighted dimmed matched');

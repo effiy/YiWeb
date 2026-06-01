@@ -7,7 +7,7 @@
       {
         "id": "MOD-baseView",
         "label": "createBaseView",
-        "type": "framework",
+        "type": "source",
         "group": "视图工厂",
         "file": "cdn/utils/view/baseView.js",
         "description": "通用视图工厂：createBaseView + mountApp",
@@ -56,7 +56,7 @@
       {
         "id": "MOD-componentLoader",
         "label": "componentLoader",
-        "type": "framework",
+        "type": "source",
         "group": "组件系统",
         "file": "cdn/utils/view/componentLoader.js",
         "description": "组件 CSS 加载 + 全局注册",
@@ -86,7 +86,7 @@
       {
         "id": "MOD-log",
         "label": "log 工具",
-        "type": "utility",
+        "type": "source",
         "group": "基础设施",
         "file": "cdn/utils/core/log.js",
         "description": "logInfo/logWarn/logError + debug 开关",
@@ -139,7 +139,7 @@
       {
         "id": "MOD-error",
         "label": "error 工具",
-        "type": "utility",
+        "type": "source",
         "group": "基础设施",
         "file": "cdn/utils/core/error.js",
         "description": "safeExecute + ErrorCodes + ErrorTypes",
@@ -192,7 +192,7 @@
       {
         "id": "MOD-common",
         "label": "common 工具",
-        "type": "utility",
+        "type": "source",
         "group": "基础设施",
         "file": "cdn/utils/core/common.js",
         "description": "safeGetItem/safeSetItem 基础工具",
@@ -231,7 +231,7 @@
       {
         "id": "MOD-config",
         "label": "config",
-        "type": "config",
+        "type": "source",
         "group": "配置",
         "file": "src/core/config.js",
         "description": "环境切换 + ENDPOINTS 定义",
@@ -270,7 +270,7 @@
       {
         "id": "MOD-services-index",
         "label": "services/index",
-        "type": "service",
+        "type": "source",
         "group": "服务聚合",
         "file": "src/core/services/index.js",
         "description": "API 模块聚合 re-export",
@@ -313,7 +313,7 @@
       {
         "id": "MOD-crud",
         "label": "crud",
-        "type": "service",
+        "type": "source",
         "group": "数据操作",
         "file": "src/core/services/modules/crud.js",
         "description": "getData/postData/streamPrompt + 内存缓存",
@@ -372,7 +372,7 @@
       {
         "id": "MOD-requestHelper",
         "label": "requestHelper",
-        "type": "service",
+        "type": "source",
         "group": "请求工具",
         "file": "src/core/services/helper/requestHelper.js",
         "description": "sendRequest + retryRequest + batchRequests",
@@ -428,7 +428,7 @@
       {
         "id": "MOD-authUtils",
         "label": "authUtils",
-        "type": "service",
+        "type": "source",
         "group": "认证",
         "file": "src/core/services/helper/authUtils.js",
         "description": "X-Token 管理 + getAuthHeaders",
@@ -481,7 +481,7 @@
       {
         "id": "MOD-authError",
         "label": "authErrorHandler",
-        "type": "service",
+        "type": "source",
         "group": "认证",
         "file": "src/core/services/helper/authErrorHandler.js",
         "description": "401 拦截 + 登录弹窗",
@@ -523,7 +523,7 @@
       {
         "id": "MOD-checkStatus",
         "label": "checkStatus",
-        "type": "service",
+        "type": "source",
         "group": "请求工具",
         "file": "src/core/services/helper/checkStatus.js",
         "description": "HTTP 状态码映射",
@@ -562,7 +562,7 @@
       {
         "id": "MOD-sessionSync",
         "label": "sessionSyncService",
-        "type": "service",
+        "type": "source",
         "group": "同步服务",
         "file": "src/core/services/aicr/sessionSyncService.js",
         "description": "⚠️ 含 L2→L1 违规：文件↔会话同步",
@@ -625,7 +625,7 @@
       {
         "id": "MOD-aicr-index",
         "label": "aicr/index",
-        "type": "view",
+        "type": "source",
         "group": "视图入口",
         "file": "src/views/aicr/index.js",
         "description": "AICR 视图主入口",
@@ -676,7 +676,7 @@
       {
         "id": "MOD-claude-index",
         "label": "claude/index",
-        "type": "view",
+        "type": "source",
         "group": "视图入口",
         "file": "src/views/claude/index.js",
         "description": "Claude 视图主入口",
@@ -725,7 +725,7 @@
       {
         "id": "MOD-story-index",
         "label": "story/index",
-        "type": "view",
+        "type": "source",
         "group": "视图入口",
         "file": "src/views/story/index.js",
         "description": "Story 视图主入口",
@@ -776,7 +776,7 @@
       {
         "id": "MOD-filterHelpers",
         "label": "filterHelpers",
-        "type": "view",
+        "type": "source",
         "group": "共享工具",
         "file": "src/views/aicr/utils/filterHelpers.js",
         "description": "🟡 跨视图依赖：三级筛选联动",
@@ -829,7 +829,7 @@
       {
         "id": "MOD-fileNormalizer",
         "label": "fileFieldNormalizer",
-        "type": "view",
+        "type": "source",
         "group": "共享工具",
         "file": "src/views/aicr/utils/fileFieldNormalizer.js",
         "description": "文件路径标准化",
@@ -858,7 +858,7 @@
       {
         "id": "MOD-knowledgeGraph",
         "label": "knowledgeGraphUtils",
-        "type": "view",
+        "type": "source",
         "group": "知识图谱",
         "file": "src/views/story/utils/knowledgeGraphUtils.js",
         "description": "知识图谱加载/解析/查询",
@@ -887,7 +887,7 @@
       {
         "id": "MOD-YiIcon",
         "label": "YiIcon",
-        "type": "component",
+        "type": "source",
         "group": "通用组件",
         "file": "cdn/icons/YiIcon/",
         "description": "图标组件",
@@ -926,7 +926,7 @@
       {
         "id": "MOD-YiButton",
         "label": "YiButton",
-        "type": "component",
+        "type": "source",
         "group": "通用组件",
         "file": "cdn/components/common/buttons/YiButton/",
         "description": "按钮组件",
@@ -965,7 +965,7 @@
       {
         "id": "MOD-YiTag",
         "label": "YiTag",
-        "type": "component",
+        "type": "source",
         "group": "通用组件",
         "file": "cdn/components/common/tags/YiTag/",
         "description": "标签组件",
@@ -1002,7 +1002,7 @@
       {
         "id": "MOD-YiLoading",
         "label": "YiLoading",
-        "type": "component",
+        "type": "source",
         "group": "通用组件",
         "file": "cdn/components/common/loaders/YiLoading/",
         "description": "加载组件",
@@ -1039,7 +1039,7 @@
       {
         "id": "MOD-YiEmpty",
         "label": "YiEmptyState",
-        "type": "component",
+        "type": "source",
         "group": "通用组件",
         "file": "cdn/components/common/feedback/YiEmptyState/",
         "description": "空状态组件",
@@ -1076,7 +1076,7 @@
       {
         "id": "MOD-YiError",
         "label": "YiErrorState",
-        "type": "component",
+        "type": "source",
         "group": "通用组件",
         "file": "cdn/components/common/feedback/YiErrorState/",
         "description": "错误状态组件",
@@ -1113,7 +1113,7 @@
       {
         "id": "MOD-HeaderActions",
         "label": "HeaderActions",
-        "type": "component",
+        "type": "source",
         "group": "业务组件",
         "file": "cdn/components/business/HeaderActions/",
         "description": "头部操作组件",
@@ -1152,7 +1152,7 @@
       {
         "id": "MOD-markdown",
         "label": "Markdown 渲染器",
-        "type": "component",
+        "type": "source",
         "group": "渲染系统",
         "file": "cdn/markdown/",
         "description": "Markdown + Mermaid + Sanitize + TOC",
@@ -1191,7 +1191,7 @@
       {
         "id": "MOD-sanitize",
         "label": "SanitizePlugin",
-        "type": "component",
+        "type": "source",
         "group": "渲染系统",
         "file": "cdn/markdown/plugins/SanitizePlugin.js",
         "description": "DOMPurify XSS 防护",
@@ -1262,7 +1262,7 @@
       {
         "id": "yiweb-arch-modules-scene-1",
         "label": "场景1 · 查下游 — 修改前评估变更影响",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-modules/场景1-查下游.md",
         "description": "flowchart LR",
@@ -1289,7 +1289,7 @@
       {
         "id": "yiweb-arch-modules-scene-2",
         "label": "场景2 · 分类浏览 — 按类型找到特定模块",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-modules/场景2-分类浏览.md",
         "description": "flowchart LR",
@@ -1328,7 +1328,7 @@
       {
         "id": "yiweb-arch-modules-scene-3",
         "label": "场景3 · 方向校验 — 审查跨模块引用合规性",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-modules/场景3-方向校验.md",
         "description": "flowchart LR",
@@ -1352,7 +1352,7 @@
       {
         "id": "yiweb-arch-modules-scene-4",
         "label": "场景4 · 补充下游 — 全局搜索完善模块地图",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-modules/场景4-补充下游.md",
         "description": "flowchart LR",
@@ -2021,7 +2021,7 @@
     "description": "全部模块清单与依赖关系：通用组件、视图入口、服务模块、基础设施的上下游消费者映射",
     "scenarios": [
       {
-        "name": "场景1 · 查下游 — 修改前评估变更影响",
+        "name": "场景1-查下游",
         "description": "确定要修改的模块 → 在模块地图中查找 → 模块在地图中? → 查看下游消费者列表 → 下游数量? → 0(直接修改) / 1-3(逐一验证) / >3(按影响级别分组)",
         "sourceFiles": [],
         "graphNodes": [
@@ -2037,7 +2037,7 @@
         ]
       },
       {
-        "name": "场景2 · 分类浏览 — 按类型找到特定模块",
+        "name": "场景2-分类浏览",
         "description": "需要找一个模块 → 知道属于哪种类型? → 通用界面组件(浏览通用组件分类) / 渲染相关(浏览渲染插件分类) / 接口请求(浏览服务层分类) / 底层工具(浏览基础设施分类) / 不知道(遍历四大分类逐一排除) → 找到目标模块获取入口路径",
         "sourceFiles": [],
         "graphNodes": [
@@ -2068,7 +2068,7 @@
         ]
       },
       {
-        "name": "场景3 · 方向校验 — 审查跨模块引用合规性",
+        "name": "场景3-方向校验",
         "description": "收到代码变更 → 识别新增或修改的 import 语句 → 确定被 import 模块的类型 → 确定当前模块的类型 → 依赖方向符合规范? → 组件引用组件(允许) / 视图引用组件(允许) / 视图引用服务(允许) / 组件引用视图(违规) / 服务引用视图(违规)",
         "sourceFiles": [],
         "graphNodes": [
@@ -2081,17 +2081,17 @@
         ]
       },
       {
-        "name": "场景4 · 补充下游 — 全局搜索完善模块地图",
+        "name": "场景4-补充下游",
         "description": "选取目标模块 → 提取模块入口文件名 → 全局搜索该文件名的 import 语句 → 排除 node_modules 和 .git 结果 → 对比搜索结果与地图下游列表 → 有遗漏?(补充遗漏) / 无遗漏?(下游列表完整) → 更新模块地图",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "全项目 import 语句",
             "keyContent": "grep 搜索结果",
             "description": "下游补充依据"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "模块地图总表",
             "keyContent": "下游消费者列",
             "description": "补充目标"

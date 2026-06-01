@@ -7,7 +7,7 @@
     "description": "五面安全审计：输入面→接口面→存储面→认证面→渲染面的防护措施检查",
     "scenarios": [
       {
-        "name": "场景1 · 安全审计 — 逐面检查防护措施",
+        "name": "场景1-安全审计",
         "description": "检查输入面(地址栏参数/文件上传/文本输入/数据加载) → 检查接口面(请求凭证/认证头/401拦截) → 检查存储面(本地存储内容审计) → 检查认证面(凭证生命周期管理) → 检查渲染面(SanitizePlugin启用状态) → 汇总审计发现",
         "graphNodes": [
           "yiweb-arch-security-scene-1",
@@ -26,75 +26,75 @@
         ],
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/config.js",
             "keyContent": "URLSearchParams 解析",
             "description": "输入面·地址栏",
             "code": "/**\n * YiWeb Configuration\n *\n * Supports environment switching (local/prod) via URL params or localStorage.\n * Exports an ESM config object while maintaining backward compatibility with window globals.\n */\n\n// --- Environment Detection ---\nconst getParams = () => new URLSearchParams(typeof location !== 'undefined' ? location.search : '');\nconst getStorage = (key) => typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;\nconst isLocalHost = (h) => h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');\n\nconst params = getParams();\n\nlet ENV = 'prod';\n\n// --- Configuration Definitions ---\nconst ENDPOINTS = {\n  local: {\n    DATA_URL: 'http://localhost:9000',\n    API_URL: 'http://localhost:8080',\n    OLLAMA_URL: 'http://localhost:11434'\n  },\n  prod: {\n    DATA_URL: 'https://data.effiy.cn',"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/hooks/projectZipMethods.js",
             "keyContent": "文件上传预检",
             "description": "输入面·文件上传",
             "code": "export const createProjectZipMethods = ({\n    store,\n    safeExecute,\n    createError,\n    ErrorTypes,\n    normalizeFileObject,\n    normalizeTreeNode,\n    normalizeFilePath,\n    extractFileName,\n    fileTree,\n    loadFileTree,\n    loadFiles\n}) => {\n    const handleDownloadProjectVersion = async () => {\n        console.warn('[handleDownloadProjectVersion] 该功能已被禁用');\n    };\n\n    const handleUploadProjectVersion = async (zipFileOrEvent) => {\n        return safeExecute(async () => {\n            let zipFile = zipFileOrEvent;\n            if (zipFileOrEvent && zipFileOrEvent.target && zipFileOrEvent.target.files) {\n                zipFile = zipFileOrEvent.target.files[0];\n            }\n\n            if (!zipFile) return;"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/hooks/methods/inputMethods.js",
             "keyContent": "输入处理",
             "description": "输入面·文本输入",
             "code": "/**\n * 输入处理方法模块\n * author: YiWeb\n * 说明：处理消息输入、输入法事件等\n */\n\nimport { safeExecute } from '/cdn/utils/core/error.js';\n\n/**\n * 创建输入处理方法\n * @param {Object} deps - 依赖注入对象\n * @returns {Object} 输入处理方法集合\n */\nexport const createInputMethods = () => {\n    /**\n     * 处理消息输入键盘事件\n     * @param {Event} event - 键盘事件\n     */\n    const handleMessageInput = async (event) => {\n        return safeExecute(() => {\n        }, '消息输入键盘事件处理');\n    };\n\n    /**\n     * 处理输入法开始事件"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/requestHelper.js",
             "keyContent": "`credentials: 'omit'`",
             "description": "接口面·凭证隔离",
             "code": "/**\n * 发送 HTTP 请求的辅助函数 - 简化版本\n * 作者：liangliang\n */\n\n// 模块依赖改为全局方式\n// import { window.checkStatus, window.isJsonResponse } from '/src/core/services/helper/window.checkStatus.js';\n// import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用\nimport '/src/core/services/helper/checkStatus.js';\n// 导入认证工具，确保 getAuthHeaders 函数可用\nimport { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 默认请求配置\n */\nconst DEFAULT_CONFIG = {\n  timeout: 5 * 60 * 1000, // 5分钟\n  headers: {\n    'Content-Type': 'application/json',"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/authUtils.js",
             "keyContent": "`getAuthHeaders()` `X-Token`",
             "description": "接口面·认证注入",
             "code": "/**\n * API 认证工具函数\n * 用于管理 X-Token 的存储和获取\n * 作者：liangliang\n */\n\n// ---------- 常量定义 ----------\nconst API_TOKEN_KEY = \"YiWeb.apiToken.v1\";\nconst API_MODEL_KEY = \"YiWeb.apiModel.v1\";\nconst DEFAULT_API_MODEL = \"qwen3.5\";\n\n// ---------- 模型服务相关状态 ----------\nlet ModelService = null;\n\n// ---------- 基础存储函数 ----------\n\n/**\n * 获取存储的 Token\n * @returns {string} 存储的 token，如果没有则返回空字符串\n */\nexport const getStoredToken = () => {\n  try {\n    return String(localStorage.getItem(API_TOKEN_KEY) || \"\").trim();\n  } catch (_) {\n    return \"\";"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/authErrorHandler.js",
             "keyContent": "`handle401Error()`",
             "description": "接口面·401拦截",
             "code": "/**\n * 认证错误处理器\n * 统一处理 401 未授权错误\n * 作者：liangliang\n */\n\nimport { getStoredToken, saveToken } from './authUtils.js';\n\n// 导入消息提示工具\nimport '/cdn/utils/ui/message.js';\n\n/**\n * 认证错误处理配置\n */\nconst AUTH_ERROR_CONFIG = {\n  // 是否自动清除 token\n  autoClearToken: true,\n  // 是否显示错误提示\n  showError: true,\n  // 是否触发登录提示\n  promptLogin: true,\n  // 登录提示回调函数\n  onLoginPrompt: null,\n  // 清除 token 后的回调\n  onTokenCleared: null"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/plugins/SanitizePlugin.js",
             "keyContent": "DOMPurify",
             "description": "渲染面·安全清洗",
             "code": "/**\n * Sanitize Plugin\n * Cleans HTML to prevent XSS\n */\n\nconst sanitizeClassName = (className) => {\n  if (!className || typeof className !== 'string') return '';\n  const cleaned = className.replace(/[^a-zA-Z0-9 _-]/g, ' ').replace(/\\s+/g, ' ').trim();\n  return cleaned.length > 128 ? cleaned.slice(0, 128).trim() : cleaned;\n};\n\nconst isSafeCssColor = (color) => {\n  if (!color || typeof color !== 'string') return false;\n  const value = color.trim();\n  if (!value || value.length > 48) return false;\n  if (/^#[0-9a-fA-F]{3}$/.test(value) || /^#[0-9a-fA-F]{6}$/.test(value)) return true;\n  if (/^[a-zA-Z]+$/.test(value)) return true;\n  const rgbMatch = value.match(/^rgb\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*\\)$/i);\n  if (rgbMatch) {\n    const r = Number(rgbMatch[1]);\n    const g = Number(rgbMatch[2]);\n    const b = Number(rgbMatch[3]);\n    return r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255;\n  }\n  const rgbaMatch = value.match(/^rgba\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(0|1|0?\\.\\d+)\\s*\\)$/i);"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/core/PluginSystem.js",
             "keyContent": "插件注册顺序",
             "description": "渲染面·首位检查",
             "code": "/**\n * Markdown Plugin System\n * Manages plugin lifecycle and hooks\n */\n\nexport class PluginContext {\n  constructor(options = {}) {\n    this._options = options;\n    this._state = {};\n    this._hooks = {};\n  }\n\n  get options() {\n    return this._options;\n  }\n\n  getState(key) {\n    return this._state[key];\n  }\n\n  setState(key, value) {\n    this._state[key] = value;\n  }\n\n  registerHook(name, fn) {"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/core/config.test.js",
             "keyContent": "配置测试",
             "description": "验证环境切换"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/helper/requestHelper.test.js",
             "keyContent": "请求封装测试",
             "description": "验证 credentials"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/helper/authUtils.test.js",
             "keyContent": "认证测试",
             "description": "验证 token 生命周期"
@@ -102,7 +102,7 @@
         ]
       },
       {
-        "name": "场景2 · 安全自查 — 新功能上线前自我检查",
+        "name": "场景2-安全自查",
         "description": "新功能涉及用户输入?(确认输入有校验或清洗) → 新功能涉及请求发送?(确认使用封装的请求方法) → 新功能涉及本地存储?(确认仅存非敏感数据) → 新功能涉及动态内容渲染?(确认经过 SanitizePlugin) → 安全自查通过可提交",
         "graphNodes": [
           "yiweb-arch-security-scene-2",
@@ -122,20 +122,20 @@
         ],
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "五类信任面防护清单",
             "keyContent": "自查对照表",
             "description": "每次变更前逐项检查"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/requestHelper.js",
             "keyContent": "请求封装",
             "description": "自查·接口面",
             "code": "/**\n * 发送 HTTP 请求的辅助函数 - 简化版本\n * 作者：liangliang\n */\n\n// 模块依赖改为全局方式\n// import { window.checkStatus, window.isJsonResponse } from '/src/core/services/helper/window.checkStatus.js';\n// import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用\nimport '/src/core/services/helper/checkStatus.js';\n// 导入认证工具，确保 getAuthHeaders 函数可用\nimport { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 默认请求配置\n */\nconst DEFAULT_CONFIG = {\n  timeout: 5 * 60 * 1000, // 5分钟\n  headers: {\n    'Content-Type': 'application/json',"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/plugins/SanitizePlugin.js",
             "keyContent": "安全清洗",
             "description": "自查·渲染面",
@@ -144,7 +144,7 @@
         ]
       },
       {
-        "name": "场景3 · 认证排查 — 追踪凭证链路",
+        "name": "场景3-认证排查",
         "description": "检查本地存储凭证是否存在 → 凭证存在? → 检查请求头凭证是否正确注入 → 认证头存在? → 检查响应是否收到 401 → 收到 401? → 检查 authErrorHandler 是否触发登录弹窗 / 问题在后端联系后端排查",
         "graphNodes": [
           "yiweb-arch-security-scene-3",
@@ -156,34 +156,34 @@
         ],
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/authUtils.js",
             "keyContent": "`getStoredToken()` `saveToken()` `getAuthHeaders()` `clearToken()` `openAuth()`",
             "description": "①②③⑦⑧",
             "code": "/**\n * API 认证工具函数\n * 用于管理 X-Token 的存储和获取\n * 作者：liangliang\n */\n\n// ---------- 常量定义 ----------\nconst API_TOKEN_KEY = \"YiWeb.apiToken.v1\";\nconst API_MODEL_KEY = \"YiWeb.apiModel.v1\";\nconst DEFAULT_API_MODEL = \"qwen3.5\";\n\n// ---------- 模型服务相关状态 ----------\nlet ModelService = null;\n\n// ---------- 基础存储函数 ----------\n\n/**\n * 获取存储的 Token\n * @returns {string} 存储的 token，如果没有则返回空字符串\n */\nexport const getStoredToken = () => {\n  try {\n    return String(localStorage.getItem(API_TOKEN_KEY) || \"\").trim();\n  } catch (_) {\n    return \"\";"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/authErrorHandler.js",
             "keyContent": "`handle401Error()` `reset401Handler()`",
             "description": "⑤⑥",
             "code": "/**\n * 认证错误处理器\n * 统一处理 401 未授权错误\n * 作者：liangliang\n */\n\nimport { getStoredToken, saveToken } from './authUtils.js';\n\n// 导入消息提示工具\nimport '/cdn/utils/ui/message.js';\n\n/**\n * 认证错误处理配置\n */\nconst AUTH_ERROR_CONFIG = {\n  // 是否自动清除 token\n  autoClearToken: true,\n  // 是否显示错误提示\n  showError: true,\n  // 是否触发登录提示\n  promptLogin: true,\n  // 登录提示回调函数\n  onLoginPrompt: null,\n  // 清除 token 后的回调\n  onTokenCleared: null"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/requestHelper.js",
             "keyContent": "`sendRequest()` credentials:omit",
             "description": "④",
             "code": "/**\n * 发送 HTTP 请求的辅助函数 - 简化版本\n * 作者：liangliang\n */\n\n// 模块依赖改为全局方式\n// import { window.checkStatus, window.isJsonResponse } from '/src/core/services/helper/window.checkStatus.js';\n// import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/src/utils/log.js';\n// 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用\nimport '/cdn/utils/core/log.js';\n// 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用\nimport '/src/core/services/helper/checkStatus.js';\n// 导入认证工具，确保 getAuthHeaders 函数可用\nimport { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';\n// 导入认证错误处理器\nimport { isAuthError } from '/src/core/services/helper/authErrorHandler.js';\nimport { ErrorCodes, ErrorTypes } from '/cdn/utils/core/error.js';\n\n/**\n * 默认请求配置\n */\nconst DEFAULT_CONFIG = {\n  timeout: 5 * 60 * 1000, // 5分钟\n  headers: {\n    'Content-Type': 'application/json',"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/helper/authUtils.test.js",
             "keyContent": "认证工具测试",
             "description": "验证 token 生命周期"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/helper/requestHelper.test.js",
             "keyContent": "请求封装测试",
             "description": "验证 credentials"
@@ -191,7 +191,7 @@
         ]
       },
       {
-        "name": "场景4 · XSS 评估 — 检查内容清洗安全性",
+        "name": "场景4-XSS评估",
         "description": "检查 SanitizePlugin 是否启用 → 插件已启用? → 检查插件在链中的排序是否为第一位 → 排序正确? → 检查输入面是否有未校验的输入点 → 检查是否有绕过清洗插件的渲染路径 → 汇总风险评估结果",
         "graphNodes": [
           "yiweb-arch-security-scene-4",
@@ -202,28 +202,28 @@
         ],
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/plugins/SanitizePlugin.js",
             "keyContent": "DOMPurify 配置",
             "description": "XSS 防护核心",
             "code": "/**\n * Sanitize Plugin\n * Cleans HTML to prevent XSS\n */\n\nconst sanitizeClassName = (className) => {\n  if (!className || typeof className !== 'string') return '';\n  const cleaned = className.replace(/[^a-zA-Z0-9 _-]/g, ' ').replace(/\\s+/g, ' ').trim();\n  return cleaned.length > 128 ? cleaned.slice(0, 128).trim() : cleaned;\n};\n\nconst isSafeCssColor = (color) => {\n  if (!color || typeof color !== 'string') return false;\n  const value = color.trim();\n  if (!value || value.length > 48) return false;\n  if (/^#[0-9a-fA-F]{3}$/.test(value) || /^#[0-9a-fA-F]{6}$/.test(value)) return true;\n  if (/^[a-zA-Z]+$/.test(value)) return true;\n  const rgbMatch = value.match(/^rgb\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*\\)$/i);\n  if (rgbMatch) {\n    const r = Number(rgbMatch[1]);\n    const g = Number(rgbMatch[2]);\n    const b = Number(rgbMatch[3]);\n    return r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255;\n  }\n  const rgbaMatch = value.match(/^rgba\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(0|1|0?\\.\\d+)\\s*\\)$/i);"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/core/MarkdownRenderer.js",
             "keyContent": "`renderMarkdownHtml()`",
             "description": "渲染入口",
             "code": "/**\n * Markdown Renderer\n * Core markdown rendering with plugin support\n */\n\nimport { PluginContext, PluginManager } from './PluginSystem.js';\n\nexport class MarkdownRenderer {\n  constructor(options = {}) {\n    this.options = {\n      breaks: true,\n      gfm: true,\n      ...options\n    };\n\n    this._pluginContext = new PluginContext(this.options);\n    this._pluginManager = new PluginManager();\n    this._pluginManager.setContext(this._pluginContext);\n\n    this._markedRenderer = null;\n    this._interactionsBound = false;\n  }\n\n  use(plugin, pluginOptions = {}) {\n    this._pluginManager.use(plugin, pluginOptions);"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/core/PluginSystem.js",
             "keyContent": "插件注册顺序",
             "description": "SanitizePlugin 首位保证",
             "code": "/**\n * Markdown Plugin System\n * Manages plugin lifecycle and hooks\n */\n\nexport class PluginContext {\n  constructor(options = {}) {\n    this._options = options;\n    this._state = {};\n    this._hooks = {};\n  }\n\n  get options() {\n    return this._options;\n  }\n\n  getState(key) {\n    return this._state[key];\n  }\n\n  setState(key, value) {\n    this._state[key] = value;\n  }\n\n  registerHook(name, fn) {"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/views/aicr/hooks/methods/inputMethods.js",
             "keyContent": "用户输入入口",
             "description": "输入→渲染链路",
@@ -238,7 +238,7 @@
       {
         "id": "config",
         "label": "config.js",
-        "type": "utility",
+        "type": "source",
         "group": "L2-Config",
         "file": "src/core/config.js",
         "description": "输入面·地址栏",
@@ -279,7 +279,7 @@
       {
         "id": "projectZipMethods",
         "label": "projectZipMethods.js",
-        "type": "view",
+        "type": "source",
         "group": "L1-AICR",
         "file": "src/views/aicr/hooks/projectZipMethods.js",
         "description": "输入面·文件上传",
@@ -318,7 +318,7 @@
       {
         "id": "inputMethods",
         "label": "inputMethods.js",
-        "type": "view",
+        "type": "source",
         "group": "L1-AICR",
         "file": "src/views/aicr/hooks/methods/inputMethods.js",
         "description": "输入面·文本输入",
@@ -369,7 +369,7 @@
       {
         "id": "requestHelper",
         "label": "requestHelper.js",
-        "type": "service",
+        "type": "source",
         "group": "L2-Helpers",
         "file": "src/core/services/helper/requestHelper.js",
         "description": "接口面·凭证隔离",
@@ -421,7 +421,7 @@
       {
         "id": "authUtils",
         "label": "authUtils.js",
-        "type": "service",
+        "type": "source",
         "group": "L2-Helpers",
         "file": "src/core/services/helper/authUtils.js",
         "description": "接口面·认证注入",
@@ -473,7 +473,7 @@
       {
         "id": "authErrorHandler",
         "label": "authErrorHandler.js",
-        "type": "service",
+        "type": "source",
         "group": "L2-Helpers",
         "file": "src/core/services/helper/authErrorHandler.js",
         "description": "接口面·401拦截",
@@ -523,7 +523,7 @@
       {
         "id": "SanitizePlugin",
         "label": "SanitizePlugin.js",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "cdn/markdown/plugins/SanitizePlugin.js",
         "description": "渲染面·安全清洗",
@@ -574,7 +574,7 @@
       {
         "id": "PluginSystem",
         "label": "PluginSystem.js",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "cdn/markdown/core/PluginSystem.js",
         "description": "渲染面·首位检查",
@@ -624,8 +624,8 @@
       {
         "id": "config-test",
         "label": "config.test.js",
-        "type": "utility",
-        "group": "Other",
+        "type": "test",
+        "group": "Tests",
         "file": "tests/core/config.test.js",
         "description": "验证环境切换",
         "keyFunctions": [
@@ -662,8 +662,8 @@
       {
         "id": "requestHelper-test",
         "label": "requestHelper.test.js",
-        "type": "utility",
-        "group": "Other",
+        "type": "test",
+        "group": "Tests",
         "file": "tests/helper/requestHelper.test.js",
         "description": "验证 credentials",
         "keyFunctions": [
@@ -711,8 +711,8 @@
       {
         "id": "authUtils-test",
         "label": "authUtils.test.js",
-        "type": "utility",
-        "group": "Other",
+        "type": "test",
+        "group": "Tests",
         "file": "tests/helper/authUtils.test.js",
         "description": "验证 token 生命周期",
         "keyFunctions": [
@@ -760,7 +760,7 @@
       {
         "id": "manage",
         "label": "五类信任面防护清单",
-        "type": "documentation",
+        "type": "source",
         "group": "Other",
         "file": "五类信任面防护清单",
         "description": "每次变更前逐项检查",
@@ -788,7 +788,7 @@
       {
         "id": "MarkdownRenderer",
         "label": "MarkdownRenderer.js",
-        "type": "utility",
+        "type": "source",
         "group": "Other",
         "file": "cdn/markdown/core/MarkdownRenderer.js",
         "description": "渲染入口",
@@ -870,7 +870,7 @@
       {
         "id": "yiweb-arch-security-scene-1",
         "label": "场景1 · 安全审计 — 逐面检查防护措施",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-security/场景1-安全审计.md",
         "description": "flowchart LR",
@@ -901,7 +901,7 @@
       {
         "id": "yiweb-arch-security-scene-2",
         "label": "场景2 · 安全自查 — 新功能上线前自我检查",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-security/场景2-安全自查.md",
         "description": "flowchart TD",
@@ -933,7 +933,7 @@
       {
         "id": "yiweb-arch-security-scene-3",
         "label": "场景3 · 认证排查 — 追踪凭证链路",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-security/场景3-认证排查.md",
         "description": "flowchart TB",
@@ -957,7 +957,7 @@
       {
         "id": "yiweb-arch-security-scene-4",
         "label": "场景4 · XSS 评估 — 检查内容清洗安全性",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-arch-security/场景4-XSS评估.md",
         "description": "flowchart LR",

@@ -7,7 +7,7 @@
       {
         "id": "ST-full",
         "label": "全量自检",
-        "type": "check",
+        "type": "source",
         "group": "检查模式",
         "description": "项目初始化后完整检查：扫描全部文件，运行全部规则",
         "mode": "full",
@@ -48,7 +48,7 @@
       {
         "id": "ST-incremental",
         "label": "增量自检",
-        "type": "check",
+        "type": "source",
         "group": "检查模式",
         "description": "提交前仅检查变更文件：git diff --name-only",
         "mode": "incremental",
@@ -88,7 +88,7 @@
       {
         "id": "ST-consistency",
         "label": "一致性校验",
-        "type": "check",
+        "type": "source",
         "group": "检查模式",
         "description": "文档声称 vs 代码实际：模块地图条目对比真实文件",
         "mode": "consistency",
@@ -116,7 +116,7 @@
       {
         "id": "ST-rule-registry",
         "label": "检查项注册表",
-        "type": "config",
+        "type": "source",
         "group": "规则引擎",
         "description": "15 项规则配置（JSON），定义每项检查的内容和严重度",
         "ruleCount": 15,
@@ -161,7 +161,7 @@
       {
         "id": "ST-engine",
         "label": "执行引擎",
-        "type": "engine",
+        "type": "source",
         "group": "规则引擎",
         "description": "顺序/并行/降级执行策略",
         "strategies": [
@@ -210,7 +210,7 @@
       {
         "id": "ST-reporter",
         "label": "报告生成器",
-        "type": "output",
+        "type": "source",
         "group": "输出",
         "description": "JSON + 终端格式报告输出",
         "formats": [
@@ -262,7 +262,7 @@
       {
         "id": "ST-check-completeness",
         "label": "claude-completeness",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "file": "CLAUDE.md",
         "description": "检查 CLAUDE.md 五大标记段完整性",
@@ -291,7 +291,7 @@
       {
         "id": "ST-check-arch",
         "label": "architecture-rules",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "检查模块间是否有违规引用（L2→L1 等）",
         "category": "架构",
@@ -320,7 +320,7 @@
       {
         "id": "ST-check-security",
         "label": "security-scan",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "扫描代码中是否藏有密码或密钥",
         "category": "安全",
@@ -363,7 +363,7 @@
       {
         "id": "ST-check-version",
         "label": "version-consistency",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "检查各处版本号是否一致",
         "category": "版本",
@@ -391,7 +391,7 @@
       {
         "id": "ST-check-branch",
         "label": "branch-naming",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "检查分支名是否符合 feat/<name> 规范",
         "category": "分支",
@@ -419,7 +419,7 @@
       {
         "id": "ST-check-doc-format",
         "label": "doc-format",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "检查文档格式和引用完整性",
         "category": "文档",
@@ -447,7 +447,7 @@
       {
         "id": "ST-check-code-style",
         "label": "code-style",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "检查代码风格一致性",
         "category": "代码",
@@ -475,7 +475,7 @@
       {
         "id": "ST-check-deps",
         "label": "dependency-check",
-        "type": "rule",
+        "type": "source",
         "group": "规则项",
         "description": "检查依赖矩阵与实际 import 一致性",
         "category": "架构",
@@ -515,7 +515,7 @@
       {
         "id": "ST-doc-claude",
         "label": "CLAUDE.md 基线",
-        "type": "baseline",
+        "type": "source",
         "group": "参照基线",
         "file": "CLAUDE.md",
         "description": "项目画像+约束+准则的权威来源",
@@ -552,7 +552,7 @@
       {
         "id": "ST-doc-arch",
         "label": "架构文档基线",
-        "type": "baseline",
+        "type": "source",
         "group": "参照基线",
         "file": "docs/故事任务面板/yiweb-arch/",
         "description": "架构文档基线",
@@ -570,7 +570,7 @@
       {
         "id": "ST-doc-modules",
         "label": "模块地图基线",
-        "type": "baseline",
+        "type": "source",
         "group": "参照基线",
         "file": "docs/故事任务面板/yiweb-arch-modules/",
         "description": "模块清单基线",
@@ -595,7 +595,7 @@
       {
         "id": "ST-code-actual",
         "label": "实际代码",
-        "type": "baseline",
+        "type": "source",
         "group": "参照基线",
         "description": "git 仓库中的真实文件结构",
         "source": "git",
@@ -724,7 +724,7 @@
       {
         "id": "yiweb-self-test-scene-1",
         "label": "场景1 · 全量自检 — 项目初始化后完整检查",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-self-test/场景1-全量自检.md",
         "description": "flowchart LR",
@@ -757,7 +757,7 @@
       {
         "id": "yiweb-self-test-scene-2",
         "label": "场景2 · 增量自检 — 提交前仅检查变更文件",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-self-test/场景2-增量自检.md",
         "description": "flowchart LR",
@@ -781,7 +781,7 @@
       {
         "id": "yiweb-self-test-scene-3",
         "label": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-self-test/场景3-一致性校验.md",
         "description": "flowchart LR",
@@ -805,7 +805,7 @@
       {
         "id": "yiweb-self-test-scene-4",
         "label": "场景4 · 安全回归 — 安全相关变更后触发检查",
-        "type": "doc",
+        "type": "scenario",
         "group": "Documentation",
         "file": "docs/故事任务面板/yiweb-self-test/场景4-安全回归.md",
         "description": "flowchart LR",
@@ -1240,35 +1240,35 @@
     "description": "全量/增量/一致性三层自检体系：规则引擎驱动，文档基线对比代码实际",
     "scenarios": [
       {
-        "name": "场景1 · 全量自检 — 项目初始化后完整检查",
+        "name": "场景1-全量自检",
         "description": "扫描项目根目录 → 检查项目说明(完整项目画像?) → 检查项目说明书(≥3个领域术语?) → 检查故事目录(每个任务都有完整文档?) → 检查架构规则(模块间有违规引用?) → 检查安全(代码中藏有密码或密钥?) → 检查版本(各处版本号一致?) → 检查分支(分支名规范?) → 全部通过生成健康报告",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本",
             "keyContent": "检查项注册表 (JSON)",
             "description": "15 项规则配置"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本",
             "keyContent": "执行引擎",
             "description": "顺序/并行/降级"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本",
             "keyContent": "报告生成器",
             "description": "JSON + 终端"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "CLAUDE.md",
             "keyContent": "五大标记段",
             "description": "claude-completeness 检查依据"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/self-test/full.test.js",
             "keyContent": "全量自检测试",
             "description": "验证合规+违规场景"
@@ -1295,23 +1295,23 @@
         ]
       },
       {
-        "name": "场景2 · 增量自检 — 提交前仅检查变更文件",
+        "name": "场景2-增量自检",
         "description": "提交触发 → 找出本次变更了哪些文件 → 有文件变更? → 按文件类型分类(文档/代码/配置) → 变更了文档?(检查文档格式+引用) / 变更了代码?(检查安全+日志+架构) / 变更了配置?(检查环境切换) → 全部通过(允许提交) / 有失败(阻断提交列出失败项)",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本 (增量模式)",
             "keyContent": "git diff --name-only",
             "description": "变更检测"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本",
             "keyContent": "按扩展名分发检查",
             "description": "文档(.md)/代码(.js)/配置(.json)"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/self-test/incremental.test.js",
             "keyContent": "增量自检测试",
             "description": "验证混合变更场景"
@@ -1329,11 +1329,11 @@
         ]
       },
       {
-        "name": "场景3 · 一致性校验 — 文档声称 vs 代码实际",
+        "name": "场景3-一致性校验",
         "description": "读取模块地图了解文档声称的目录结构 → 扫描实际代码列出真实存在的目录和文件 → 对比视图层(文档列出的视图代码中都有吗?) → 反向检查(代码中有而文档未列出的模块) → 对比服务层(文档中的服务实际文件存在吗?) → 汇总差异清单 → 差异数=0(完全一致评审可继续) / 差异数>0(发现不一致建议先修复)",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "模块地图文档",
             "keyContent": "全部模块条目",
             "description": "文档基线"
@@ -1351,41 +1351,41 @@
         ]
       },
       {
-        "name": "场景4 · 安全回归 — 安全相关变更后触发检查",
+        "name": "场景4-安全回归",
         "description": "安全相关代码变更检测 → 变更是否涉及安全面? → 启动安全面回归检查 → 检查密钥暴露 → 检查请求安全 → 检查日志安全 → 检查存储安全 → 检查第三方内容过滤 → 五项全通过?(安全回归通过) / 有发现?(汇总安全问题，高风险阻断)",
         "sourceFiles": [
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本 (安全模块)",
             "keyContent": "`security-no-secrets`",
             "description": "密钥暴露检查"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本 (安全模块)",
             "keyContent": "`security-fetch-credentials`",
             "description": "请求安全检查"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "自检脚本 (安全模块)",
             "keyContent": "`security-no-raw-log`",
             "description": "日志安全检查"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "src/core/services/helper/requestHelper.js",
             "keyContent": "credentials:omit",
             "description": "请求安全验证目标"
           },
           {
-            "type": "开发",
+            "type": "source",
             "file": "cdn/markdown/plugins/SanitizePlugin.js",
             "keyContent": "DOMPurify",
             "description": "第三方过滤验证目标"
           },
           {
-            "type": "测试",
+            "type": "test",
             "file": "tests/self-test/security.test.js",
             "keyContent": "安全回归测试",
             "description": "验证 5 项检查"
