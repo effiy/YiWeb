@@ -58,45 +58,46 @@ registerGlobalComponent({
             _graphData: null,
             _graphTitle: '知识图谱',
             _graphLoading: false,
+            _tagGraphData: null,
+            _tagGraphTitle: '',
+            _tagGraphLoading: false,
         };
+    },
+    watch: {
+        selectedProjectTags: {
+            handler(newTags) {
+                if (this.viewMode === 'graph') {
+                    if (newTags && newTags.length > 0) {
+                        this.loadGraphForTags(newTags);
+                    } else {
+                        this._tagGraphData = null;
+                        this._tagGraphTitle = '';
+                    }
+                }
+            },
+            deep: false,
+        },
     },
     computed: {
         graphHeight() {
             return typeof window !== 'undefined' ? window.innerHeight - 200 : 600;
         },
         displayGraphData() {
-            // Use prop if provided, otherwise use internal _graphData
             if (this.filteredGraphData) return this.filteredGraphData;
+            if (this._tagGraphData) return this._tagGraphData;
             return this._graphData;
         },
         displayGraphTitle() {
-            return this.graphTitle || this._graphTitle;
+            return this.graphTitle || this._tagGraphTitle || this._graphTitle;
         },
-        // 根据选中的项目标签过滤图谱节点
+        // 根据选中的项目标签加载对应知识图谱
         tagFilteredGraphData() {
-            const raw = this.filteredGraphData || this._graphData;
-            if (!raw || !raw.nodes) return raw;
-            // 没有标签筛选 → 显示全部
-            if (!this.selectedProjectTags || this.selectedProjectTags.length === 0) return raw;
-            // 有标签筛选 → 只显示标签匹配的故事目录下的节点
-            const selectedSet = new Set(this.selectedProjectTags);
-            const filteredNodes = raw.nodes.filter(n => {
-                // 节点关联的故事目录标签与筛选标签匹配
-                const mdFiles = n.mdFiles || [];
-                return mdFiles.some(mf => {
-                    const file = mf.file || '';
-                    // 通过 file 路径推断所属故事目录
-                    return this.stories.some(s =>
-                        selectedSet.has(s.name) && s.directory && file.includes(s.directory)
-                    );
-                });
-            });
-            if (filteredNodes.length === 0) return raw; // 无匹配时显示全部
-            const filteredIds = new Set(filteredNodes.map(n => n.id));
-            const filteredEdges = (raw.edges || []).filter(e =>
-                filteredIds.has(e.source) && filteredIds.has(e.target)
-            );
-            return { nodes: filteredNodes, edges: filteredEdges };
+            // 有标签筛选 → 使用按标签加载的独立知识图谱数据
+            if (this.selectedProjectTags && this.selectedProjectTags.length > 0 && this._tagGraphData) {
+                return this._tagGraphData;
+            }
+            // 无标签筛选 → 使用全量聚合图谱
+            return this.filteredGraphData || this._graphData;
         },
     },
     methods: {
@@ -175,8 +176,13 @@ registerGlobalComponent({
 
         onSetView(mode) {
             this.$emit('set-view', mode);
-            if (mode === 'graph' && !this._graphData) {
-                this.loadGraphData();
+            if (mode === 'graph') {
+                if (!this._graphData) {
+                    this.loadGraphData();
+                }
+                if (this.selectedProjectTags && this.selectedProjectTags.length > 0 && !this._tagGraphData) {
+                    this.loadGraphForTags(this.selectedProjectTags);
+                }
             }
         },
 
@@ -184,14 +190,12 @@ registerGlobalComponent({
             if (this._graphLoading) return;
             this._graphLoading = true;
             try {
-                // 加载全局故事依赖图
                 const resp = await fetch('/docs/故事任务面板/story-deps.json', { credentials: 'omit' });
                 if (resp.ok) {
                     const data = await resp.json();
                     this._graphData = data.graph || { nodes: [], edges: [] };
                     this._graphTitle = (data.story && data.story.name) || '故事依赖关系图';
                 } else {
-                    // 回退：尝试合并所有故事目录的知识图谱
                     this._graphData = { nodes: [], edges: [] };
                     this._graphTitle = '知识图谱（无数据）';
                 }
@@ -200,6 +204,58 @@ registerGlobalComponent({
                 this._graphTitle = '知识图谱加载失败';
             } finally {
                 this._graphLoading = false;
+            }
+        },
+
+        async loadGraphForTags(tagNames) {
+            if (this._tagGraphLoading) return;
+            this._tagGraphLoading = true;
+            try {
+                const tagSet = new Set(tagNames);
+                const dirs = [];
+                for (const s of this.stories) {
+                    if (tagSet.has(s.name) && s.directory) {
+                        dirs.push(s.directory);
+                    }
+                }
+
+                if (dirs.length === 0) {
+                    this._tagGraphData = this._graphData;
+                    this._tagGraphTitle = this._graphTitle;
+                    return;
+                }
+
+                const allNodes = new Map();
+                const allEdges = new Map();
+                let firstName = '';
+
+                for (const dir of dirs) {
+                    try {
+                        const url = `/docs/故事任务面板/${dir}/knowledge-graph.json`;
+                        const resp = await fetch(url, { credentials: 'omit' });
+                        if (!resp.ok) continue;
+                        const data = await resp.json();
+                        if (!firstName) firstName = (data.story && data.story.name) || dir;
+
+                        for (const n of (data.graph?.nodes || [])) {
+                            if (!allNodes.has(n.id)) allNodes.set(n.id, { ...n });
+                        }
+                        for (const e of (data.graph?.edges || [])) {
+                            const key = `${e.source}|${e.target}|${e.relation}`;
+                            if (!allEdges.has(key)) allEdges.set(key, { ...e });
+                        }
+                    } catch (_) {}
+                }
+
+                this._tagGraphData = {
+                    nodes: Array.from(allNodes.values()),
+                    edges: Array.from(allEdges.values()),
+                };
+                this._tagGraphTitle = dirs.length === 1 ? firstName : `已选项目 (${dirs.length})`;
+            } catch (_) {
+                this._tagGraphData = this._graphData;
+            } finally {
+                this._tagGraphLoading = false;
             }
         },
         onKeydown(e) {
