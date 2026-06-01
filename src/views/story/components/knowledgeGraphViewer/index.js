@@ -154,10 +154,19 @@ const GROUP_DESCRIPTIONS = {
     'External': '外部 — 第三方依赖与 CDN 资源',
 };
 
+const TYPE_COLORS = {
+    view: '#3B82F6', entry: '#10B981', service: '#F59E0B', utility: '#A855F7',
+    component: '#06B6D4', framework: '#8B5CF6', config: '#F97316', state: '#EC4899',
+    event: '#EF4444', method: '#6366F1', test: '#DC2626', doc: '#6B7280',
+    external: '#9CA3AF', storage: '#EC4899',
+};
+
 function getNodeColor(node) {
     if (node.group && GROUP_COLORS[node.group]) return GROUP_COLORS[node.group];
     if (node.type && GROUP_COLORS[node.type]) return GROUP_COLORS[node.type];
-    return '#94A3B8';
+    if (node.type && TYPE_COLORS[node.type]) return TYPE_COLORS[node.type];
+    const hash = String(node.id || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+    return `hsl(${Math.abs(hash) % 360}, 55%, 50%)`;
 }
 
 function getTypeLabel(type) {

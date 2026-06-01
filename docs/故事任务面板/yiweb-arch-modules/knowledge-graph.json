@@ -1226,6 +1226,167 @@
         "relatedNodes": [
           "MOD-markdown"
         ]
+      },
+      {
+        "id": "yiweb-arch-modules",
+        "label": "YiWeb-系统架构-模块地图 · 故事任务",
+        "type": "story",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-modules/故事任务.md",
+        "description": "<a id=\"sec1\"></a>",
+        "keyFunctions": [],
+        "mdFiles": [],
+        "relatedNodes": [
+          "MOD-crud",
+          "MOD-baseView",
+          "MOD-authUtils",
+          "MOD-requestHelper",
+          "MOD-sessionSync",
+          "MOD-filterHelpers",
+          "MOD-error",
+          "MOD-log",
+          "MOD-YiIcon",
+          "MOD-YiButton",
+          "MOD-YiTag",
+          "MOD-YiLoading",
+          "MOD-YiEmpty",
+          "MOD-YiError",
+          "MOD-HeaderActions",
+          "MOD-markdown",
+          "MOD-sanitize",
+          "MOD-crud",
+          "MOD-requestHelper",
+          "MOD-authUtils"
+        ]
+      },
+      {
+        "id": "yiweb-arch-modules-scene-1",
+        "label": "场景1 · 查下游 — 修改前评估变更影响",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-modules/场景1-查下游.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 查下游 — 修改前评估变更影响",
+            "scenarioIndex": 0,
+            "section": "§0 技术评审",
+            "file": "场景1-查下游.md"
+          }
+        ],
+        "relatedNodes": [
+          "MOD-crud",
+          "MOD-baseView",
+          "MOD-authUtils",
+          "MOD-requestHelper",
+          "MOD-sessionSync",
+          "MOD-filterHelpers",
+          "MOD-error",
+          "MOD-log"
+        ]
+      },
+      {
+        "id": "yiweb-arch-modules-scene-2",
+        "label": "场景2 · 分类浏览 — 按类型找到特定模块",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-modules/场景2-分类浏览.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 分类浏览 — 按类型找到特定模块",
+            "scenarioIndex": 1,
+            "section": "§0 技术评审",
+            "file": "场景2-分类浏览.md"
+          }
+        ],
+        "relatedNodes": [
+          "MOD-YiIcon",
+          "MOD-YiButton",
+          "MOD-YiTag",
+          "MOD-YiLoading",
+          "MOD-YiEmpty",
+          "MOD-YiError",
+          "MOD-HeaderActions",
+          "MOD-markdown",
+          "MOD-sanitize",
+          "MOD-crud",
+          "MOD-requestHelper",
+          "MOD-authUtils",
+          "MOD-authError",
+          "MOD-checkStatus",
+          "MOD-sessionSync",
+          "MOD-services-index",
+          "MOD-log",
+          "MOD-error",
+          "MOD-common",
+          "MOD-aicr-index"
+        ]
+      },
+      {
+        "id": "yiweb-arch-modules-scene-3",
+        "label": "场景3 · 方向校验 — 审查跨模块引用合规性",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-modules/场景3-方向校验.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 方向校验 — 审查跨模块引用合规性",
+            "scenarioIndex": 2,
+            "section": "§0 技术评审",
+            "file": "场景3-方向校验.md"
+          }
+        ],
+        "relatedNodes": [
+          "MOD-sessionSync",
+          "MOD-filterHelpers",
+          "MOD-aicr-index",
+          "MOD-claude-index",
+          "MOD-story-index"
+        ]
+      },
+      {
+        "id": "yiweb-arch-modules-scene-4",
+        "label": "场景4 · 补充下游 — 全局搜索完善模块地图",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-modules/场景4-补充下游.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 补充下游 — 全局搜索完善模块地图",
+            "scenarioIndex": 3,
+            "section": "§0 技术评审",
+            "file": "场景4-补充下游.md"
+          }
+        ],
+        "relatedNodes": [
+          "MOD-baseView",
+          "MOD-componentLoader",
+          "MOD-log",
+          "MOD-error",
+          "MOD-common",
+          "MOD-config",
+          "MOD-services-index",
+          "MOD-crud",
+          "MOD-requestHelper",
+          "MOD-authUtils",
+          "MOD-authError",
+          "MOD-checkStatus",
+          "MOD-sessionSync",
+          "MOD-aicr-index",
+          "MOD-claude-index",
+          "MOD-story-index",
+          "MOD-filterHelpers",
+          "MOD-fileNormalizer",
+          "MOD-knowledgeGraph",
+          "MOD-YiIcon"
+        ]
       }
     ],
     "edges": [
@@ -1444,6 +1605,414 @@
         "target": "MOD-baseView",
         "relation": "registered_by",
         "label": "注册"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-modules-scene-1",
+        "relation": "contains",
+        "label": "场景1"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-crud",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-sessionSync",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-filterHelpers",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-error",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-1",
+        "target": "MOD-log",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-modules-scene-2",
+        "relation": "contains",
+        "label": "场景2"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-YiIcon",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-YiButton",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-YiTag",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-YiLoading",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-YiEmpty",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-YiError",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-HeaderActions",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-markdown",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-sanitize",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-crud",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-authError",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-checkStatus",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-sessionSync",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-services-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-log",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-error",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-common",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-aicr-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-claude-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-story-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-2",
+        "target": "MOD-config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-modules-scene-3",
+        "relation": "contains",
+        "label": "场景3"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-3",
+        "target": "MOD-sessionSync",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-3",
+        "target": "MOD-filterHelpers",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-3",
+        "target": "MOD-aicr-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-3",
+        "target": "MOD-claude-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-3",
+        "target": "MOD-story-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules",
+        "target": "yiweb-arch-modules-scene-4",
+        "relation": "contains",
+        "label": "场景4"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-componentLoader",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-log",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-error",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-common",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-services-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-crud",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-authError",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-checkStatus",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-sessionSync",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-aicr-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-claude-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-story-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-filterHelpers",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-fileNormalizer",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-knowledgeGraph",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-YiIcon",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-YiButton",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-YiTag",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-YiLoading",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-YiEmpty",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-YiError",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-HeaderActions",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-markdown",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-modules-scene-4",
+        "target": "MOD-sanitize",
+        "relation": "documents",
+        "label": "§7 关联源码"
       }
     ]
   },
@@ -1456,6 +2025,7 @@
         "description": "确定要修改的模块 → 在模块地图中查找 → 模块在地图中? → 查看下游消费者列表 → 下游数量? → 0(直接修改) / 1-3(逐一验证) / >3(按影响级别分组)",
         "sourceFiles": [],
         "graphNodes": [
+          "yiweb-arch-modules-scene-1",
           "MOD-crud",
           "MOD-baseView",
           "MOD-authUtils",
@@ -1471,6 +2041,7 @@
         "description": "需要找一个模块 → 知道属于哪种类型? → 通用界面组件(浏览通用组件分类) / 渲染相关(浏览渲染插件分类) / 接口请求(浏览服务层分类) / 底层工具(浏览基础设施分类) / 不知道(遍历四大分类逐一排除) → 找到目标模块获取入口路径",
         "sourceFiles": [],
         "graphNodes": [
+          "yiweb-arch-modules-scene-2",
           "MOD-YiIcon",
           "MOD-YiButton",
           "MOD-YiTag",
@@ -1501,6 +2072,7 @@
         "description": "收到代码变更 → 识别新增或修改的 import 语句 → 确定被 import 模块的类型 → 确定当前模块的类型 → 依赖方向符合规范? → 组件引用组件(允许) / 视图引用组件(允许) / 视图引用服务(允许) / 组件引用视图(违规) / 服务引用视图(违规)",
         "sourceFiles": [],
         "graphNodes": [
+          "yiweb-arch-modules-scene-3",
           "MOD-sessionSync",
           "MOD-filterHelpers",
           "MOD-aicr-index",
@@ -1526,6 +2098,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-modules-scene-4",
           "MOD-baseView",
           "MOD-componentLoader",
           "MOD-log",

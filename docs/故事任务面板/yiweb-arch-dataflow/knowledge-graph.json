@@ -100,6 +100,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-dataflow-scene-1",
           "aicr-test",
           "authErrorHandler",
           "authUtils",
@@ -189,6 +190,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-dataflow-scene-2",
           "baseView",
           "baseView-test",
           "componentLoader",
@@ -231,6 +233,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-dataflow-scene-3",
           "import-doc",
           "rui",
           "rui-story",
@@ -241,7 +244,9 @@
         "name": "场景4 · 新增数据流 — 扩展系统链路",
         "description": "分析新链路的起点和终点 → 识别链路经过的中间节点 → 标注每个节点的处理逻辑 → 与现有三条流对比是否有可复用的节点 → 绘制新流 mermaid 图 → 标注每节点的入口文件 → 补充到数据流文档",
         "sourceFiles": [],
-        "graphNodes": []
+        "graphNodes": [
+          "yiweb-arch-dataflow-scene-4"
+        ]
       }
     ]
   },
@@ -1052,6 +1057,140 @@
           }
         ],
         "relatedNodes": []
+      },
+      {
+        "id": "yiweb-arch-dataflow",
+        "label": "YiWeb-系统架构-数据流 · 故事任务",
+        "type": "story",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-dataflow/故事任务.md",
+        "description": "<a id=\"sec1\"></a>",
+        "keyFunctions": [],
+        "mdFiles": [],
+        "relatedNodes": [
+          "aicr-test",
+          "authErrorHandler",
+          "authUtils",
+          "authUtils-test",
+          "checkStatus",
+          "crud",
+          "inputMethods",
+          "requestHelper",
+          "requestHelper-test",
+          "storeFactory",
+          "storeState",
+          "useComputed",
+          "useMethods",
+          "baseView",
+          "baseView-test",
+          "componentLoader",
+          "componentLoader-test",
+          "index-html",
+          "index-js",
+          "storeFactory"
+        ]
+      },
+      {
+        "id": "yiweb-arch-dataflow-scene-1",
+        "label": "场景1 · 命令流排查 — 从用户操作到界面更新",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-dataflow/场景1-命令流排查.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 命令流排查 — 从用户操作到界面更新",
+            "scenarioIndex": 0,
+            "section": "§0 技术评审",
+            "file": "场景1-命令流排查.md"
+          }
+        ],
+        "relatedNodes": [
+          "aicr-test",
+          "authErrorHandler",
+          "authUtils",
+          "authUtils-test",
+          "checkStatus",
+          "crud",
+          "inputMethods",
+          "requestHelper",
+          "requestHelper-test",
+          "storeFactory",
+          "storeState",
+          "useComputed",
+          "useMethods"
+        ]
+      },
+      {
+        "id": "yiweb-arch-dataflow-scene-2",
+        "label": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-dataflow/场景2-加载流排查.md",
+        "description": "flowchart TD",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 加载流排查 — 从浏览器入口到视图挂载",
+            "scenarioIndex": 1,
+            "section": "§0 技术评审",
+            "file": "场景2-加载流排查.md"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "baseView-test",
+          "componentLoader",
+          "componentLoader-test",
+          "index-html",
+          "index-js",
+          "storeFactory",
+          "storeState",
+          "useComputed",
+          "useMethods"
+        ]
+      },
+      {
+        "id": "yiweb-arch-dataflow-scene-3",
+        "label": "场景3 · 文档管线流 — 从需求到远端存储",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-dataflow/场景3-文档管线流.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 文档管线流 — 从需求到远端存储",
+            "scenarioIndex": 2,
+            "section": "§0 技术评审",
+            "file": "场景3-文档管线流.md"
+          }
+        ],
+        "relatedNodes": [
+          "import-doc",
+          "rui",
+          "rui-story",
+          "sync"
+        ]
+      },
+      {
+        "id": "yiweb-arch-dataflow-scene-4",
+        "label": "场景4 · 新增数据流 — 扩展系统链路",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-dataflow/场景4-新增数据流.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 新增数据流 — 扩展系统链路",
+            "scenarioIndex": 3,
+            "section": "§0 技术评审",
+            "file": "场景4-新增数据流.md"
+          }
+        ],
+        "relatedNodes": []
       }
     ],
     "edges": [
@@ -1162,6 +1301,192 @@
         "target": "componentLoader",
         "relation": "imports",
         "label": "componentLoader"
+      },
+      {
+        "source": "yiweb-arch-dataflow",
+        "target": "yiweb-arch-dataflow-scene-1",
+        "relation": "contains",
+        "label": "场景1"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "aicr-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "authErrorHandler",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "authUtils-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "checkStatus",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "crud",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "inputMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "requestHelper-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "storeFactory",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "storeState",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "useComputed",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-1",
+        "target": "useMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow",
+        "target": "yiweb-arch-dataflow-scene-2",
+        "relation": "contains",
+        "label": "场景2"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "baseView-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "componentLoader",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "componentLoader-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "index-html",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "index-js",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "storeFactory",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "storeState",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "useComputed",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-2",
+        "target": "useMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow",
+        "target": "yiweb-arch-dataflow-scene-3",
+        "relation": "contains",
+        "label": "场景3"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-3",
+        "target": "import-doc",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-3",
+        "target": "rui",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-3",
+        "target": "rui-story",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow-scene-3",
+        "target": "sync",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-dataflow",
+        "target": "yiweb-arch-dataflow-scene-4",
+        "relation": "contains",
+        "label": "场景4"
       }
     ]
   }

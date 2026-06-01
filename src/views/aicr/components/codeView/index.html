@@ -209,16 +209,14 @@
         </div>
       </div>
       <!-- 面包屑导航 -->
-      <div v-if="kgDrillStack && kgDrillStack.length > 0" class="graph-breadcrumb">
-        <span class="graph-breadcrumb-item" @click="resetKgFilter()" title="返回全图">🏠</span>
-        <template v-for="(nodeId, idx) in kgDrillStack" :key="nodeId">
-          <span class="graph-breadcrumb-sep">/</span>
-          <span class="graph-breadcrumb-item" :class="{ current: idx === kgDrillStack.length - 1 }"
-                @click="focusKgNode(nodeId)" :title="'回到 ' + nodeId">
-            {{ nodeId }}
+      <div v-if="kgBreadcrumb && kgBreadcrumb.length > 0" class="graph-breadcrumb">
+        <template v-for="(item, idx) in kgBreadcrumb" :key="idx">
+          <span v-if="idx > 0" class="graph-breadcrumb-sep">/</span>
+          <span class="graph-breadcrumb-item" :class="{ current: item.current }"
+                @click="navigateBreadcrumb(item)" :title="item.action === 'overview' ? '返回全景' : '定位: ' + item.label">
+            {{ item.label }}
           </span>
         </template>
-        <span class="graph-breadcrumb-level">L{{ kgDrillStack.length }}</span>
       </div>
       <div class="graph-reader-body">
         <div class="graph-reader-canvas" ref="kgCanvas"></div>
@@ -330,10 +328,10 @@
             <ul class="graph-overview-tips">
               <li>🖱️ 滚轮缩放 · 拖拽平移</li>
               <li>👆 单击节点查看详情</li>
-              <li>👆👆 双击节点下钻（最多 3 层）</li>
-              <li>👆 单击空白退回上一层</li>
-              <li>👆👆 双击空白退出下钻</li>
-              <li>⌨️ ↻ 重置布局</li>
+              <li>👆👆 双击节点聚焦子图</li>
+              <li>👆 单击空白取消选中</li>
+              <li>👆👆 双击空白重置布局</li>
+              <li>🧭 面包屑点击导航</li>
             </ul>
           </div>
         </div>
@@ -355,7 +353,6 @@
           </div>
 
           <div class="graph-node-detail-meta">
-            <span v-if="kgSelectedNode.isDrilled" class="graph-node-badge drill" title="双击空白退出下钻">🔍 下钻</span>
             <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.type }}</span>
             <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
             <span v-if="kgSelectedNode.totalEdges" class="graph-node-badge degree">{{ kgSelectedNode.totalEdges }} 连接</span>
@@ -438,7 +435,7 @@
           <div class="graph-node-detail-section" v-if="kgSelectedNode.edgeGroups && kgSelectedNode.edgeGroups.length">
             <div class="graph-node-detail-section-title">
               关联边 ({{ kgSelectedNode.totalEdges }})
-              <span class="graph-node-detail-hint">悬停高亮 · 点击定位</span>
+              <span class="graph-node-detail-hint">点击高亮</span>
             </div>
             <div class="graph-node-detail-edges">
               <div v-for="grp in kgSelectedNode.edgeGroups" :key="grp.relation" class="graph-node-edge-group">
@@ -449,7 +446,6 @@
                 <div v-for="(edge, i) in grp.edges" :key="i"
                      class="graph-node-edge clickable"
                      @click="highlightKgEdge(edge.edgeId)"
-                     @mouseenter="highlightKgEdge(edge.edgeId)"
                      :title="(edge.direction === '→' ? '依赖: ' : '被依赖: ') + edge.targetLabel">
                   <span class="graph-node-edge-dir">{{ edge.direction }}</span>
                   <span class="graph-node-edge-label" v-if="edge.label && edge.label !== edge.relation">{{ edge.label }}</span>

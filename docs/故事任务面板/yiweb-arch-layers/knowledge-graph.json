@@ -51,6 +51,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-layers-scene-1",
           "baseView",
           "tests-cdn-baseView-test",
           "componentLoader",
@@ -105,6 +106,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-layers-scene-2",
           "tests-views-test",
           "baseView",
           "tests-views-claude-test",
@@ -159,6 +161,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-layers-scene-3",
           "svc-authUtils",
           "tests-authUtils-test",
           "baseView",
@@ -203,6 +206,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-layers-scene-4",
           "baseView",
           "tests-cdn-baseView-test",
           "src-core-config",
@@ -846,6 +850,143 @@
           }
         ],
         "relatedNodes": []
+      },
+      {
+        "id": "yiweb-arch-layers",
+        "label": "YiWeb-系统架构-分层结构 · 故事任务",
+        "type": "story",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-layers/故事任务.md",
+        "description": "<a id=\"sec1\"></a>",
+        "keyFunctions": [],
+        "mdFiles": [],
+        "relatedNodes": [
+          "baseView",
+          "tests-cdn-baseView-test",
+          "componentLoader",
+          "tests-cdn-componentLoader-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "claude-index",
+          "tests-views-test",
+          "baseView",
+          "tests-views-claude-test",
+          "componentLoader",
+          "src-core-config",
+          "claude-index",
+          "tests-views-story-test",
+          "svc-authUtils",
+          "tests-authUtils-test",
+          "baseView",
+          "componentLoader",
+          "src-core-config",
+          "claude-index"
+        ]
+      },
+      {
+        "id": "yiweb-arch-layers-scene-1",
+        "label": "场景1 · 新人上手 — 建立分层认知",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-layers/场景1-新人上手-分层认知.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 新人上手 — 建立分层认知",
+            "scenarioIndex": 0,
+            "section": "§0 技术评审",
+            "file": "场景1-新人上手-分层认知.md"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "tests-cdn-baseView-test",
+          "componentLoader",
+          "tests-cdn-componentLoader-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "claude-index"
+        ]
+      },
+      {
+        "id": "yiweb-arch-layers-scene-2",
+        "label": "场景2 · 功能归属 — 判断新功能放哪层",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-layers/场景2-功能归属-判断放哪层.md",
+        "description": "flowchart TD",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 功能归属 — 判断新功能放哪层",
+            "scenarioIndex": 1,
+            "section": "§0 技术评审",
+            "file": "场景2-功能归属-判断放哪层.md"
+          }
+        ],
+        "relatedNodes": [
+          "tests-views-test",
+          "baseView",
+          "tests-views-claude-test",
+          "componentLoader",
+          "src-core-config",
+          "claude-index",
+          "tests-views-story-test"
+        ]
+      },
+      {
+        "id": "yiweb-arch-layers-scene-3",
+        "label": "场景3 · 架构评审 — 检查层级依赖方向",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-layers/场景3-架构评审-检查层级依赖.md",
+        "description": "flowchart TD",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 架构评审 — 检查层级依赖方向",
+            "scenarioIndex": 2,
+            "section": "§0 技术评审",
+            "file": "场景3-架构评审-检查层级依赖.md"
+          }
+        ],
+        "relatedNodes": [
+          "svc-authUtils",
+          "tests-authUtils-test",
+          "baseView",
+          "componentLoader",
+          "src-core-config",
+          "claude-index",
+          "svc-requestHelper",
+          "tests-requestHelper-test",
+          "storeFactory",
+          "tests-state-storeFactory-test"
+        ]
+      },
+      {
+        "id": "yiweb-arch-layers-scene-4",
+        "label": "场景4 · 层级变更 — 模块跨层迁移",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-layers/场景4-层级变更-模块跨层迁移.md",
+        "description": "flowchart TD",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 层级变更 — 模块跨层迁移",
+            "scenarioIndex": 3,
+            "section": "§0 技术评审",
+            "file": "场景4-层级变更-模块跨层迁移.md"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "tests-cdn-baseView-test",
+          "src-core-config",
+          "tests-core-config-test",
+          "svc-requestHelper"
+        ]
       }
     ],
     "edges": [
@@ -884,6 +1025,204 @@
         "target": "svc-authUtils",
         "relation": "imports",
         "label": "authUtils?v=1"
+      },
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-layers-scene-1",
+        "relation": "contains",
+        "label": "场景1"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "tests-cdn-baseView-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "componentLoader",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "tests-cdn-componentLoader-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "src-core-config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "tests-core-config-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-1",
+        "target": "claude-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-layers-scene-2",
+        "relation": "contains",
+        "label": "场景2"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "tests-views-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "tests-views-claude-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "componentLoader",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "src-core-config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "claude-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-2",
+        "target": "tests-views-story-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-layers-scene-3",
+        "relation": "contains",
+        "label": "场景3"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "svc-authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "tests-authUtils-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "componentLoader",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "src-core-config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "claude-index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "svc-requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "tests-requestHelper-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "storeFactory",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-3",
+        "target": "tests-state-storeFactory-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers",
+        "target": "yiweb-arch-layers-scene-4",
+        "relation": "contains",
+        "label": "场景4"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-4",
+        "target": "baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-4",
+        "target": "tests-cdn-baseView-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-4",
+        "target": "src-core-config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-4",
+        "target": "tests-core-config-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-layers-scene-4",
+        "target": "svc-requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
       }
     ]
   }

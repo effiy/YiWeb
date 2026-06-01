@@ -59,6 +59,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-deps-scene-1",
           "baseView",
           "baseView-test",
           "crud",
@@ -95,6 +96,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-deps-scene-2",
           "filterHelpers",
           "index",
           "sessionSyncService"
@@ -118,6 +120,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-deps-scene-3",
           "-------",
           "--------yiweb-arch-layers-"
         ]
@@ -148,6 +151,7 @@
           }
         ],
         "graphNodes": [
+          "yiweb-arch-deps-scene-4",
           "aiSearchMethods",
           "crud",
           "crud-test"
@@ -452,6 +456,124 @@
           "index",
           "requestHelper"
         ]
+      },
+      {
+        "id": "yiweb-arch-deps",
+        "label": "YiWeb-系统架构-依赖矩阵 · 故事任务",
+        "type": "story",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-deps/故事任务.md",
+        "description": "<a id=\"sec1\"></a>",
+        "keyFunctions": [],
+        "mdFiles": [],
+        "relatedNodes": [
+          "baseView",
+          "baseView-test",
+          "crud",
+          "crud-test",
+          "error",
+          "filterHelpers",
+          "requestHelper",
+          "filterHelpers",
+          "index",
+          "sessionSyncService",
+          "-------",
+          "--------yiweb-arch-layers-",
+          "aiSearchMethods",
+          "crud",
+          "crud-test"
+        ]
+      },
+      {
+        "id": "yiweb-arch-deps-scene-1",
+        "label": "场景1 · 影响评估 — 查矩阵知全貌",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-deps/场景1-影响评估.md",
+        "description": "flowchart TD",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 影响评估 — 查矩阵知全貌",
+            "scenarioIndex": 0,
+            "section": "§0 技术评审",
+            "file": "场景1-影响评估.md"
+          }
+        ],
+        "relatedNodes": [
+          "baseView",
+          "baseView-test",
+          "crud",
+          "crud-test",
+          "error",
+          "filterHelpers",
+          "requestHelper"
+        ]
+      },
+      {
+        "id": "yiweb-arch-deps-scene-2",
+        "label": "场景2 · 健康度检查 — 定期扫描架构违规",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-deps/场景2-健康度检查.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 健康度检查 — 定期扫描架构违规",
+            "scenarioIndex": 1,
+            "section": "§0 技术评审",
+            "file": "场景2-健康度检查.md"
+          }
+        ],
+        "relatedNodes": [
+          "filterHelpers",
+          "index",
+          "sessionSyncService"
+        ]
+      },
+      {
+        "id": "yiweb-arch-deps-scene-3",
+        "label": "场景3 · 新增依赖评估 — 确定依赖合理性",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-deps/场景3-新增依赖评估.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 新增依赖评估 — 确定依赖合理性",
+            "scenarioIndex": 2,
+            "section": "§0 技术评审",
+            "file": "场景3-新增依赖评估.md"
+          }
+        ],
+        "relatedNodes": [
+          "-------",
+          "--------yiweb-arch-layers-"
+        ]
+      },
+      {
+        "id": "yiweb-arch-deps-scene-4",
+        "label": "场景4 · 重构规划 — 评估高风险模块拆分",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-deps/场景4-重构规划.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · 重构规划 — 评估高风险模块拆分",
+            "scenarioIndex": 3,
+            "section": "§0 技术评审",
+            "file": "场景4-重构规划.md"
+          }
+        ],
+        "relatedNodes": [
+          "aiSearchMethods",
+          "crud",
+          "crud-test"
+        ]
       }
     ],
     "edges": [
@@ -514,6 +636,120 @@
         "target": "index",
         "relation": "imports",
         "label": "index"
+      },
+      {
+        "source": "yiweb-arch-deps",
+        "target": "yiweb-arch-deps-scene-1",
+        "relation": "contains",
+        "label": "场景1"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "baseView",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "baseView-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "crud",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "crud-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "error",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "filterHelpers",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-1",
+        "target": "requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps",
+        "target": "yiweb-arch-deps-scene-2",
+        "relation": "contains",
+        "label": "场景2"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-2",
+        "target": "filterHelpers",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-2",
+        "target": "index",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-2",
+        "target": "sessionSyncService",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps",
+        "target": "yiweb-arch-deps-scene-3",
+        "relation": "contains",
+        "label": "场景3"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-3",
+        "target": "-------",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-3",
+        "target": "--------yiweb-arch-layers-",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps",
+        "target": "yiweb-arch-deps-scene-4",
+        "relation": "contains",
+        "label": "场景4"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-4",
+        "target": "aiSearchMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-4",
+        "target": "crud",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-deps-scene-4",
+        "target": "crud-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
       }
     ]
   }

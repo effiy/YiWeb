@@ -10,6 +10,7 @@
         "name": "场景1 · 安全审计 — 逐面检查防护措施",
         "description": "检查输入面(地址栏参数/文件上传/文本输入/数据加载) → 检查接口面(请求凭证/认证头/401拦截) → 检查存储面(本地存储内容审计) → 检查认证面(凭证生命周期管理) → 检查渲染面(SanitizePlugin启用状态) → 汇总审计发现",
         "graphNodes": [
+          "yiweb-arch-security-scene-1",
           "config",
           "projectZipMethods",
           "inputMethods",
@@ -104,6 +105,7 @@
         "name": "场景2 · 安全自查 — 新功能上线前自我检查",
         "description": "新功能涉及用户输入?(确认输入有校验或清洗) → 新功能涉及请求发送?(确认使用封装的请求方法) → 新功能涉及本地存储?(确认仅存非敏感数据) → 新功能涉及动态内容渲染?(确认经过 SanitizePlugin) → 安全自查通过可提交",
         "graphNodes": [
+          "yiweb-arch-security-scene-2",
           "config",
           "projectZipMethods",
           "inputMethods",
@@ -145,6 +147,7 @@
         "name": "场景3 · 认证排查 — 追踪凭证链路",
         "description": "检查本地存储凭证是否存在 → 凭证存在? → 检查请求头凭证是否正确注入 → 认证头存在? → 检查响应是否收到 401 → 收到 401? → 检查 authErrorHandler 是否触发登录弹窗 / 问题在后端联系后端排查",
         "graphNodes": [
+          "yiweb-arch-security-scene-3",
           "requestHelper",
           "authUtils",
           "authErrorHandler",
@@ -191,6 +194,7 @@
         "name": "场景4 · XSS 评估 — 检查内容清洗安全性",
         "description": "检查 SanitizePlugin 是否启用 → 插件已启用? → 检查插件在链中的排序是否为第一位 → 排序正确? → 检查输入面是否有未校验的输入点 → 检查是否有绕过清洗插件的渲染路径 → 汇总风险评估结果",
         "graphNodes": [
+          "yiweb-arch-security-scene-4",
           "SanitizePlugin",
           "PluginSystem",
           "MarkdownRenderer",
@@ -830,6 +834,148 @@
           "SanitizePlugin",
           "PluginSystem"
         ]
+      },
+      {
+        "id": "yiweb-arch-security",
+        "label": "YiWeb-系统架构-安全边界 · 故事任务",
+        "type": "story",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-security/故事任务.md",
+        "description": "<a id=\"sec1\"></a>",
+        "keyFunctions": [],
+        "mdFiles": [],
+        "relatedNodes": [
+          "config",
+          "projectZipMethods",
+          "inputMethods",
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "config-test",
+          "requestHelper-test",
+          "authUtils-test",
+          "config",
+          "projectZipMethods",
+          "inputMethods",
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "SanitizePlugin",
+          "PluginSystem"
+        ]
+      },
+      {
+        "id": "yiweb-arch-security-scene-1",
+        "label": "场景1 · 安全审计 — 逐面检查防护措施",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-security/场景1-安全审计.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景1 · 安全审计 — 逐面检查防护措施",
+            "scenarioIndex": 0,
+            "section": "§0 技术评审",
+            "file": "场景1-安全审计.md"
+          }
+        ],
+        "relatedNodes": [
+          "config",
+          "projectZipMethods",
+          "inputMethods",
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "config-test",
+          "requestHelper-test",
+          "authUtils-test"
+        ]
+      },
+      {
+        "id": "yiweb-arch-security-scene-2",
+        "label": "场景2 · 安全自查 — 新功能上线前自我检查",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-security/场景2-安全自查.md",
+        "description": "flowchart TD",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景2 · 安全自查 — 新功能上线前自我检查",
+            "scenarioIndex": 1,
+            "section": "§0 技术评审",
+            "file": "场景2-安全自查.md"
+          }
+        ],
+        "relatedNodes": [
+          "config",
+          "projectZipMethods",
+          "inputMethods",
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "config-test",
+          "requestHelper-test",
+          "authUtils-test",
+          "manage"
+        ]
+      },
+      {
+        "id": "yiweb-arch-security-scene-3",
+        "label": "场景3 · 认证排查 — 追踪凭证链路",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-security/场景3-认证排查.md",
+        "description": "flowchart TB",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景3 · 认证排查 — 追踪凭证链路",
+            "scenarioIndex": 2,
+            "section": "§0 技术评审",
+            "file": "场景3-认证排查.md"
+          }
+        ],
+        "relatedNodes": [
+          "requestHelper",
+          "authUtils",
+          "authErrorHandler",
+          "requestHelper-test",
+          "authUtils-test"
+        ]
+      },
+      {
+        "id": "yiweb-arch-security-scene-4",
+        "label": "场景4 · XSS 评估 — 检查内容清洗安全性",
+        "type": "doc",
+        "group": "Documentation",
+        "file": "docs/故事任务面板/yiweb-arch-security/场景4-XSS评估.md",
+        "description": "flowchart LR",
+        "keyFunctions": [],
+        "mdFiles": [
+          {
+            "scenario": "场景4 · XSS 评估 — 检查内容清洗安全性",
+            "scenarioIndex": 3,
+            "section": "§0 技术评审",
+            "file": "场景4-XSS评估.md"
+          }
+        ],
+        "relatedNodes": [
+          "SanitizePlugin",
+          "PluginSystem",
+          "MarkdownRenderer",
+          "inputMethods"
+        ]
       }
     ],
     "edges": [
@@ -856,6 +1002,234 @@
         "target": "PluginSystem",
         "relation": "imports",
         "label": "PluginSystem"
+      },
+      {
+        "source": "yiweb-arch-security",
+        "target": "yiweb-arch-security-scene-1",
+        "relation": "contains",
+        "label": "场景1"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "projectZipMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "inputMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "authErrorHandler",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "SanitizePlugin",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "PluginSystem",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "MarkdownRenderer",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "config-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "requestHelper-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-1",
+        "target": "authUtils-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security",
+        "target": "yiweb-arch-security-scene-2",
+        "relation": "contains",
+        "label": "场景2"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "config",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "projectZipMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "inputMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "authErrorHandler",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "SanitizePlugin",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "PluginSystem",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "MarkdownRenderer",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "config-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "requestHelper-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "authUtils-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-2",
+        "target": "manage",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security",
+        "target": "yiweb-arch-security-scene-3",
+        "relation": "contains",
+        "label": "场景3"
+      },
+      {
+        "source": "yiweb-arch-security-scene-3",
+        "target": "requestHelper",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-3",
+        "target": "authUtils",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-3",
+        "target": "authErrorHandler",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-3",
+        "target": "requestHelper-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-3",
+        "target": "authUtils-test",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security",
+        "target": "yiweb-arch-security-scene-4",
+        "relation": "contains",
+        "label": "场景4"
+      },
+      {
+        "source": "yiweb-arch-security-scene-4",
+        "target": "SanitizePlugin",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-4",
+        "target": "PluginSystem",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-4",
+        "target": "MarkdownRenderer",
+        "relation": "documents",
+        "label": "§7 关联源码"
+      },
+      {
+        "source": "yiweb-arch-security-scene-4",
+        "target": "inputMethods",
+        "relation": "documents",
+        "label": "§7 关联源码"
       }
     ]
   }
