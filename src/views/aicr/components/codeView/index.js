@@ -189,6 +189,7 @@ const componentOptions = {
             kgActiveFilterNodeIds: null,
             kgLayer: 1,
             kgFullscreen: false,
+            kgSidebarCollapsed: false,
             kgCollapsed: {},
             _isDestroyed: false
         };
@@ -308,12 +309,12 @@ const componentOptions = {
             if (name.endsWith('.md') || this.languageType === 'markdown') {
                 return (this.fullFilePath || '').includes('故事任务面板');
             }
-            // knowledge-graph.json files
-            if (name.endsWith('knowledge-graph.json') || name.includes('knowledge-graph')) {
+            // 知识图谱.json files
+            if (name.endsWith('知识图谱.json') || name.includes('knowledge-graph')) {
                 return true;
             }
-            // story-deps.json
-            if (name.includes('story-deps.json')) {
+            // 故事依赖.json
+            if (name.includes('故事依赖.json')) {
                 return true;
             }
             return false;
@@ -1422,8 +1423,8 @@ const componentOptions = {
                 const filePath = this.fullFilePath || '';
                 const fileName = this.kgSourceFileName;
 
-                // Case 1: File is already a knowledge-graph.json → parse from loaded content
-                if (langType === 'json' && (fileName === 'knowledge-graph.json' || filePath.includes('knowledge-graph.json'))) {
+                // Case 1: File is already a 知识图谱.json → parse from loaded content
+                if (langType === 'json' && (fileName === '知识图谱.json' || filePath.includes('知识图谱.json'))) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, this.kgSourceStoryDir));
                     if (this._isDestroyed) return;
@@ -1438,19 +1439,19 @@ const componentOptions = {
                     return;
                 }
 
-                // Case 2: story-deps.json — 聚合的图谱数据，格式与 knowledge-graph.json 一致
-                if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
+                // Case 2: 故事依赖.json — 聚合的图谱数据，格式与 知识图谱.json 一致
+                if (fileName === '故事依赖.json' || filePath.includes('故事依赖.json')) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, ''));
                     if (this._isDestroyed) return;
-                    // 统一使用 graph 键（与 knowledge-graph.json 一致）
+                    // 统一使用 graph 键（与 知识图谱.json 一致）
                     const nodes = this._normalizeGraphNodes(data.graph?.nodes || []);
                     const edges = this._normalizeGraphEdges(data.graph?.edges || []);
                     this.kgGraphData = { nodes, edges };
                     this.kgTitle = (data.project && data.project.name) || '故事依赖关系图';
                     this.kgAllNodes = nodes;
                     this.kgMatchedIds = null;
-                    // 从 stories 数组构建场景列表（每个 story 的 scenes 来自其 knowledge-graph.json）
+                    // 从 stories 数组构建场景列表（每个 story 的 scenes 来自其 知识图谱.json）
                     const allScenarios = [];
                     for (const story of (data.stories || [])) {
                         if (story.sceneList) {
@@ -1478,7 +1479,7 @@ const componentOptions = {
                     return;
                 }
 
-                const kgFilePath = `docs/故事任务面板/${storyDir}/knowledge-graph.json`;
+                const kgFilePath = `docs/故事任务面板/${storyDir}/知识图谱.json`;
                 const data = await this._fetchKgJson(`/${kgFilePath}`);
                 const allNodes = this._normalizeGraphNodes(data.graph?.nodes || []);
                 const allEdges = this._normalizeGraphEdges(data.graph?.edges || []);
@@ -2092,6 +2093,10 @@ const componentOptions = {
 
         /* ── 详情面板交互：点击关联边 / 邻居节点 → 图谱高亮 ── */
 
+        toggleKgSidebar() {
+            this.kgSidebarCollapsed = !this.kgSidebarCollapsed;
+        },
+
         toggleKgSection(key) {
             this.kgCollapsed = { ...this.kgCollapsed, [key]: !this.kgCollapsed[key] };
         },
@@ -2689,9 +2694,9 @@ const componentOptions = {
             }
             const topGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
             const topRelations = Object.entries(relationCounts).sort((a, b) => b[1] - a[1]);
-            // story-deps.json uses "project.description"; per-story KG uses "story.description"
+            // 故事依赖.json uses "project.description"; per-story KG uses "story.description"
             const storyDesc = (data.story && data.story.description) || (data.project && data.project.description) || '';
-            // story-deps.json scenes are pre-processed into this.kgSourceScenarios; per-story KG uses data.story.scenarios
+            // 故事依赖.json scenes are pre-processed into this.kgSourceScenarios; per-story KG uses data.story.scenarios
             const scenarios = (data.story && data.story.scenarios) || this.kgSourceScenarios || [];
             // 故事数：优先统计节点中的 story 类型，其次 data.stories 数组长度，否则以 data.story 存在为 1
             const storyCount = storyNodeCount > 0 ? storyNodeCount
@@ -2747,14 +2752,14 @@ const componentOptions = {
                 }))
                 .sort((a, b) => b.sceneCount - a.sceneCount);
 
-            // ── Build story cards from data.stories (story-deps.json) or data.story (per-story KG) ──
+            // ── Build story cards from data.stories (故事依赖.json) or data.story (per-story KG) ──
             let storyCards = [];
             let crossStoryEdgesCount = 0;
             let storyDeps = [];
             const version = data.version || '';
 
             if (Array.isArray(data.stories) && data.stories.length > 0) {
-                // story-deps.json has rich story cards
+                // 故事依赖.json has rich story cards
                 storyCards = data.stories.map(s => ({
                     id: s.id || '',
                     label: s.label || s.id || '',

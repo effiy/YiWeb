@@ -206,6 +206,7 @@
         <div class="graph-reader-actions">
 <button type="button" class="graph-reader-btn" @click="resetKgLayout" title="重置布局">↻</button>
           <button type="button" class="graph-reader-btn" @click="toggleKgFullscreen" :title="kgFullscreen ? '退出全屏' : '全屏'">{{ kgFullscreen ? '⊠' : '⛶' }}</button>
+          <button type="button" class="graph-reader-btn" @click="toggleKgSidebar" :title="kgSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">{{ kgSidebarCollapsed ? '◀' : '▶' }}</button>
         </div>
       </div>
       <!-- 面包屑导航 + 层级切换 -->
@@ -232,6 +233,8 @@
       </div>
       <div class="graph-reader-body">
         <div class="graph-reader-canvas" ref="kgCanvas"></div>
+        <!-- 侧边栏面板 -->
+        <div v-show="!kgSidebarCollapsed" class="graph-sidebar">
         <!-- 图谱总览（未选中节点时） -->
         <div v-if="!kgSelectedNode && kgGraphOverview" class="graph-node-detail">
           <div class="graph-node-detail-header">
@@ -586,6 +589,12 @@
               </div>
             </div>
           </div>
+        </div>
+        </div>
+        <!-- 侧边栏展开按钮（收起时显示） -->
+        <div v-show="kgSidebarCollapsed" class="graph-sidebar-expand" @click="toggleKgSidebar" title="展开侧边栏">
+          <span class="graph-sidebar-expand-arrow">◀</span>
+          <span class="graph-sidebar-expand-label">详情</span>
         </div>
       </div>
     </div>

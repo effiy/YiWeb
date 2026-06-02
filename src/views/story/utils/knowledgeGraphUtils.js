@@ -52,26 +52,26 @@ async function loadAllKnowledgeGraphs() {
     }
 
     try {
-        // 首先加载story-deps.json以获取所有故事目录
-        const depsResponse = await fetch('/docs/故事任务面板/story-deps.json', { credentials: 'omit' });
+        // 首先加载故事依赖.json以获取所有故事目录
+        const depsResponse = await fetch('/docs/故事任务面板/故事依赖.json', { credentials: 'omit' });
         if (!depsResponse.ok) {
-            logError('[知识图谱] 无法加载story-deps.json:', depsResponse.status);
+            logError('[知识图谱] 无法加载故事依赖.json:', depsResponse.status);
             return [];
         }
-        
+
         const depsData = await depsResponse.json();
         if (!depsData.stories) {
-            logError('[知识图谱] story-deps.json格式无效');
+            logError('[知识图谱] 故事依赖.json格式无效');
             return [];
         }
 
         const stories = depsData.stories;
         const graphs = [];
 
-        // 逐个加载每个故事的knowledge-graph.json
+        // 逐个加载每个故事的知识图谱.json
         for (const story of stories) {
             try {
-                const graphPath = `/docs/故事任务面板/${story.directory}/knowledge-graph.json`;
+                const graphPath = `/docs/故事任务面板/${story.directory}/知识图谱.json`;
                 const response = await fetch(graphPath, { credentials: 'omit' });
                 
                 if (response.ok) {
@@ -361,7 +361,7 @@ export async function findNodesByMdFile(storyDir, mdFileName) {
     if (!storyDir || !mdFileName) return [];
 
     try {
-        const graphPath = `/docs/故事任务面板/${storyDir}/knowledge-graph.json`;
+        const graphPath = `/docs/故事任务面板/${storyDir}/知识图谱.json`;
         const response = await fetch(graphPath, { credentials: 'omit' });
         if (!response.ok) {
             logWarn(`[知识图谱] 无法加载图谱: ${graphPath}`);

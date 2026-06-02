@@ -438,7 +438,7 @@ const fileTreeMethods = {
         try {
             const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL)) ? String(window.API_URL).replace(/\/+$/, '') : '';
             if (apiBase) {
-                const res = await fetch(`${apiBase}/read-file`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_file: 'docs/故事任务面板/story-deps.json' }) });
+                const res = await fetch(`${apiBase}/read-file`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_file: 'docs/故事任务面板/故事依赖.json' }) });
                 if (this._isDestroyed) return;
                 if (res.ok) {
                     const json = await res.json();
@@ -579,7 +579,7 @@ const fileTreeMethods = {
         });
     },
 
-    /* ── 从 story-deps.json API 数据构建图谱 ── */
+    /* ── 从 故事依赖.json API 数据构建图谱 ── */
     _buildGraphFromStoryDeps(data) {
         const TYPE_COLORS = {
             source: '#3B82F6',

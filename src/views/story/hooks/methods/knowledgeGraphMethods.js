@@ -82,7 +82,7 @@ export function createKnowledgeGraphMethods(state) {
         state.knowledgeGraphError.value = null;
 
         try {
-            const graphPath = `/docs/故事任务面板/${directory}/knowledge-graph.json`;
+            const graphPath = `/docs/故事任务面板/${directory}/知识图谱.json`;
             const response = await fetch(graphPath, { credentials: 'omit' });
 
             if (!response.ok) {
@@ -120,7 +120,7 @@ export function createKnowledgeGraphMethods(state) {
         }
 
         try {
-            const graphPath = `/docs/故事任务面板/${directory}/knowledge-graph.json`;
+            const graphPath = `/docs/故事任务面板/${directory}/知识图谱.json`;
             const response = await fetch(graphPath, { credentials: 'omit' });
             if (!response.ok) {
                 state.panelKgGraphData.value = null;
@@ -135,12 +135,12 @@ export function createKnowledgeGraphMethods(state) {
     },
 
     /**
-     * 打开故事依赖关系图（从 story-deps.json 加载）
+     * 打开故事依赖关系图（从 故事依赖.json 加载）
      */
     async function openStoryDepsGraph() {
         state.knowledgeGraphLoading.value = true;
         try {
-            const response = await fetch('/docs/故事任务面板/story-deps.json', { credentials: 'omit' });
+            const response = await fetch('/docs/故事任务面板/故事依赖.json', { credentials: 'omit' });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             state.knowledgeGraphData.value = data.graph || { nodes: [], edges: [] };

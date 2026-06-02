@@ -192,7 +192,7 @@ registerGlobalComponent({
             if (this._graphLoading || this._isDestroyed) return;
             this._graphLoading = true;
             try {
-                const resp = await fetch('/docs/故事任务面板/story-deps.json', { credentials: 'omit' });
+                const resp = await fetch('/docs/故事任务面板/故事依赖.json', { credentials: 'omit' });
                 if (this._isDestroyed) return;
                 if (resp.ok) {
                     const data = await resp.json();
@@ -241,7 +241,7 @@ registerGlobalComponent({
                 for (const dir of dirs) {
                     if (this._isDestroyed) return;
                     try {
-                        const url = `/docs/故事任务面板/${dir}/knowledge-graph.json`;
+                        const url = `/docs/故事任务面板/${dir}/知识图谱.json`;
                         const resp = await fetch(url, { credentials: 'omit' });
                         if (!resp.ok) continue;
                         const data = await resp.json();

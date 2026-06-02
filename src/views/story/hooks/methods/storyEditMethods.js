@@ -10,7 +10,7 @@ import { enrichDocumentPageDescription } from '/src/core/services/modules/docume
 import { postData } from '/src/core/services/modules/crud.js';
 
 const SERVICE_MODULE = 'services.database.data_service';
-const DEPS_FILE_PATH = '故事任务面板/story-deps.json';
+const DEPS_FILE_PATH = '故事任务面板/故事依赖.json';
 
 export function createStoryEditMethods(state) {
 
@@ -44,7 +44,7 @@ export function createStoryEditMethods(state) {
             // 先读取现有数据以保留 graph 等聚合字段
             let existing = {};
             try {
-                const res = await fetch(`/docs/故事任务面板/story-deps.json`, { credentials: 'omit' });
+                const res = await fetch(`/docs/故事任务面板/故事依赖.json`, { credentials: 'omit' });
                 if (res.ok) existing = await res.json();
             } catch (_) {}
             const payload = {

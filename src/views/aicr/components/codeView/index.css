@@ -352,6 +352,41 @@
     min-width: 0;
 }
 
+/* 侧边栏折叠 */
+.graph-sidebar {
+    display: flex;
+    flex-shrink: 0;
+    overflow: visible;
+}
+.graph-sidebar-expand {
+    width: 32px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 12px;
+    gap: 6px;
+    border-left: 1px solid var(--yi-border, #2d3340);
+    cursor: pointer;
+    color: #475569;
+    user-select: none;
+    transition: color 0.15s, background 0.15s;
+}
+.graph-sidebar-expand:hover {
+    color: #94a3b8;
+    background: rgba(255,255,255,0.03);
+}
+.graph-sidebar-expand-arrow {
+    font-size: 10px;
+    line-height: 1;
+}
+.graph-sidebar-expand-label {
+    font-size: 10px;
+    writing-mode: vertical-rl;
+    letter-spacing: 2px;
+}
+
 /* 节点详情面板 */
 .graph-node-detail {
     width: 340px;
