@@ -130,3 +130,26 @@ YiWeb/
 
 - "视图" 可能指浏览器页面（`index.html`）或 `createBaseView` 实例 — 需结合上下文区分
 - "组件" 可能指 `cdn/components/` 通用组件或 `src/views/aicr/components/` 业务组件 — 默认指通用组件，业务组件需加前缀
+
+## Testing
+
+YiWeb 使用 Vitest + jsdom 进行自主测试。测试工具为 dev 依赖，App 本身保持零构建。
+
+```bash
+npm install        # 安装 vitest + jsdom（dev only）
+npm test           # 运行全部测试（6 个文件 · 110 个用例 · 15 条规则）
+npm run test:watch # watch 模式
+```
+
+测试文件位于 `tests/`，验证 15 条项目健康检查规则，覆盖 4 种执行模式：
+
+| 模式 | 说明 |
+|------|------|
+| 全量（runFull） | 15 条规则全量扫描，按类别分组并行 |
+| 增量（runIncremental） | 仅扫描 git diff 变更文件，按扩展名过滤规则 |
+| 顺序（runSequential） | 逐规则执行，P0 失败中断 |
+| 降级（runDegraded） | 按工具可用性过滤规则 |
+
+规则覆盖 5 个类别：document（文档完整性）、structure（结构合规）、branch（分支隔离）、version（版本一致性）、security（安全检查）。
+
+新增规则：在 `tests/rules/` 下创建模块，在 `tests/ruleRegistry.js` 注册。

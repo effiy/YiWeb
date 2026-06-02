@@ -1,8 +1,6 @@
 /**
  * 工具函数测试 — escapeHtml, normalizeFilePath
  */
-import { describe, it, expect, beforeEach } from '/tests/runner.js';
-
 /* ── escapeHtml (DOM 节点法) ── */
 describe('escapeHtml (DOM 节点法)', () => {
     let escapeHtml;
@@ -32,8 +30,9 @@ describe('escapeHtml (DOM 节点法)', () => {
         expect(escapeHtml('a & b')).not.toBe('a & b');
     });
 
-    it('双引号被转义', () => {
-        expect(escapeHtml('"hello"')).toContain('&quot;');
+    it('双引号在文本内容中保持原样（HTML 文本节点不转义双引号）', () => {
+        // DOM createTextNode → innerHTML: 仅 & 和 < > 被转义，双引号在文本内容中不需要转义
+        expect(escapeHtml('"hello"')).toBe('"hello"');
     });
 
     it('null / undefined 返回空字符串', () => {
@@ -118,7 +117,8 @@ describe('图谱节点数据字段', () => {
             color: '#F59E0B', ext: 'js', depth: 0, childCount: 0,
         };
         for (const field of requiredFields) {
-            expect(node[field]).toBeTruthy();
+            // childCount/depth 可以为 0，使用 toBeDefined 而非 toBeTruthy
+            expect(node[field]).toBeDefined();
         }
     });
 

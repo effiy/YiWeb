@@ -3,7 +3,6 @@
  *
  * 验证文档声称 vs 代码实际的双向对比逻辑。
  */
-import { describe, it, expect, beforeEach } from '/tests/runner.js';
 import { createMockScanner } from '/tests/scanner.js';
 
 /**

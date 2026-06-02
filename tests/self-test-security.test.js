@@ -4,7 +4,6 @@
  * 验证 5 项安全检查：硬编码密钥、fetch 凭证模式、
  * 裸日志调用、P0 阻断 / P1 告警逻辑。
  */
-import { describe, it, expect, beforeEach } from '/tests/runner.js';
 import { createEngine } from '/tests/engine.js';
 import { createMockScanner } from '/tests/scanner.js';
 import { getRuleById } from '/tests/ruleRegistry.js';
@@ -236,7 +235,8 @@ describe('安全回归 — 综合场景', () => {
     it('P0 安全问题导致 gate FAIL', async () => {
         const scanner = makeScanner({
             'CLAUDE.md': '# YiWeb\n\n## 项目画像\n## 项目约束\n## 执行准则\n## 退化对策\n## 安全面',
-            'src/vuln.js': "const apiKey = 'abc123';\nfetch('/api/data');",
+            // Token 硬编码模式要求 ≥8 字符，使用足够长的字符串触发检测
+            'src/vuln.js': "const apiKey = 'abc1234567890';\nfetch('/api/data');",
         });
 
         const engine = createEngine({ scanner });

@@ -3,7 +3,6 @@
  * 测试 _buildFileTreeGraphData, _buildGraphFromStoryDeps,
  *       _buildFtGraphOverview, _buildFtGraphOverviewFromDeps
  */
-import { describe, it, expect } from '/tests/runner.js';
 import { fileTreeMethods } from '/src/views/aicr/components/fileTree/fileTreeMethods.js';
 
 /* ── 测试辅助 ── */

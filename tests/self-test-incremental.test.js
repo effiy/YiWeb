@@ -4,7 +4,6 @@
  * 验证增量扫描引擎：按变更文件扩展名过滤规则、
  * 混合变更、二进制跳过、空变更处理。
  */
-import { describe, it, expect, beforeEach } from '/tests/runner.js';
 import { createEngine } from '/tests/engine.js';
 import { createMockScanner, classifyByExtension } from '/tests/scanner.js';
 
