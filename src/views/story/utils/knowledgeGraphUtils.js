@@ -121,8 +121,7 @@ async function buildFileToStoriesMap() {
                 const filePath = fileRef.file;
                 if (!filePath || typeof filePath !== 'string') continue;
                 // 跳过非真实文件路径的占位符
-                if (filePath === '自检脚本' || filePath.includes('全项目 import') ||
-                    filePath === '模块地图文档' || filePath === '模块地图总表') {
+                if (filePath.includes('全项目 import') || filePath === '模块地图总表') {
                     continue;
                 }
 
@@ -148,7 +147,7 @@ async function buildFileToStoriesMap() {
             for (const node of rawData.graph.nodes) {
                 const filePath = node.file;
                 if (!filePath || typeof filePath !== 'string') continue;
-                if (filePath.includes('自检脚本') || filePath.includes('全项目 import')) continue;
+                if (filePath.includes('全项目 import')) continue;
                 if (map[filePath]) continue; // 已通过 scenarios 索引
 
                 if (!map[filePath]) {

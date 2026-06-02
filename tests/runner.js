@@ -111,7 +111,9 @@ function expect(actual) {
             if (!actual || actual.length !== len) throw new Error(`期望长度 ${len}，实际 ${actual ? actual.length : '无 length'}`);
         },
         toBeGreaterThan(n) { if (!(actual > n)) throw new Error(`期望 > ${n}，实际 ${actual}`); },
+        toBeGreaterThanOrEqual(n) { if (!(actual >= n)) throw new Error(`期望 >= ${n}，实际 ${actual}`); },
         toBeLessThan(n) { if (!(actual < n)) throw new Error(`期望 < ${n}，实际 ${actual}`); },
+        toBeLessThanOrEqual(n) { if (!(actual <= n)) throw new Error(`期望 <= ${n}，实际 ${actual}`); },
         toBeInstanceOf(cls) {
             if (!(actual instanceof cls)) throw new Error(`期望 instance of ${cls.name}，实际 ${typeof actual}`);
         },

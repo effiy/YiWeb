@@ -7860,7 +7860,7 @@
           "label": "全量自检测试",
           "type": "test",
           "group": "测试",
-          "file": "tests/self-test/full.test.js",
+          "file": "tests/full.test.js",
           "description": "验证合规+违规场景",
           "mdFiles": [
             {
@@ -7901,7 +7901,7 @@
           "label": "增量自检测试",
           "type": "test",
           "group": "测试",
-          "file": "tests/self-test/incremental.test.js",
+          "file": "tests/incremental.test.js",
           "description": "验证混合变更场景",
           "mdFiles": [
             {

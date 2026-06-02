@@ -33,7 +33,7 @@
     <div id="test-results"></div>
 
     <script type="module">
-        import { run } from '/cdn/test/runner.js';
+        import { run } from '/tests/runner.js';
 
         document.getElementById('test-status').textContent = '运行中...';
 
@@ -41,6 +41,10 @@
         const testModules = [
             import('/tests/fileTreeGraphData.test.js'),
             import('/tests/utils.test.js'),
+            import('/tests/self-test-full.test.js'),
+            import('/tests/self-test-incremental.test.js'),
+            import('/tests/self-test-consistency.test.js'),
+            import('/tests/self-test-security.test.js'),
         ];
 
         try {

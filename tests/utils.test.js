@@ -1,7 +1,7 @@
 /**
  * 工具函数测试 — escapeHtml, normalizeFilePath
  */
-import { describe, it, expect, beforeEach } from '/cdn/test/runner.js';
+import { describe, it, expect, beforeEach } from '/tests/runner.js';
 
 /* ── escapeHtml (DOM 节点法) ── */
 describe('escapeHtml (DOM 节点法)', () => {
