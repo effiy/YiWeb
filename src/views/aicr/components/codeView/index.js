@@ -1411,10 +1411,6 @@ const componentOptions = {
             }
         },
 
-        closeKnowledgeGraph() {
-            this.showKnowledgeGraph = false;
-        },
-
         async loadKnowledgeGraph() {
             if (this._isDestroyed || this.kgLoading) return;
             this.kgLoading = true;
