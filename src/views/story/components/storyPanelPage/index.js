@@ -198,7 +198,7 @@ registerGlobalComponent({
                     const data = await resp.json();
                     if (this._isDestroyed) return;
                     this._graphData = data.graph || { nodes: [], edges: [] };
-                    this._graphTitle = (data.story && data.story.name) || '故事依赖关系图';
+                    this._graphTitle = (data.project && data.project.name) || (data.story && data.story.name) || '故事依赖关系图';
                 } else {
                     if (this._isDestroyed) return;
                     this._graphData = { nodes: [], edges: [] };

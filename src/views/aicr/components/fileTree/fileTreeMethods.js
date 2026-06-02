@@ -528,39 +528,10 @@ const fileTreeMethods = {
             if (!e || e.key !== 'Escape') return;
             if (!this._ftGraph || this._ftGraph.destroyed()) return;
             if (this.ftFilterType) { e.preventDefault(); this.ftFilterByStoryType(); return; }
-            if (this._ftDrillNodeId) { e.preventDefault(); this._ftDrillNodeId = null; this._clearAllGraphHighlights(this._ftGraph); this._ftGraph.fit(undefined, 40); this.ftSelectedNode = null; }
+            if (this._ftDrillNodeId) { e.preventDefault(); this.ftResetGraph(); }
             else if (this.ftSelectedNode) { e.preventDefault(); this.ftSelectedNode = null; }
         };
         document.addEventListener('keydown', this._onFtGraphKeydown, true);
-    },
-
-    /* ── 布局回退链 ── */
-    _runGraphLayout(cy) {
-        const nodeCount = cy.nodes().length;
-        // 节点 170×46，间距需大幅提升
-        const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
-            : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
-            : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
-        const layouts = [
-            { name: 'dagre', rankDir: 'TB', rankSep: dagreOpts.rankSep,
-              nodeSep: dagreOpts.nodeSep, edgeSep: dagreOpts.edgeSep,
-              ranker: dagreOpts.ranker,
-              nodeDimensionsIncludeLabels: true,
-              animate: true, animationDuration: 400,
-              animationEasing: 'ease-out', fit: true, padding: 50 },
-            { name: 'breadthfirst', directed: true, spacingFactor: 1.5, animate: true,
-              animationDuration: 400, fit: true, padding: 50 },
-            { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 50,
-              nodeRepulsion: 20000, idealEdgeLength: 200, gravity: 0.25,
-              nodeDimensionsIncludeLabels: true },
-            { name: 'grid', animate: false, fit: true, padding: 50 },
-        ];
-        for (const opts of layouts) {
-            try {
-                cy.layout(opts).run();
-                return;
-            } catch (_) {}
-        }
     },
 
     /* ── Cytoscape 事件绑定 ── */
@@ -576,7 +547,7 @@ const fileTreeMethods = {
         });
         cy.on('tap', (evt) => {
             if (evt.target !== cy) return;
-            if (this._ftDrillNodeId) { this._ftDrillNodeId = null; this._clearAllGraphHighlights(cy); cy.fit(undefined, 40); this._updateFtBreadcrumb(); }
+            if (this._ftDrillNodeId) { this.ftResetGraph(); }
             this.ftSelectedNode = null;
         });
         cy.on('dbltap', 'node', (evt) => {
@@ -595,9 +566,7 @@ const fileTreeMethods = {
         });
         cy.on('dbltap', (evt) => {
             if (evt.target !== cy) return;
-            if (this.ftFilterType) { this.ftFilterByStoryType(); return; }
-            this._ftDrillNodeId = null; this._clearAllGraphHighlights(cy); cy.fit(undefined, 40);
-            this.ftSelectedNode = null; this._updateFtBreadcrumb();
+            this.ftResetGraph();
         });
         cy.on('mouseover', 'node', (evt) => {
             const id = evt.target.data('id');
@@ -623,7 +592,7 @@ const fileTreeMethods = {
             'L3-Foundation': '#06B6D4', 'Other': '#64748B',
         };
 
-        this._ftStoryTitle = (data.story && data.story.name) || '依赖关系图';
+        this._ftStoryTitle = (data.story && data.story.name) || (data.project && data.project.name) || '依赖关系图';
 
         const activeProjectTags = new Set();
         if (Array.isArray(this.selectedTags)) {
@@ -958,7 +927,8 @@ const fileTreeMethods = {
         const cy = this._ftGraph;
         if (this.ftFilterType === 'story') {
             this.ftFilterType = null; this.ftSelectedNode = null;
-            this._clearAllGraphHighlights(cy); cy.fit(undefined, 40);
+            this._clearAllGraphHighlights(cy);
+            this._resetToInitLayout(cy);
             this.ftGraphOverview = this.ftGraphOverviewOriginal ? { ...this.ftGraphOverviewOriginal } : this.ftGraphOverview;
             this._updateFtBreadcrumb(); return;
         }
@@ -973,24 +943,37 @@ const fileTreeMethods = {
         cy.fit(undefined, 40); this._updateFtBreadcrumb();
     },
 
-    /* ── 适应视图 ── */
-    ftFitGraph() {
-        if (!this._ftGraph || this._ftGraph.destroyed()) return;
-        const cy = this._ftGraph;
-        if (this._ftDrillNodeId) {
-            const n = cy.getElementById(this._ftDrillNodeId);
-            if (n && !n.removed()) { cy.animate({ center: { x: n.position('x'), y: n.position('y') }, duration: 300 }, {}); return; }
+    /* ── 使用与初始化完全相同的 dagre 布局，无动画立即归位 ── */
+    _resetToInitLayout(cy) {
+        if (!cy || cy.destroyed()) return;
+        const nodeCount = cy.nodes().length;
+        const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+            : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+            : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
+        try {
+            cy.layout({
+                name: 'dagre',
+                rankDir: 'TB',
+                rankSep: dagreOpts.rankSep,
+                nodeSep: dagreOpts.nodeSep,
+                edgeSep: dagreOpts.edgeSep,
+                ranker: dagreOpts.ranker,
+                nodeDimensionsIncludeLabels: true,
+                animate: false,
+                fit: true,
+                padding: 50,
+            }).run();
+        } catch (_) {
+            cy.fit(undefined, 50);
         }
-        cy.fit(undefined, 40);
     },
 
-    /* ── 重置布局 ── */
+    /* ── 重置视图（清除筛选/下钻/选中，回到全景）── */
     ftResetGraph() {
         if (!this._ftGraph || this._ftGraph.destroyed()) return;
         this._ftDrillNodeId = null; this.ftFilterType = null; this.ftGraphOverviewOriginal = null; this.ftSelectedNode = null;
         this._clearAllGraphHighlights(this._ftGraph);
-        this._runGraphLayout(this._ftGraph);
-        this._ftGraph.fit(undefined, 50);
+        this._resetToInitLayout(this._ftGraph);
         this._updateFtBreadcrumb();
     },
 
@@ -1007,7 +990,8 @@ const fileTreeMethods = {
         if (!item || item.action !== 'overview') return;
         if (!this._ftGraph || this._ftGraph.destroyed()) return;
         this._ftDrillNodeId = null; this.ftFilterType = null; this.ftSelectedNode = null;
-        this._clearAllGraphHighlights(this._ftGraph); this._ftGraph.fit(undefined, 40);
+        this._clearAllGraphHighlights(this._ftGraph);
+        this._resetToInitLayout(this._ftGraph);
         if (this.ftGraphOverviewOriginal) { this.ftGraphOverview = { ...this.ftGraphOverviewOriginal }; this.ftGraphOverviewOriginal = null; }
         this._updateFtBreadcrumb();
     },

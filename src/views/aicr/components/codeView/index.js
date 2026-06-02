@@ -1441,29 +1441,35 @@ const componentOptions = {
                     return;
                 }
 
-                // Case 2: File is story-deps.json → parse from loaded content
+                // Case 2: story-deps.json — 聚合的图谱数据，格式与 knowledge-graph.json 一致
                 if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, ''));
                     if (this._isDestroyed) return;
-                    // story-deps.json uses "knowledgeGraph" key (not "graph")
-                    const nodes = this._normalizeGraphNodes(data.knowledgeGraph?.nodes || []);
-                    const edges = this._normalizeGraphEdges(data.knowledgeGraph?.edges || []);
+                    // 统一使用 graph 键（与 knowledge-graph.json 一致）
+                    const nodes = this._normalizeGraphNodes(data.graph?.nodes || []);
+                    const edges = this._normalizeGraphEdges(data.graph?.edges || []);
                     this.kgGraphData = { nodes, edges };
-                    // story-deps.json has "project.name" for display title
                     this.kgTitle = (data.project && data.project.name) || '故事依赖关系图';
                     this.kgAllNodes = nodes;
                     this.kgMatchedIds = null;
-                    // story-deps.json uses "scenes" (map) instead of "story.scenarios" (array)
-                    const scenesMap = data.scenes || {};
-                    this.kgSourceScenarios = Object.entries(scenesMap).map(([id, sc]) => ({
-                        id,
-                        name: sc.name || id,
-                        description: sc.description || '',
-                        graphNodes: sc.nodes || [],
-                        story: sc.story || '',
-                        storyLabel: sc.storyLabel || '',
-                    }));
+                    // 从 stories 数组构建场景列表（每个 story 的 scenes 来自其 knowledge-graph.json）
+                    const allScenarios = [];
+                    for (const story of (data.stories || [])) {
+                        if (story.sceneList) {
+                            for (const sc of story.sceneList) {
+                                allScenarios.push({
+                                    id: `${story.directory}/${sc.id}`,
+                                    name: sc.name || sc.id,
+                                    description: sc.description || '',
+                                    graphNodes: (sc.nodes || []).map(nid => `${story.directory}/${nid}`),
+                                    story: story.directory || '',
+                                    storyLabel: story.label || story.name || '',
+                                });
+                            }
+                        }
+                    }
+                    this.kgSourceScenarios = allScenarios;
                     this.kgGraphOverview = this._buildGraphOverview(nodes, edges, data, false, 0);
                     return;
                 }
@@ -2023,10 +2029,34 @@ const componentOptions = {
             return s.length > 80 ? s.slice(0, 80) + '...' : s;
         },
 
-        fitView() {
-            if (this._cy) {
-                this._cy.stop();
-                this._smartFit(40);
+        resetKgLayout() {
+            if (!this._cy) return;
+            this.kgSelectedNode = null;
+            this.kgActiveFilter = null;
+            this.kgActiveFilterNodeIds = null;
+            this.kgLayer = 1;
+            this._updateBreadcrumb();
+            const cy = this._cy;
+            cy.elements().removeClass('highlighted dimmed');
+            if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
+                const matched = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
+                matched.addClass('matched');
+            }
+            // 使用与初始化完全相同的 dagre 布局，无动画立即归位
+            const nodeCount = cy.nodes().length;
+            const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+                : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+                : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
+            try {
+                cy.layout({
+                    name: 'dagre', rankDir: 'TB',
+                    rankSep: dagreOpts.rankSep, nodeSep: dagreOpts.nodeSep,
+                    edgeSep: dagreOpts.edgeSep, ranker: dagreOpts.ranker,
+                    nodeDimensionsIncludeLabels: true,
+                    animate: false, fit: true, padding: 50,
+                }).run();
+            } catch (_) {
+                cy.fit(undefined, 50);
             }
         },
 
@@ -2428,7 +2458,7 @@ const componentOptions = {
                 // 无筛选 + 选中节点 → 退回到全景概览
                 this.kgSelectedNode = null;
                 this._updateBreadcrumb();
-                this.fitKgGraph();
+                this.resetKgLayout();
             }
         },
 
@@ -2466,7 +2496,7 @@ const componentOptions = {
                 this.kgActiveFilter = null;
                 this.kgActiveFilterNodeIds = null;
                 this._updateBreadcrumb();
-                this.fitKgGraph();
+                this.resetKgLayout();
             } else if (item.action === 'node' && item.id) {
                 this.focusKgNode(item.id);
             } else if (item.action === 'scenario') {
@@ -2636,31 +2666,7 @@ const componentOptions = {
                 const matched = cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
                 matched.addClass('matched');
             }
-            this.fitKgGraph();
-        },
-
-        fitKgGraph() {
-            if (this._cy) {
-                this.kgSelectedNode = null;
-                this.kgActiveFilter = null;
-                this.kgActiveFilterNodeIds = null;
-                this._updateBreadcrumb();
-                this._cy.elements().removeClass('highlighted dimmed');
-                if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {
-                    const matched = this._cy.nodes().filter(n => this.kgMatchedIds.has(n.data('id')));
-                    matched.addClass('matched');
-                }
-                const layouts = [
-                    { name: 'cose', animate: true, animationDuration: 600, fit: true, padding: 50,
-                        nodeRepulsion: 10000, idealEdgeLength: 120, edgeElasticity: 0.35,
-                        gravity: 0.25, numIter: 2000, nodeDimensionsIncludeLabels: true },
-                    { name: 'dagre', rankDir: 'TB', spacingFactor: 1.5, nodeDimensionsIncludeLabels: true, animate: true, fit: true, padding: 50 },
-                    { name: 'breadthfirst', directed: true, spacingFactor: 1.4, animate: true, fit: true, padding: 50 },
-                ];
-                for (const opts of layouts) {
-                    try { this._cy.layout(opts).run(); return; } catch (_) {}
-                }
-            }
+            this.resetKgLayout();
         },
 
         _buildGraphOverview(nodes, edges, data, hasFilter, matchedCount) {

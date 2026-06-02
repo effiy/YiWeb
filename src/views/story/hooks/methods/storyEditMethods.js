@@ -41,6 +41,12 @@ export function createStoryEditMethods(state) {
     async function updateStoryDeps(updatedStories) {
         state.saving.value = true;
         try {
+            // 先读取现有数据以保留 graph 等聚合字段
+            let existing = {};
+            try {
+                const res = await fetch(`/docs/故事任务面板/story-deps.json`, { credentials: 'omit' });
+                if (res.ok) existing = await res.json();
+            } catch (_) {}
             const payload = {
                 module_name: SERVICE_MODULE,
                 method_name: 'update_document',
@@ -49,16 +55,18 @@ export function createStoryEditMethods(state) {
                     file_path: DEPS_FILE_PATH,
                     data: {
                         content: JSON.stringify({
-                            version: '1.0.0',
-                            generatedAt: new Date().toISOString().slice(0, 10),
+                            version: existing.version || '3.0.0',
+                            kind: 'story-deps',
+                            generatedAt: new Date().toISOString(),
+                            project: existing.project || { name: 'YiWeb' },
                             stories: updatedStories,
+                            graph: existing.graph || { nodes: [], edges: [] },
                         }),
                     },
                 },
             };
             const url = `${window.API_URL}/`;
             await postData(url, payload);
-            // 同步内存
             state.storyDeps.value = updatedStories;
             logInfo('[故事面板] 依赖数据已更新');
             return true;

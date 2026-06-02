@@ -204,7 +204,7 @@
           <span v-if="kgMatchedIds && kgMatchedIds.size" class="graph-reader-matched"> · 🎯 {{ kgMatchedIds.size }} 关联</span>
         </span>
         <div class="graph-reader-actions">
-          <button type="button" class="graph-reader-btn" @click="fitView" title="适应视图">⊞</button>
+<button type="button" class="graph-reader-btn" @click="resetKgLayout" title="重置布局">↻</button>
           <button type="button" class="graph-reader-btn" @click="toggleKgFullscreen" :title="kgFullscreen ? '退出全屏' : '全屏'">{{ kgFullscreen ? '⊠' : '⛶' }}</button>
           <button type="button" class="graph-reader-btn" @click="closeKnowledgeGraph" title="关闭">✕</button>
         </div>
