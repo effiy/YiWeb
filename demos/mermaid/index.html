@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mermaid 图表渲染 Demo</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0F172A; color:#E2E8F0; font-family:ui-monospace,monospace; min-height:100vh; display:flex; }
+.sidebar { width:280px; background:#1E293B; border-right:1px solid #334155; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.sidebar h1 { font-size:14px; margin-bottom:4px; }
+.sidebar button { width:100%; padding:10px 12px; border-radius:6px; border:1px solid #334155; background:#0F172A; color:#E2E8F0; cursor:pointer; font-size:11px; text-align:left; }
+.sidebar button:hover { border-color:#3B82F6; }
+.main { flex:1; padding:24px; overflow-y:auto; }
+.diagram { background:#111827; border:1px solid #1E293B; border-radius:8px; padding:24px; margin-bottom:20px; min-height:200px; display:flex; align-items:center; justify-content:center; }
+.diagram svg { max-width:100%; }
+.code { background:#0B1121; border:1px solid #1E293B; border-radius:8px; padding:16px; font-size:11px; color:#94A3B8; white-space:pre-wrap; overflow-x:auto; margin-bottom:20px; display:none; }
+.code.show { display:block; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <h1>Mermaid 图表 Demo</h1>
+    <button onclick="renderDiagram('flowchart')">流程图 (flowchart)</button>
+    <button onclick="renderDiagram('sequence')">时序图 (sequence)</button>
+    <button onclick="renderDiagram('class')">类图 (classDiagram)</button>
+    <button onclick="renderDiagram('state')">状态图 (stateDiagram)</button>
+    <button onclick="renderDiagram('gantt')">甘特图 (gantt)</button>
+    <button onclick="renderDiagram('pie')">饼图 (pie)</button>
+    <button onclick="renderDiagram('er')">ER 图 (erDiagram)</button>
+    <button onclick="renderDiagram('git')">Git 图 (gitGraph)</button>
+    <button onclick="toggleCode()" style="margin-top:auto;border-color:#3B82F6;">显示/隐藏源码</button>
+</div>
+<div class="main">
+    <div class="diagram" id="mermaid-diagram"></div>
+    <div class="code" id="mermaid-code"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" crossorigin="anonymous"></script>
+<script>
+mermaid.initialize({ startOnLoad:false, theme:'dark', securityLevel:'loose' });
+
+const diagrams = {
+    flowchart: `graph TD
+    A[用户请求] --> B{鉴权检查}
+    B -->|通过| C[路由分发]
+    B -->|失败| D[返回 401]
+    C --> E[业务层处理]
+    E --> F[数据层查询]
+    F --> G[(数据库)]
+    G --> H[JSON 响应]
+    H --> I[前端渲染]`,
+
+    sequence: `sequenceDiagram
+    participant 浏览器
+    participant API
+    participant 数据库
+    浏览器->>API: POST /api/login
+    API->>数据库: 查询用户
+    数据库-->>API: 用户记录
+    API-->>浏览器: JWT Token
+    浏览器->>API: GET /api/data
+    API->>数据库: 查询数据
+    数据库-->>API: 数据行
+    API-->>浏览器: JSON 响应`,
+
+    class: `classDiagram
+    class BaseView {
+        +store
+        +computed
+        +methods
+        +mounted()
+        +beforeUnmount()
+    }
+    class AicrView {
+        +fileTree
+        +codeView
+        +chatPanel
+        +loadFileTree()
+        +saveFile()
+    }
+    class StoryView {
+        +storyPanel
+        +detailCard
+        +knowledgeGraph
+        +loadStories()
+    }
+    BaseView <|-- AicrView
+    BaseView <|-- StoryView`,
+
+    state: `stateDiagram-v2
+    [*] --> 未登录
+    未登录 --> 登录中: 提交凭证
+    登录中 --> 已登录: 验证成功
+    登录中 --> 未登录: 验证失败
+    已登录 --> 加载中: 请求数据
+    加载中 --> 已登录: 数据返回
+    已登录 --> 未登录: Token 过期`,
+
+    gantt: `gantt
+    title YiWeb 开发计划
+    dateFormat  YYYY-MM-DD
+    section 基础设施
+    项目初始化      :done, a1, 2025-01-01, 3d
+    ESM 架构搭建    :done, a2, after a1, 5d
+    section 视图开发
+    AICR 视图       :active, b1, after a2, 14d
+    Story 视图      :b2, after b1, 10d
+    Claude 视图     :b3, after b2, 8d
+    section 上线
+    性能优化        :c1, after b3, 5d
+    生产部署        :c2, after c1, 2d`,
+
+    pie: `pie title 项目文件类型分布
+    "JavaScript" : 45
+    "HTML" : 15
+    "CSS" : 20
+    "Markdown" : 12
+    "JSON" : 8`,
+
+    er: `erDiagram
+    STORY ||--o{ TASK : contains
+    STORY {
+        string name
+        string status
+        date lastModified
+    }
+    TASK {
+        string title
+        string assignee
+        boolean completed
+    }
+    STORY ||--o{ DOCUMENT : has
+    DOCUMENT {
+        string path
+        string content
+        date updatedAt
+    }`,
+
+    git: `gitGraph
+    commit id:"init"
+    branch develop
+    checkout develop
+    commit id:"ESM 架构"
+    branch feature/aicr
+    commit id:"文件树"
+    commit id:"代码视图"
+    checkout develop
+    merge feature/aicr
+    branch feature/story
+    commit id:"故事面板"
+    checkout develop
+    merge feature/story
+    commit id:"v1.0" tag:"release"`
+};
+
+async function renderDiagram(key) {
+    const container = document.getElementById('mermaid-diagram');
+    const codeEl = document.getElementById('mermaid-code');
+    container.innerHTML = '';
+    codeEl.textContent = diagrams[key];
+    try {
+        const { svg } = await mermaid.render('mermaid-svg', diagrams[key]);
+        container.innerHTML = svg;
+    } catch (e) {
+        container.innerHTML = `<div style="color:#ef4444">渲染失败: ${e.message}</div>`;
+    }
+}
+function toggleCode() {
+    document.getElementById('mermaid-code').classList.toggle('show');
+}
+// 默认渲染流程图
+renderDiagram('flowchart');
+</script>
+</body>
+</html>

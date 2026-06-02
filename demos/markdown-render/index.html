@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown 渲染 Demo</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0F172A; color:#E2E8F0; font-family:ui-monospace,monospace; min-height:100vh; display:flex; }
+.sidebar { width:300px; background:#1E293B; border-right:1px solid #334155; padding:16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; }
+.sidebar h1 { font-size:14px; margin-bottom:4px; }
+.sidebar button { width:100%; padding:8px 12px; border-radius:6px; border:1px solid #334155; background:#0F172A; color:#E2E8F0; cursor:pointer; font-size:11px; text-align:left; }
+.sidebar button:hover { border-color:#3B82F6; }
+.sidebar button.active { border-color:#3B82F6; background:#3B82F620; }
+.main { flex:1; padding:24px; overflow-y:auto; }
+.preview { background:#111827; border:1px solid #1E293B; border-radius:8px; padding:24px; }
+.source { background:#0B1121; border:1px solid #1E293B; border-radius:8px; padding:16px; font-size:11px; color:#94A3B8; white-space:pre-wrap; overflow-x:auto; margin-top:16px; display:none; }
+.source.show { display:block; }
+/* Markdown 渲染输出样式 */
+.preview h1,.preview h2,.preview h3 { margin:12px 0 6px; }
+.preview h1 { font-size:1.4em; border-bottom:1px solid #334155; padding-bottom:6px; }
+.preview h2 { font-size:1.2em; }
+.preview h3 { font-size:1.05em; }
+.preview code { background:#1E293B; padding:1px 5px; border-radius:3px; font-size:0.9em; }
+.preview pre { background:#0B1121; padding:12px 16px; border-radius:6px; overflow-x:auto; margin:8px 0; border:1px solid #1E293B; }
+.preview pre code { background:none; padding:0; }
+.preview table { border-collapse:collapse; margin:8px 0; width:100%; }
+.preview th,.preview td { border:1px solid #334155; padding:6px 10px; text-align:left; font-size:0.9em; }
+.preview th { background:#1E293B; }
+.preview blockquote { border-left:3px solid #3B82F6; padding-left:12px; color:#94A3B8; margin:8px 0; }
+.preview ul,.preview ol { padding-left:20px; margin:6px 0; }
+.preview a { color:#60A5FA; }
+.preview img { max-width:100%; border-radius:6px; }
+</style>
+</head>
+<body>
+<div class="sidebar">
+    <h1>Markdown 渲染 Demo</h1>
+    <button class="active" onclick="selectSample('readme')">典型 README</button>
+    <button onclick="selectSample('table')">表格 + 代码块</button>
+    <button onclick="selectSample('api')">API 文档</button>
+    <button onclick="selectSample('mixed')">混合内容</button>
+    <button onclick="selectSample('xss')">XSS 防护测试</button>
+    <button onclick="toggleSource()" style="margin-top:auto;border-color:#3B82F6;">显示/隐藏源码</button>
+</div>
+<div class="main">
+    <div class="preview" id="md-preview"></div>
+    <div class="source" id="md-source"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js" crossorigin="anonymous"></script>
+<script>
+// 配置 marked
+marked.setOptions({ breaks:true, gfm:true });
+
+const samples = {
+    readme: `# YiWeb 项目
+
+## 简介
+
+YiWeb 是一个**零构建**的前端项目，使用浏览器原生 ESM 模块加载。
+
+## 特性
+
+- 🚀 零构建链 — 无 transpile / bundle / dev server
+- 📦 无 npm 依赖 — 通过 CDN 加载第三方库
+- 🎨 自研视图框架 — \`createBaseView\` 语义化 API
+- 🔒 安全优先 — Sanitize 插件防 XSS
+
+## 快速开始
+
+\`\`\`bash
+# 直接在浏览器中打开
+open src/views/aicr/index.html
+\`\`\`
+
+## 架构
+
+| 层级 | 说明 |
+|------|------|
+| View | 视图层，通过 \`createBaseView\` 注册 |
+| Store | 状态层，使用 \`vueRef\` 响应式 |
+| Service | 服务层，封装 fetch + 缓存 |
+
+> **注意**：所有代码必须是浏览器原生可执行的 ESM。`,
+
+    table: `# 图谱布局参数对比
+
+## dagre 布局参数
+
+| 参数 | 小型图 (≤50) | 中型图 (51-100) | 大型图 (>100) |
+|------|-------------|----------------|--------------|
+| rankSep | 130 | 150 | 180 |
+| nodeSep | 80 | 100 | 120 |
+| edgeSep | 25 | 30 | 40 |
+| ranker | network-simplex | network-simplex | tight-tree |
+
+## 代码示例
+
+\`\`\`javascript
+const cy = cytoscape({
+    container: document.getElementById('cy'),
+    elements: { nodes, edges },
+    style: stylesheet,
+    layout: {
+        name: 'dagre',
+        rankDir: 'TB',
+        rankSep: 130,
+        nodeSep: 80,
+        edgeSep: 25,
+        ranker: 'network-simplex',
+        nodeDimensionsIncludeLabels: true,
+        fit: true,
+        padding: 50,
+    },
+});
+\`\`\`
+
+## 性能指标
+
+1. **初始化时间**: < 100ms
+2. **布局计算**: dagre O(|V|·|E|)
+3. **渲染帧率**: 60fps`,
+
+    api: `# API 接口文档
+
+## POST /api/read-file
+
+读取文件内容。
+
+### 请求
+
+\`\`\`json
+{
+    "target_file": "docs/故事任务面板/story-deps.json"
+}
+\`\`\`
+
+### 响应
+
+\`\`\`json
+{
+    "code": 200,
+    "data": {
+        "content": "{...}",
+        "updated_at": "2025-03-15T10:30:00Z"
+    }
+}
+\`\`\`
+
+### 错误码
+
+| code | 说明 |
+|------|------|
+| 200 | 成功 |
+| 401 | 未授权 — Token 无效或过期 |
+| 404 | 文件不存在 |
+| 500 | 服务器内部错误 |
+
+### 调用示例
+
+\`\`\`javascript
+const res = await fetch(API_URL + '/read-file', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-Token': localStorage.getItem('YiWeb.apiToken.v1'),
+    },
+    credentials: 'omit',
+    body: JSON.stringify({ target_file: path }),
+});
+\`\`\``,
+
+    mixed: `# 混合内容示例
+
+## 文本格式
+
+这是**粗体**，这是*斜体*，这是~~删除线~~，这是\`行内代码\`。
+
+## 列表
+
+- 功能点 A
+- 功能点 B
+  - 子功能 B.1
+  - 子功能 B.2
+- 功能点 C
+
+## 有序列表
+
+1. 第一步：初始化
+2. 第二步：配置
+3. 第三步：启动
+
+## 引用块
+
+> 这是第一层引用。
+>
+> > 这是嵌套引用。
+
+## 链接和图片
+
+[YiWeb 项目](https://github.com)
+
+---
+
+## HTML 实体安全
+
+自动转义：<script>alert('xss')</script>
+
+安全渲染：\`const x = "<div>safe</div>"\``,
+
+    xss: `# XSS 防护测试
+
+## 危险标签应被过滤
+
+<script>alert('XSS via script tag')</script>
+
+<iframe src="javascript:alert('XSS')"></iframe>
+
+## 危险属性应被移除
+
+<a href="javascript:alert('xss')" onclick="evil()">点击我</a>
+
+<img src="x" onerror="alert('xss')" />
+
+## 安全内容应保留
+
+正常链接：[安全链接](https://example.com)
+
+正常图片：![alt text](https://example.com/image.png)
+
+## 代码块中的内容应保持原样
+
+\`\`\`html
+<script>console.log("这段代码应该被安全展示，不应执行")</script>
+\`\`\`
+
+## 内联 HTML 样式
+
+<div style="color:red">这个 div 的 style 应该被清理</div>
+
+<span style="color: blue; font-size: 14px">正常样式应保留</span>`,
+};
+
+function selectSample(key) {
+    document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[onclick="selectSample('${key}')"]`).classList.add('active');
+    document.getElementById('md-preview').innerHTML = marked.parse(samples[key]);
+    document.getElementById('md-source').textContent = samples[key];
+}
+function toggleSource() {
+    document.getElementById('md-source').classList.toggle('show');
+}
+// 默认渲染
+selectSample('readme');
+</script>
+</body>
+</html>

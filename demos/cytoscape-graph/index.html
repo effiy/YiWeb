@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cytoscape.js + dagre 图谱布局 Demo</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0F172A; color:#E2E8F0; font-family:ui-monospace,monospace; height:100vh; display:flex; flex-direction:column; }
+.header { padding:14px 20px; background:#1E293B; border-bottom:1px solid #334155; display:flex; align-items:center; gap:16px; }
+.header h1 { font-size:15px; font-weight:700; }
+.header .actions { display:flex; gap:8px; }
+button { height:30px; padding:0 14px; border-radius:6px; border:1px solid #334155; background:#1E293B; color:#E2E8F0; cursor:pointer; font-size:12px; }
+button:hover { border-color:#3B82F6; }
+#cy { flex:1; min-height:0; background:radial-gradient(circle at 30% 40%, rgba(59,130,246,.03) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(139,92,246,.03) 0%, transparent 50%), #0B1121; }
+.info { padding:8px 20px; background:#1E293B; border-top:1px solid #334155; font-size:11px; color:#64748B; }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>Cytoscape.js + dagre 图谱</h1>
+    <div class="actions">
+        <button onclick="fitGraph()">适应视图</button>
+        <button onclick="resetLayout()">重置布局</button>
+        <button onclick="toggleLabels()">切换标签</button>
+    </div>
+</div>
+<div id="cy"></div>
+<div class="info" id="info">节点: 0 · 边: 0 · 布局: dagre</div>
+
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js" crossorigin="anonymous"></script>
+
+<script>
+// 注册 dagre 布局
+if (typeof cytoscapeDagre === 'function') cytoscapeDagre(cytoscape);
+
+const GROUP_COLORS = {
+    'L1-View':'#3B82F6','L2-Service':'#8B5CF6','L3-Foundation':'#06B6D4',
+    'source':'#3B82F6','test':'#10B981','scenario':'#F59E0B','story':'#8B5CF6'
+};
+
+// 模拟项目文件树图谱数据
+const sampleData = {
+    nodes: [
+        { id:'src',     label:'src',         color:'#F59E0B', kind:'folder', depth:0, childCount:5 },
+        { id:'views',   label:'views',       color:'#F59E0B', kind:'folder', depth:1, childCount:3 },
+        { id:'services',label:'services',    color:'#F59E0B', kind:'folder', depth:1, childCount:3 },
+        { id:'app.js',  label:'app.js',       color:'#F59E0B', kind:'file',   ext:'js', depth:2 },
+        { id:'router.js',label:'router.js',  color:'#F59E0B', kind:'file',   ext:'js', depth:2 },
+        { id:'store.js',label:'store.js',    color:'#F59E0B', kind:'file',   ext:'js', depth:2 },
+        { id:'api.js',  label:'api.js',       color:'#6366F1', kind:'file',   ext:'ts', depth:2 },
+        { id:'auth.js', label:'auth.js',      color:'#6366F1', kind:'file',   ext:'ts', depth:2 },
+        { id:'utils.js',label:'utils.js',     color:'#6366F1', kind:'file',   ext:'ts', depth:2 },
+        { id:'style.css',label:'style.css',  color:'#06B6D4', kind:'file',   ext:'css',depth:2 },
+        { id:'index.html',label:'index.html',color:'#EF4444', kind:'file',   ext:'html',depth:1 },
+        { id:'readme.md',label:'readme.md',  color:'#3B82F6', kind:'file',   ext:'md', depth:1 },
+    ],
+    edges: [
+        { source:'src', target:'views',    relation:'contains' },
+        { source:'src', target:'services', relation:'contains' },
+        { source:'src', target:'index.html',relation:'contains' },
+        { source:'src', target:'readme.md', relation:'contains' },
+        { source:'views',target:'app.js',   relation:'contains' },
+        { source:'views',target:'router.js',relation:'contains' },
+        { source:'views',target:'store.js', relation:'contains' },
+        { source:'services',target:'api.js', relation:'contains' },
+        { source:'services',target:'auth.js',relation:'contains' },
+        { source:'services',target:'utils.js',relation:'contains' },
+        { source:'services',target:'style.css',relation:'contains' },
+    ]
+};
+
+// 构建 elements
+const cyNodes = sampleData.nodes.map(n => ({
+    data: {
+        id:n.id, label:n.label, color:n.color, kind:n.kind,
+        ext:n.ext||'', depth:n.depth, childCount:n.childCount||0,
+    }
+}));
+const cyEdges = sampleData.edges.map(e => ({
+    data: { id:`${e.source}_${e.target}`, source:e.source, target:e.target, relation:e.relation }
+}));
+
+// 节点样式表 (匹配 fileTree 组件)
+const stylesheet = [
+    { selector:'node', style:{
+        'shape':'round-rectangle','width':170,'height':46,
+        'background-color':'#1e293b','border-color':'data(color)',
+        'border-width':1.5,'border-opacity':1,
+        'color':'#E2E8F0','label':'data(label)','font-size':'10.5px',
+        'font-weight':'600','text-valign':'bottom','text-margin-y':4,
+        'text-wrap':'ellipsis','text-max-width':'160px',
+        'overlay-opacity':0,'transition-property':'border-color,border-width',
+        'transition-duration':'0.2s'
+    }},
+    { selector:'node.highlighted', style:{ 'border-color':'#E2E8F0','border-width':3 }},
+    { selector:'node.dimmed', style:{ 'opacity':0.12 }},
+    { selector:'node.hover', style:{ 'border-color':'#60A5FA','border-width':3 }},
+    { selector:'edge', style:{
+        'width':1.2,'line-color':'#334155','target-arrow-shape':'triangle',
+        'target-arrow-color':'#475569','arrow-scale':0.8,'opacity':0.45,
+        'curve-style':'bezier','overlay-opacity':0
+    }},
+    { selector:'edge[label]', style:{ 'label':'data(relation)','font-size':'8px','color':'#64748B','text-rotation':'autorotate' }},
+    { selector:'edge.highlighted', style:{ 'line-color':'#E2E8F0','width':2.5,'opacity':0.85,'target-arrow-color':'#E2E8F0' }},
+    { selector:'edge.dimmed', style:{ 'opacity':0.04 }},
+    { selector:'edge.hover', style:{ 'line-color':'#60A5FA','width':2,'opacity':0.65,'target-arrow-color':'#60A5FA' }},
+];
+
+const cy = cytoscape({
+    container:document.getElementById('cy'),
+    elements:{ nodes:cyNodes, edges:cyEdges },
+    style:stylesheet,
+    layout:{ name:'dagre', rankDir:'TB', rankSep:130, nodeSep:80, edgeSep:25,
+             ranker:'network-simplex', nodeDimensionsIncludeLabels:true,
+             fit:true, padding:50, animate:true, animationDuration:400 },
+    minZoom:0.06, maxZoom:3.5, wheelSensitivity:0.3,
+});
+
+// 交互事件
+cy.on('tap','node', evt => {
+    cy.elements().removeClass('highlighted dimmed');
+    evt.target.addClass('highlighted');
+    cy.edges().forEach(e => {
+        const d = e.data();
+        if (d.source === evt.target.id() || d.target === evt.target.id()) e.addClass('highlighted');
+    });
+});
+cy.on('tap', evt => { if (evt.target === cy) cy.elements().removeClass('highlighted dimmed'); });
+cy.on('mouseover','node', evt => {
+    evt.target.addClass('hover');
+    cy.edges().forEach(e => {
+        const d = e.data();
+        if (d.source === evt.target.id() || d.target === evt.target.id()) e.addClass('hover');
+    });
+});
+cy.on('mouseout','node', () => { cy.elements().removeClass('hover'); });
+cy.on('dbltap','node', evt => {
+    cy.elements().removeClass('highlighted dimmed');
+    const id = evt.target.id();
+    const nb = new Set([id]);
+    cy.edges().forEach(e => { const d=e.data(); if(d.source===id)nb.add(d.target); if(d.target===id)nb.add(d.source); });
+    cy.nodes().forEach(n => n.addClass(nb.has(n.id())?'highlighted':'dimmed'));
+    cy.edges().forEach(e => { const d=e.data(); if(nb.has(d.source)&&nb.has(d.target))e.addClass('highlighted');else e.addClass('dimmed'); });
+});
+cy.on('dbltap', evt => { if (evt.target===cy) cy.elements().removeClass('highlighted dimmed'); });
+
+document.getElementById('info').textContent =
+    `节点: ${cyNodes.length} · 边: ${cyEdges.length} · 布局: dagre · rankSep=130 nodeSep=80`;
+
+window.fitGraph = () => cy.fit(undefined, 40);
+window.resetLayout = () => {
+    cy.layout({ name:'dagre', rankDir:'TB', rankSep:130, nodeSep:80,
+        nodeDimensionsIncludeLabels:true, fit:true, padding:50, animate:true }).run();
+};
+window.toggleLabels = () => {
+    const s = cy.nodes().style('font-size');
+    cy.nodes().style('font-size', s === '0px' ? '10.5px' : '0px');
+};
+</script>
+</body>
+</html>

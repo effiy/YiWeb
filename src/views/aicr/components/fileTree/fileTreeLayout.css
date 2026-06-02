@@ -565,7 +565,14 @@
     flex: 1;
     min-height: 0;
     min-width: 0;
+    position: relative;
+    background:
+        radial-gradient(circle at 30% 40%, rgba(59,130,246,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 70% 60%, rgba(139,92,246,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(16,185,129,0.02) 0%, transparent 40%),
+        #0B1121;
 }
+.file-graph-canvas canvas { display: block; }
 
 /* 详情面板 */
 .file-graph-detail {
@@ -1118,16 +1125,4 @@
     color: #94A3B8;
     flex-shrink: 0;
     font-weight: 500;
-}
-
-/* ── G6 小地图 ── */
-.ft-graph-minimap {
-    position: absolute !important;
-    bottom: 8px !important;
-    right: 8px !important;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    background: rgba(15, 23, 42, 0.85);
-    overflow: hidden;
 }

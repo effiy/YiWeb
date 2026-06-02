@@ -66,6 +66,7 @@ registerGlobalComponent({
     watch: {
         selectedProjectTags: {
             handler(newTags) {
+                if (this._isDestroyed) return;
                 if (this.viewMode === 'graph') {
                     if (newTags && newTags.length > 0) {
                         this.loadGraphForTags(newTags);
@@ -176,6 +177,7 @@ registerGlobalComponent({
 
         onSetView(mode) {
             this.$emit('set-view', mode);
+            if (this._isDestroyed) return;
             if (mode === 'graph') {
                 if (!this._graphData) {
                     this.loadGraphData();
@@ -187,28 +189,34 @@ registerGlobalComponent({
         },
 
         async loadGraphData() {
-            if (this._graphLoading) return;
+            if (this._graphLoading || this._isDestroyed) return;
             this._graphLoading = true;
             try {
                 const resp = await fetch('/docs/故事任务面板/story-deps.json', { credentials: 'omit' });
+                if (this._isDestroyed) return;
                 if (resp.ok) {
                     const data = await resp.json();
+                    if (this._isDestroyed) return;
                     this._graphData = data.graph || { nodes: [], edges: [] };
                     this._graphTitle = (data.story && data.story.name) || '故事依赖关系图';
                 } else {
+                    if (this._isDestroyed) return;
                     this._graphData = { nodes: [], edges: [] };
                     this._graphTitle = '知识图谱（无数据）';
                 }
             } catch (_) {
+                if (this._isDestroyed) return;
                 this._graphData = { nodes: [], edges: [] };
                 this._graphTitle = '知识图谱加载失败';
             } finally {
-                this._graphLoading = false;
+                if (!this._isDestroyed) {
+                    this._graphLoading = false;
+                }
             }
         },
 
         async loadGraphForTags(tagNames) {
-            if (this._tagGraphLoading) return;
+            if (this._tagGraphLoading || this._isDestroyed) return;
             this._tagGraphLoading = true;
             try {
                 const tagSet = new Set(tagNames);
@@ -220,6 +228,7 @@ registerGlobalComponent({
                 }
 
                 if (dirs.length === 0) {
+                    if (this._isDestroyed) return;
                     this._tagGraphData = this._graphData;
                     this._tagGraphTitle = this._graphTitle;
                     return;
@@ -230,6 +239,7 @@ registerGlobalComponent({
                 let firstName = '';
 
                 for (const dir of dirs) {
+                    if (this._isDestroyed) return;
                     try {
                         const url = `/docs/故事任务面板/${dir}/knowledge-graph.json`;
                         const resp = await fetch(url, { credentials: 'omit' });
@@ -247,15 +257,19 @@ registerGlobalComponent({
                     } catch (_) {}
                 }
 
+                if (this._isDestroyed) return;
                 this._tagGraphData = {
                     nodes: Array.from(allNodes.values()),
                     edges: Array.from(allEdges.values()),
                 };
                 this._tagGraphTitle = dirs.length === 1 ? firstName : `已选项目 (${dirs.length})`;
             } catch (_) {
+                if (this._isDestroyed) return;
                 this._tagGraphData = this._graphData;
             } finally {
-                this._tagGraphLoading = false;
+                if (!this._isDestroyed) {
+                    this._tagGraphLoading = false;
+                }
             }
         },
         onKeydown(e) {
@@ -307,6 +321,7 @@ registerGlobalComponent({
         });
     },
     beforeUnmount() {
+        this._isDestroyed = true;
         document.removeEventListener('keydown', this.onKeydown);
     }
 });

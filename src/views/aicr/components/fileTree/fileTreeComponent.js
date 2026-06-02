@@ -92,6 +92,7 @@ const componentOptions = {
     emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change', 'skill-tag-toggle', 'template-tag-toggle', 'rule-tag-toggle', 'agent-tag-toggle', 'batch-select-all-cards', 'batch-deselect-all-cards', 'batch-delete-files'],
     data() {
         return {
+            _isDestroyed: false,
             tagOrderVersion: 0,
             editingCardKey: null,
             editingCardDesc: '',
@@ -111,18 +112,19 @@ const componentOptions = {
     watch: {
         viewMode(newMode) {
             if (newMode === 'graph') {
-                this.$nextTick(() => this.initFileTreeGraph());
+                this.$nextTick(() => { if (!this._isDestroyed) this.initFileTreeGraph(); });
             } else {
                 this._destroyFtGraph();
             }
         },
         selectedTags(_newTags, _oldTags) {
             if (this.viewMode === 'graph') {
-                this.$nextTick(() => this.initFileTreeGraph());
+                this.$nextTick(() => { if (!this._isDestroyed) this.initFileTreeGraph(); });
             }
         }
     },
     beforeUnmount() {
+        this._isDestroyed = true;
         this._destroyFtGraph();
     },
     methods: fileTreeMethods

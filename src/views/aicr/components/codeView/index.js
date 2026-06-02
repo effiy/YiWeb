@@ -188,7 +188,8 @@ const componentOptions = {
             kgActiveFilter: null,
             kgActiveFilterNodeIds: null,
             kgLayer: 1,
-            kgFullscreen: false
+            kgFullscreen: false,
+            _isDestroyed: false
         };
     },
     computed: {
@@ -349,7 +350,7 @@ const componentOptions = {
                 this.showKnowledgeGraph = true;
                 this.kgGraphData = null;
                 this.kgError = '';
-                this.$nextTick(() => this.loadKnowledgeGraph());
+                this.$nextTick(() => { if (!this._isDestroyed) this.loadKnowledgeGraph(); });
                 return;
             }
 
@@ -369,7 +370,7 @@ const componentOptions = {
         },
         showKnowledgeGraph(val) {
             if (val && this.kgGraphData) {
-                this.$nextTick(() => this.renderKgGraph());
+                this.$nextTick(() => { if (!this._isDestroyed) this.renderKgGraph(); });
             }
             if (!val) {
                 this._destroyCyGraph();
@@ -443,6 +444,7 @@ const componentOptions = {
         window.addEventListener('open-markdown-file', this._onOpenMarkdownFile);
     },
     beforeUnmount() {
+        this._isDestroyed = true;
         if (this._onHighlightCodeLines) window.removeEventListener('highlightCodeLines', this._onHighlightCodeLines);
         if (this._onClearCodeHighlight) window.removeEventListener('clearCodeHighlight', this._onClearCodeHighlight);
         if (this._onCodeKeydown) window.removeEventListener('keydown', this._onCodeKeydown);
@@ -1414,7 +1416,7 @@ const componentOptions = {
         },
 
         async loadKnowledgeGraph() {
-            if (this.kgLoading) return;
+            if (this._isDestroyed || this.kgLoading) return;
             this.kgLoading = true;
             this.kgError = '';
 
@@ -1427,6 +1429,7 @@ const componentOptions = {
                 if (langType === 'json' && (fileName === 'knowledge-graph.json' || filePath.includes('knowledge-graph.json'))) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, this.kgSourceStoryDir));
+                    if (this._isDestroyed) return;
                     const nodes = this._normalizeGraphNodes(data.graph?.nodes || []);
                     const edges = this._normalizeGraphEdges(data.graph?.edges || []);
                     this.kgGraphData = { nodes, edges };
@@ -1442,6 +1445,7 @@ const componentOptions = {
                 if (fileName === 'story-deps.json' || filePath.includes('story-deps.json')) {
                     const raw = String(this.rawContent || '');
                     const data = raw ? JSON.parse(raw) : await this._fetchKgJson(this._resolveKgUrl(filePath, ''));
+                    if (this._isDestroyed) return;
                     // story-deps.json uses "knowledgeGraph" key (not "graph")
                     const nodes = this._normalizeGraphNodes(data.knowledgeGraph?.nodes || []);
                     const edges = this._normalizeGraphEdges(data.knowledgeGraph?.edges || []);
@@ -1655,72 +1659,60 @@ const componentOptions = {
             if (!data || !data.nodes || !data.nodes.length) return;
             const matchedIds = this.kgMatchedIds; // Set or null
 
-            // ── 节点类型 → 形状 + 色彩映射 ──
-            const TYPE_DEFS = {
-                story:    { color: '#F59E0B', shape: 'round-rectangle', label: '故事' },
-                scenario: { color: '#7DD3FC', shape: 'diamond',        label: '场景' },
-                source:   { color: '#4ADE80', shape: 'ellipse',        label: '源码' },
-                test:     { color: '#DC2626', shape: 'vee',            label: '测试' },
-                view:     { color: '#3B82F6', shape: 'ellipse',        label: '视图' },
-                entry:    { color: '#10B981', shape: 'ellipse',        label: '入口' },
-                service:  { color: '#F59E0B', shape: 'ellipse',        label: '服务' },
-                utility:  { color: '#A855F7', shape: 'ellipse',        label: '工具' },
-                component:{ color: '#06B6D4', shape: 'ellipse',        label: '组件' },
-                framework:{ color: '#8B5CF6', shape: 'ellipse',        label: '框架' },
-                config:   { color: '#F97316', shape: 'rectangle',      label: '配置' },
-                state:    { color: '#EC4899', shape: 'ellipse',        label: '状态' },
-                event:    { color: '#EF4444', shape: 'ellipse',        label: '事件' },
-                method:   { color: '#6366F1', shape: 'ellipse',        label: '方法' },
-                doc:      { color: '#6B7280', shape: 'ellipse',        label: '文档' },
-                external: { color: '#9CA3AF', shape: 'ellipse',        label: '外部' },
-                storage:  { color: '#EC4899', shape: 'ellipse',        label: '存储' },
+            // ── 节点类型 → 色彩映射 ──
+            const TYPE_COLORS = {
+                story:    '#F59E0B',
+                scenario: '#7DD3FC',
+                source:   '#4ADE80',
+                test:     '#DC2626',
+                view:     '#3B82F6',
+                entry:    '#10B981',
+                service:  '#F59E0B',
+                utility:  '#A855F7',
+                component:'#06B6D4',
+                framework:'#8B5CF6',
+                config:   '#F97316',
+                state:    '#EC4899',
+                event:    '#EF4444',
+                method:   '#6366F1',
+                doc:      '#6B7280',
+                external: '#9CA3AF',
+                storage:  '#EC4899',
             };
 
-            // 颜色 + 形状分配：TYPE_DEFS 查找，hash 兜底
-            const resolveNodeDef = (n) => {
+            const resolveNodeColor = (n) => {
                 const file = n.file || '';
                 const isTestFile = /[\/\\](test|tests|__tests__)[\/\\]/.test(file) ||
                     /\.(test|spec)\.\w+$/.test(file) ||
                     /[\/\\](test|spec)_\w+\.\w+$/.test(file) ||
                     /^test[\/\\]/.test(file) ||
                     n.type === 'test';
-                if (isTestFile) return { color: '#DC2626', shape: 'vee' };
-                if (TYPE_DEFS[n.type]) return { ...TYPE_DEFS[n.type] };
-                // 基于 id 哈希分配颜色
+                if (isTestFile) return '#DC2626';
+                if (TYPE_COLORS[n.type]) return TYPE_COLORS[n.type];
                 const hash = String(n.id || '').split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
-                const hue = Math.abs(hash) % 360;
-                return { color: `hsl(${hue}, 55%, 50%)`, shape: 'ellipse' };
+                return `hsl(${Math.abs(hash) % 360}, 55%, 50%)`;
             };
 
-            // ── 度数统计 + 对数尺度节点大小 ──
+            // ── 度数统计 ──
             const degree = {};
             for (const e of data.edges) {
                 degree[e.source] = (degree[e.source] || 0) + 1;
                 degree[e.target] = (degree[e.target] || 0) + 1;
             }
-            const maxDeg = Math.max(1, ...Object.values(degree));
-            const BASE_SIZES = { story: 28, scenario: 22, source: 16, test: 14 };
-            // 对数尺度: size = base + log2(1 + degree) * scale
-            const nodeSize = (type, d) => {
-                const base = BASE_SIZES[type] || 16;
-                const logScale = Math.log2(1 + d);
-                return base + logScale * 6;
-            };
 
             const elements = [];
             for (const n of data.nodes) {
                 const d = degree[n.id] || 0;
-                const { color, shape } = resolveNodeDef(n);
+                const color = resolveNodeColor(n);
                 const isMatched = matchedIds ? matchedIds.has(n.id) : false;
-                const size = isMatched ? nodeSize(n.type, d) + 8 : nodeSize(n.type, d);
                 elements.push({
                     group: 'nodes',
                     classes: isMatched ? 'matched' : '',
                     data: {
                         id: n.id, label: n.label || n.id,
-                        color, shape,
+                        color,
                         file: n.file || '', description: n.description || '',
-                        degree: d, size, matched: isMatched,
+                        degree: d, matched: isMatched,
                         functions: (n.keyFunctions || []).join(', '),
                         type: n.type || '', group: n.group || '',
                         mdFiles: n.mdFiles || [],
@@ -1738,78 +1730,81 @@ const componentOptions = {
                 });
             }
 
+            const nodeCount = elements.filter(e => e.group === 'nodes').length;
+            const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+                : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+                : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
+
             const cy = cytoscape({
                 container,
                 elements,
                 style: [
-                    // ── 基础节点 ──
-                    { selector: 'node', style: {
-                        'background-color': 'data(color)',
-                        'background-opacity': 0.82,
-                        'label': 'data(label)',
-                        'color': '#F1F5F9', 'font-size': '12px', 'font-weight': '600',
-                        'text-valign': 'bottom', 'text-halign': 'center',
-                        'text-margin-y': 8, 'text-max-width': '160px',
-                        'text-wrap': 'ellipsis',
-                        'width': 'data(size)', 'height': 'data(size)',
-                        'border-width': 2, 'border-color': '#FFFFFF',
-                        'border-opacity': 0.25, 'shape': 'data(shape)',
-                        'transition-property': 'border-color, border-width, border-opacity, width, height, background-opacity',
-                        'transition-duration': 200,
-                        'text-opacity': 0.85,
+                    // ── 节点 ──
+                    { selector:'node', style:{
+                        'shape':'round-rectangle','width':170,'height':46,
+                        'background-color':'#1e293b','border-color':'data(color)',
+                        'border-width':1.5,'border-opacity':1,
+                        'color':'#E2E8F0','label':'data(label)','font-size':'10.5px',
+                        'font-weight':'600','text-valign':'bottom','text-margin-y':4,
+                        'text-wrap':'ellipsis','text-max-width':'160px',
+                        'overlay-opacity':0,
+                        'transition-property':'border-color, border-width',
+                        'transition-duration':'0.2s',
                     }},
-                    // ── 选中节点: 白色光环 + 强阴影 ──
-                    { selector: 'node:selected', style: {
-                        'border-width': 5, 'border-color': '#FFFFFF', 'border-opacity': 1,
-                        'shadow-blur': 20, 'shadow-color': 'data(color)', 'shadow-opacity': 0.6,
-                        'shadow-offset-x': 0, 'shadow-offset-y': 0,
-                        'background-opacity': 0.95,
+                    { selector:'node:selected', style:{
+                        'border-width':5,'border-color':'#FFFFFF','border-opacity':1,
+                        'shadow-blur':20,'shadow-color':'data(color)','shadow-opacity':0.6,
                     }},
-                    // ── 高亮节点: 白环 ──
-                    { selector: 'node.highlighted', style: {
-                        'border-width': 5, 'border-color': '#FFFFFF', 'border-opacity': 0.95,
-                        'shadow-blur': 14, 'shadow-color': 'data(color)', 'shadow-opacity': 0.45,
-                        'background-opacity': 0.9,
+                    { selector:'node.highlighted', style:{
+                        'border-color':'#E2E8F0','border-width':3,
                     }},
-                    // ── 暗化: 几乎透明 ──
-                    { selector: 'node.dimmed', style: { 'opacity': 0.08, 'text-opacity': 0 }},
-                    // ── MD文件关联节点: 金色光环 ──
-                    { selector: 'node.matched', style: {
-                        'border-width': 6, 'border-color': '#FBBF24', 'border-opacity': 1,
-                        'shadow-blur': 28, 'shadow-color': '#F59E0B', 'shadow-opacity': 0.7,
-                        'shadow-spread': 12, 'z-index': 100, 'background-opacity': 0.95,
+                    { selector:'node.dimmed', style:{ 'opacity':0.08 }},
+                    { selector:'node.matched', style:{
+                        'border-width':6,'border-color':'#FBBF24','border-opacity':1,
+                        'shadow-blur':28,'shadow-color':'#F59E0B','shadow-opacity':0.7,
+                        'z-index':100,
                     }},
-                    { selector: 'edge', style: {
-                        'width': 1.6, 'line-color': '#475569', 'target-arrow-color': '#64748B',
-                        'target-arrow-shape': 'triangle', 'arrow-scale': 0.9,
-                        'curve-style': 'bezier', 'label': '',
-                        'color': '#64748B', 'font-size': '9px',
-                        'text-rotation': 'autorotate', 'opacity': 0.55,
-                        'transition-property': 'opacity, width, line-color, target-arrow-color',
-                        'transition-duration': 180,
+                    // ── 边 ──
+                    { selector:'edge', style:{
+                        'width':1.2,'line-color':'#334155',
+                        'target-arrow-shape':'triangle','target-arrow-color':'#475569',
+                        'arrow-scale':0.8,'opacity':0.45,
+                        'curve-style':'bezier','overlay-opacity':0,
+                        'transition-property':'line-color, width, opacity, target-arrow-color',
+                        'transition-duration':'0.15s',
                     }},
-                    { selector: 'edge.highlighted', style: {
-                        'width': 3, 'line-color': '#E2E8F0', 'target-arrow-color': '#E2E8F0',
-                        'opacity': 0.95, 'label': 'data(label)',
+                    { selector:'edge[label]', style:{
+                        'label':'data(label)','font-size':'8px',
+                        'color':'#64748B','text-rotation':'autorotate',
                     }},
-                    { selector: 'edge.dimmed', style: { 'opacity': 0.03 }},
-                    { selector: 'edge.matched', style: {
-                        'width': 3, 'line-color': '#FBBF24', 'target-arrow-color': '#F59E0B',
-                        'opacity': 0.9, 'z-index': 50,
+                    { selector:'edge.highlighted', style:{
+                        'width':3,'line-color':'#E2E8F0','target-arrow-color':'#E2E8F0','opacity':0.95,
                     }},
-                    { selector: 'node.hover', style: {
-                        'border-width': 5, 'border-color': '#FFFFFF', 'border-opacity': 0.8,
-                        'z-index': 10,
-                        'transition-duration': 120,
+                    { selector:'edge.dimmed', style:{ 'opacity':0.03 }},
+                    { selector:'edge.matched', style:{
+                        'width':3,'line-color':'#FBBF24','target-arrow-color':'#F59E0B','opacity':0.9,'z-index':50,
                     }},
-                    { selector: 'edge.hover', style: {
-                        'width': 2.8, 'line-color': '#60A5FA', 'target-arrow-color': '#60A5FA',
-                        'opacity': 0.85, 'z-index': 5, 'label': 'data(label)',
+                    { selector:'node.hover', style:{
+                        'border-color':'#60A5FA','border-width':3,
+                        'transition-duration':'0.12s',
+                    }},
+                    { selector:'edge.hover', style:{
+                        'line-color':'#60A5FA','width':2,'opacity':0.65,'target-arrow-color':'#60A5FA',
                     }},
                 ],
-                layout: { name: 'preset' },
+                layout: {
+                    name: 'dagre',
+                    rankDir: 'TB',
+                    rankSep: dagreOpts.rankSep,
+                    nodeSep: dagreOpts.nodeSep,
+                    edgeSep: dagreOpts.edgeSep,
+                    ranker: dagreOpts.ranker,
+                    nodeDimensionsIncludeLabels: true,
+                    fit: true, padding: 50,
+                    animate: true, animationDuration: 400,
+                    animationEasing: 'ease-out',
+                },
                 minZoom: 0.02, maxZoom: 10, wheelSensitivity: 0.3,
-                // Enable box selection for multi-node operations
                 boxSelectionEnabled: true,
                 selectionType: 'additive',
                 autounselectify: false,
@@ -1970,30 +1965,7 @@ const componentOptions = {
                 }
             });
 
-            // ── Run dynamic layout: COSE 力导向优先 → dagre → breadthfirst → grid ──
-            const layouts = [
-                { name: 'cose', animate: true, animationDuration: 800, fit: true, padding: 50,
-                    nodeRepulsion: 12000, idealEdgeLength: 120, edgeElasticity: 0.35,
-                    gravity: 0.25, numIter: 3000, initialTemp: 200, coolingFactor: 0.92,
-                    nodeDimensionsIncludeLabels: true, randomize: true },
-                { name: 'dagre', rankDir: 'TB', spacingFactor: 1.5, nodeDimensionsIncludeLabels: true, animate: true, animationDuration: 500, fit: true, padding: 50 },
-                { name: 'breadthfirst', directed: true, spacingFactor: 1.4, animate: true, fit: true, padding: 50 },
-                { name: 'cose', animate: true, fit: true, padding: 50, nodeRepulsion: 8000, idealEdgeLength: 100 },
-                { name: 'grid', animate: false, fit: true, padding: 50 },
-            ];
-            let layoutApplied = false;
-            for (const opts of layouts) {
-                try {
-                    const run = cy.layout(opts);
-                    run.run();
-                    layoutApplied = true;
-                    break;
-                } catch (_) {}
-            }
-            // 如果所有布局都失败了，使用 preset 布局
-            if (!layoutApplied) {
-                try { cy.layout({ name: 'preset', fit: true, padding: 50 }).run(); } catch (_) {}
-            }
+            // ── 布局已在构造函数中通过 dagre 运行，无需再次布局 ──
 
             // MD 文件关联：高亮匹配节点 + dim 其余 + 聚焦匹配区域
             if (this.kgMatchedIds && this.kgMatchedIds.size > 0) {

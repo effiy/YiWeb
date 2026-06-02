@@ -176,103 +176,46 @@ function getTypeLabel(type) {
 // ── Cytoscape 样式表 ──
 
 const CY_STYLESHEET = [
-    {
-        selector: 'node',
-        style: {
-            'background-color': 'data(color)',
-            'label': 'data(label)',
-            'color': '#E2E8F0',
-            'font-size': '10px',
-            'font-family': 'Inter, system-ui, sans-serif',
-            'text-valign': 'bottom',
-            'text-halign': 'center',
-            'text-margin-y': 6,
-            'text-max-width': '120px',
-            'text-wrap': 'ellipsis',
-            'width': 'mapData(importance, 0, 100, 24, 48)',
-            'height': 'mapData(importance, 0, 100, 24, 48)',
-            'border-width': 2,
-            'border-color': 'data(color)',
-            'border-opacity': 0.4,
-            'shape': 'ellipse',
-            'transition-property': 'background-color, border-color, width, height',
-            'transition-duration': 200,
-        },
-    },
-    {
-        selector: 'node:selected',
-        style: {
-            'border-width': 3,
-            'border-color': '#FFFFFF',
-            'border-opacity': 0.9,
-            'shadow-blur': 16,
-            'shadow-color': 'data(color)',
-            'shadow-opacity': 0.5,
-            'shadow-offset-x': 0,
-            'shadow-offset-y': 0,
-        },
-    },
-    {
-        selector: 'node.highlighted',
-        style: {
-            'border-width': 3,
-            'border-color': '#FFFFFF',
-            'border-opacity': 0.9,
-            'z-index': 9999,
-        },
-    },
-    {
-        selector: 'node.dimmed',
-        style: {
-            'opacity': 0.15,
-        },
-    },
-    {
-        selector: 'node.found',
-        style: {
-            'border-width': 3,
-            'border-color': '#F59E0B',
-            'border-opacity': 1,
-            'shadow-blur': 12,
-            'shadow-color': '#F59E0B',
-            'shadow-opacity': 0.6,
-        },
-    },
-    {
-        selector: 'edge',
-        style: {
-            'width': 1.2,
-            'line-color': '#475569',
-            'target-arrow-color': '#475569',
-            'target-arrow-shape': 'triangle',
-            'arrow-scale': 0.7,
-            'curve-style': 'bezier',
-            'label': 'data(label)',
-            'color': '#64748B',
-            'font-size': '8px',
-            'text-rotation': 'autorotate',
-            'text-margin-y': -4,
-            'opacity': 0.6,
-            'transition-property': 'line-color, target-arrow-color, opacity, width',
-            'transition-duration': 200,
-        },
-    },
-    {
-        selector: 'edge.dimmed',
-        style: {
-            'opacity': 0.05,
-        },
-    },
-    {
-        selector: 'edge.highlighted',
-        style: {
-            'width': 2.5,
-            'line-color': '#E2E8F0',
-            'target-arrow-color': '#E2E8F0',
-            'opacity': 0.9,
-            'z-index': 9998,
-        },
-    },
+    { selector:'node', style:{
+        'shape':'round-rectangle','width':170,'height':46,
+        'background-color':'#1e293b','border-color':'data(color)',
+        'border-width':1.5,'border-opacity':1,
+        'color':'#E2E8F0','label':'data(label)','font-size':'10.5px',
+        'font-weight':'600','text-valign':'bottom','text-margin-y':4,
+        'text-wrap':'ellipsis','text-max-width':'160px',
+        'overlay-opacity':0,
+        'transition-property':'border-color, border-width',
+        'transition-duration':'0.2s',
+    }},
+    { selector:'node:selected', style:{
+        'border-width':3,'border-color':'#FFFFFF','border-opacity':0.9,
+        'shadow-blur':16,'shadow-color':'data(color)','shadow-opacity':0.5,
+    }},
+    { selector:'node.highlighted', style:{
+        'border-color':'#E2E8F0','border-width':3,'z-index':9999,
+    }},
+    { selector:'node.dimmed', style:{ 'opacity':0.12 }},
+    { selector:'node.found', style:{
+        'border-width':3,'border-color':'#F59E0B','border-opacity':1,
+        'shadow-blur':12,'shadow-color':'#F59E0B','shadow-opacity':0.6,
+    }},
+    { selector:'edge', style:{
+        'width':1.2,'line-color':'#334155',
+        'target-arrow-shape':'triangle','target-arrow-color':'#475569',
+        'arrow-scale':0.8,'opacity':0.45,
+        'curve-style':'bezier','overlay-opacity':0,
+        'transition-property':'line-color, width, opacity, target-arrow-color',
+        'transition-duration':'0.2s',
+    }},
+    { selector:'edge[label]', style:{
+        'label':'data(label)','font-size':'8px',
+        'color':'#64748B','text-rotation':'autorotate',
+    }},
+    { selector:'edge.dimmed', style:{ 'opacity':0.04 }},
+    { selector:'edge.highlighted', style:{
+        'width':3,'line-color':'#E2E8F0','target-arrow-color':'#E2E8F0',
+        'opacity':0.95,'z-index':9998,
+    }},
 ];
 
 // ── 图例分组提取 ──
@@ -314,6 +257,7 @@ registerGlobalComponent({
     emits: ['close', 'node-click'],
     data() {
         return {
+            _isDestroyed: false,
             cy: null,
             searchQuery: '',
             showLabels: true,
@@ -331,11 +275,13 @@ registerGlobalComponent({
         graphData: {
             deep: true,
             handler() {
+                if (this._isDestroyed) return;
                 this.$nextTick(() => this.initCy());
             },
         },
         highlightFile: {
             handler(file) {
+                if (this._isDestroyed) return;
                 if (file && this.cy) this._highlightFileNode(file);
             },
         },
@@ -344,6 +290,7 @@ registerGlobalComponent({
         /* ── 初始化 Cytoscape ── */
 
         initCy() {
+            if (this._isDestroyed) return;
             if (typeof cytoscape === 'undefined') {
                 console.warn('[KG] Cytoscape.js 未加载');
                 return;
@@ -375,8 +322,6 @@ registerGlobalComponent({
                     functions: (n.keyFunctions || []).join(', '),
                     riskLevel: n.riskLevel || '',
                     mdFiles: n.mdFiles ? JSON.stringify(n.mdFiles) : '',
-                    importance: (n.riskLevel && n.riskLevel.includes('🔴')) ? 80 :
-                               (n.riskLevel && n.riskLevel.includes('🟡')) ? 50 : 30,
                 },
             }));
 
@@ -390,73 +335,59 @@ registerGlobalComponent({
                 },
             }));
 
+            const nodeCount = nodes.length;
+            const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+                : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+                : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
+
             const cy = cytoscape({
                 container,
                 elements: { nodes, edges },
                 style: CY_STYLESHEET,
-                layout: { name: 'breadthfirst', directed: true, spacingFactor: 1.3, fit: true, padding: 40 },
-                minZoom: 0.1,
-                maxZoom: 3,
+                layout: {
+                    name: 'dagre',
+                    rankDir: 'TB',
+                    rankSep: dagreOpts.rankSep,
+                    nodeSep: dagreOpts.nodeSep,
+                    edgeSep: dagreOpts.edgeSep,
+                    ranker: dagreOpts.ranker,
+                    nodeDimensionsIncludeLabels: true,
+                    fit: true, padding: 50,
+                    animate: true, animationDuration: 400,
+                    animationEasing: 'ease-out',
+                },
+                minZoom: 0.1, maxZoom: 3,
                 wheelSensitivity: 0.3,
-                autoungrabify: false,
-                autounselectify: false,
+                autoungrabify: false, autounselectify: false,
             });
 
             this.cy = cy;
             this._bindCyEvents(cy);
-            this._runDagreLayout(cy);
             this._setupResizeObserver(container);
         },
 
-        /* ── 布局（dagre 分层布局，对标 Understand-Anything）── */
+        /* ── 重置布局（dagre 分层布局）── */
 
         _runDagreLayout(cy) {
+            const nodeCount = cy.nodes().length;
+            const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+                : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+                : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
             const layouts = [
-                {
-                    name: 'dagre',
-                    rankDir: 'TB',
-                    spacingFactor: 1.4,
-                    nodeDimensionsIncludeLabels: true,
-                    animate: true,
-                    animationDuration: 400,
-                    animationEasing: 'ease-out',
-                    fit: true,
-                    padding: 40,
-                },
-                {
-                    name: 'breadthfirst',
-                    directed: true,
-                    spacingFactor: 1.3,
-                    animate: true,
-                    animationDuration: 400,
-                    fit: true,
-                    padding: 40,
-                },
-                {
-                    name: 'cose',
-                    animate: true,
-                    animationDuration: 500,
-                    fit: true,
-                    padding: 40,
-                    nodeRepulsion: 8000,
-                    idealEdgeLength: 120,
-                    gravity: 0.3,
-                },
-                {
-                    name: 'grid',
-                    animate: false,
-                    fit: true,
-                    padding: 40,
-                },
+                { name:'dagre', rankDir:'TB', rankSep:dagreOpts.rankSep,
+                  nodeSep:dagreOpts.nodeSep, edgeSep:dagreOpts.edgeSep,
+                  ranker:dagreOpts.ranker,
+                  nodeDimensionsIncludeLabels:true,
+                  animate:true, animationDuration:400,
+                  animationEasing:'ease-out', fit:true, padding:50 },
+                { name:'breadthfirst', directed:true, spacingFactor:1.4,
+                  animate:true, animationDuration:400, fit:true, padding:50 },
+                { name:'cose', animate:true, animationDuration:500, fit:true, padding:50,
+                  nodeRepulsion:12000, idealEdgeLength:150, gravity:0.25 },
+                { name:'grid', animate:false, fit:true, padding:50 },
             ];
-
             for (const opts of layouts) {
-                try {
-                    cy.layout(opts).run();
-                    return; // 成功后退出
-                } catch (e) {
-                    console.warn(`[KG] 布局 "${opts.name}" 失败，尝试下一个:`, e.message || e);
-                }
+                try { cy.layout(opts).run(); return; } catch (_) {}
             }
         },
 
@@ -796,6 +727,7 @@ registerGlobalComponent({
         this.$nextTick(() => this.initCy());
     },
     beforeUnmount() {
+        this._isDestroyed = true;
         this.cleanup();
     },
 });

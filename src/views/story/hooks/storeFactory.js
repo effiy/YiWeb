@@ -12,9 +12,9 @@ import { createStoryDepsMethods } from '../methods/storyDepsMethods.js';
 import { createStoryEditMethods } from '../methods/storyEditMethods.js';
 import { createKnowledgeGraphMethods } from '../methods/knowledgeGraphMethods.js';
 
-const vueRef = typeof Vue !== 'undefined' && Vue.ref
-    ? Vue.ref
-    : (val) => ({ value: val });
+const vueRef = (typeof Vue !== 'undefined' && Vue.ref) || (() => {
+    throw new Error('Vue.ref 不可用，请检查 Vue CDN 是否加载成功');
+});
 
 export function createStore() {
     const { state, internals } = createStoryStoreState(vueRef);

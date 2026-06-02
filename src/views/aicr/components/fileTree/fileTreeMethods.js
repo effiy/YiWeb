@@ -9,16 +9,6 @@ const escapeHtml = (str) => {
 };
 
 
-/* ── 颜色工具：hex → rgba ── */
-const hexToRgba = (hex, alpha) => {
-    if (!hex || typeof hex !== "string") return `rgba(100,116,139,${alpha})`;
-    const h = hex.replace("#", "");
-    if (h.length < 6) return `rgba(100,116,139,${alpha})`;
-    const r = parseInt(h.substring(0, 2), 16);
-    const g = parseInt(h.substring(2, 4), 16);
-    const b = parseInt(h.substring(4, 6), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-};
 const fileTreeMethods = {
     filterTree(items, query) {
         if (!query) return items;
@@ -391,93 +381,68 @@ const fileTreeMethods = {
     },
 
 
-    /* ── 注册自定义 G6 节点 (Understand-Anything 设计语言) ── */
-    _registerFtCustomNode() {
-        if (this._ftCustomNodeRegistered) return;
-        this._ftCustomNodeRegistered = true;
-
-        G6.registerNode('ft-node', {
-            draw(cfg, group) {
-                const { label, color, kind, ext, degree, childCount, type, groupName } = cfg;
-                const w = 170, h = 46, cr = 6;
-                const nodeColor = color || '#64748B';
-
-                const keyShape = group.addShape('rect', {
-                    attrs: { x: -w / 2, y: -h / 2, width: w, height: h, radius: cr, fill: '#1e293b', stroke: nodeColor, lineWidth: 1, cursor: 'pointer' },
-                    name: 'main-box',
-                });
-                group.addShape('rect', {
-                    attrs: { x: -w / 2 + 1, y: -h / 2 + 8, width: 3, height: h - 16, fill: nodeColor, radius: 1.5 },
-                    name: 'accent-bar',
-                });
-                const typeText = kind === 'folder' ? 'FOLDER' : (type || ext || kind || 'FILE');
-                group.addShape('text', {
-                    attrs: { x: -w / 2 + 12, y: -h / 2 + 14, text: String(typeText || '').slice(0, 12), fill: nodeColor, fontSize: 9, fontWeight: 600, textBaseline: 'middle' },
-                    name: 'type-label',
-                });
-                const displayLabel = String(label || cfg.id || '').length > 22 ? String(label || cfg.id || '').slice(0, 20) + '…' : (label || cfg.id || '');
-                group.addShape('text', {
-                    attrs: { x: -w / 2 + 12, y: -h / 2 + 32, text: displayLabel, fill: '#E2E8F0', fontSize: 10.5, fontWeight: 600, textBaseline: 'middle' },
-                    name: 'name-label',
-                });
-                let badgeText = '';
-                if (degree > 0) badgeText = String(degree);
-                else if (childCount > 0) badgeText = String(childCount);
-                if (badgeText) {
-                    const badgeW = Math.max(22, badgeText.length * 7 + 10), badgeH = 15, bx = w / 2 - badgeW - 6, by = -h / 2 + 5;
-                    group.addShape('rect', {
-                        attrs: { x: bx, y: by, width: badgeW, height: badgeH, radius: 3, fill: hexToRgba(nodeColor, 0.15) },
-                        name: 'badge-bg',
-                    });
-                    group.addShape('text', {
-                        attrs: { x: bx + badgeW / 2, y: by + badgeH / 2, text: badgeText, fill: nodeColor || '#94A3B8', fontSize: 8, fontWeight: 500, textAlign: 'center', textBaseline: 'middle' },
-                        name: 'badge-text',
-                    });
-                }
-                return keyShape;
-            },
-            setState(name, value, item) {
-                const group = item.getContainer();
-                const keyShape = group.get('children')[0];
-                if (!keyShape) return;
-                if (name === 'hover' || name === 'highlight') {
-                    keyShape.attr('stroke', value ? '#FFFFFF' : (item.getModel().color || '#64748B'));
-                    keyShape.attr('lineWidth', value ? 3 : 1);
-                    keyShape.attr('shadowBlur', value ? 12 : 0);
-                    keyShape.attr('shadowColor', value ? (item.getModel().color || '#64748B') : 'transparent');
-                }
-                if (name === 'dimmed') {
-                    const children = group.get('children');
-                    children.forEach(c => c.attr('opacity', value ? 0.12 : 1));
-                }
-            },
-            getAnchorPoints() { return [[0, 0.5], [1, 0.5]]; },
-        }, 'single-node');
+    /* ── Cytoscape 节点样式表 (对齐 demos/cytoscape-graph) ── */
+    _getFtCyStylesheet() {
+        return [
+            { selector:'node', style:{
+                'shape':'round-rectangle','width':170,'height':46,
+                'background-color':'#1e293b','border-color':'data(color)',
+                'border-width':1.5,'border-opacity':1,
+                'color':'#E2E8F0','label':'data(label)','font-size':'10.5px',
+                'font-weight':'600','text-valign':'bottom','text-margin-y':4,
+                'text-wrap':'ellipsis','text-max-width':'160px',
+                'overlay-opacity':0,
+                'transition-property':'border-color, border-width',
+                'transition-duration':'0.2s',
+            }},
+            { selector:'node.hover',       style:{ 'border-color':'#60A5FA','border-width':3 }},
+            { selector:'node.highlighted', style:{ 'border-color':'#E2E8F0','border-width':3 }},
+            { selector:'node.dimmed',      style:{ 'opacity':0.12 }},
+            { selector:'edge', style:{
+                'width':1.2,'line-color':'#334155',
+                'target-arrow-shape':'triangle','target-arrow-color':'#475569',
+                'arrow-scale':0.8,'opacity':0.45,
+                'curve-style':'bezier','overlay-opacity':0,
+                'transition-property':'line-color, width, opacity, target-arrow-color',
+                'transition-duration':'0.2s',
+            }},
+            { selector:'edge[label]', style:{
+                'label':'data(label)','font-size':'8px',
+                'color':'#64748B','text-rotation':'autorotate',
+            }},
+            { selector:'edge.hover',       style:{ 'line-color':'#60A5FA','width':2,'opacity':0.65,'target-arrow-color':'#60A5FA' }},
+            { selector:'edge.highlighted', style:{ 'line-color':'#E2E8F0','width':2.5,'opacity':0.85,'target-arrow-color':'#E2E8F0' }},
+            { selector:'edge.dimmed',      style:{ 'opacity':0.04 }},
+        ];
     },
 
     /* ── 清除所有高亮状态 ── */
-    _clearAllGraphHighlights(graph) {
-        if (!graph || graph.destroyed) return;
-        graph.getNodes().forEach(n => graph.clearItemStates(n, ['highlight', 'dimmed', 'hover']));
-        graph.getEdges().forEach(e => graph.clearItemStates(e, ['highlight', 'dimmed', 'hover']));
+    _clearAllGraphHighlights(cy) {
+        if (!cy || cy.destroyed()) return;
+        cy.elements().removeClass('highlighted dimmed hover');
     },
 
-    /* ====== 知识图谱视图 (AntV G6) ====== */
+    /* ====== 知识图谱视图 (Cytoscape.js) ====== */
     async initFileTreeGraph() {
-        if (typeof G6 === 'undefined') { console.warn('[FileTree] AntV G6 未加载'); return; }
+        if (this._isDestroyed) return;
+        if (typeof cytoscape === 'undefined') { console.warn('[FileTree] Cytoscape.js 未加载'); return; }
+        if (typeof cytoscapeDagre !== 'undefined' && typeof cytoscapeDagre === 'function') {
+            try { cytoscapeDagre(cytoscape); } catch (_) {}
+        }
         const container = this.$refs.ftGraphContainer;
         if (!container) { console.warn('[FileTree] 图谱容器未找到'); return; }
 
         this._destroyFtGraph();
-        this._registerFtCustomNode();
 
         let nodes, edges, fromApi = false;
         try {
             const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL)) ? String(window.API_URL).replace(/\/+$/, '') : '';
             if (apiBase) {
                 const res = await fetch(`${apiBase}/read-file`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_file: 'docs/故事任务面板/story-deps.json' }) });
+                if (this._isDestroyed) return;
                 if (res.ok) {
                     const json = await res.json();
+                    if (this._isDestroyed) return;
                     if (json && (json.code === 200 || json.code === 0) && json.data) {
                         const raw = json.data.content;
                         if (raw) { const data = JSON.parse(raw); const r = this._buildGraphFromStoryDeps(data); nodes = r.nodes; edges = r.edges; fromApi = true; }
@@ -485,6 +450,7 @@ const fileTreeMethods = {
                 }
             }
         } catch (e) {}
+        if (this._isDestroyed) return;
         if (!fromApi) { const r = this._buildFileTreeGraphData(); nodes = r.nodes; edges = r.edges; }
         if (!nodes.length) { console.warn('[FileTree] 图谱无数据'); return; }
 
@@ -492,86 +458,155 @@ const fileTreeMethods = {
         for (const e of edges) { degree[e.source] = (degree[e.source] || 0) + 1; degree[e.target] = (degree[e.target] || 0) + 1; }
         const maxDeg = Math.max(1, ...Object.values(degree));
 
-        const g6Nodes = nodes.map(n => ({ id: n.id, label: n.label, color: n.color, kind: n.kind, key: n.key || n.file || '', file: n.file || '', ext: n.ext || '', depth: n.depth || 0, childCount: n.childCount || 0, type: n.type || '', groupName: n.group || '', description: n.description || '', keyFunctions: n.keyFunctions || [], mdFiles: n.mdFiles || [], degree: degree[n.id] || 0, size: 16 + ((degree[n.id] || 0) / maxDeg) * 20 }));
-        const g6Edges = edges.map(e => ({ id: `${e.source}_${e.target}`, source: e.source, target: e.target, label: e.label || '', relation: e.relation || '' }));
+        const cyNodes = nodes.map(n => ({
+            data: {
+                id: n.id, label: n.label, color: n.color || '#64748B',
+                kind: n.kind, key: n.key || n.file || '', file: n.file || '',
+                ext: n.ext || '', depth: n.depth || 0,
+                childCount: n.childCount || 0, type: n.type || '',
+                groupName: n.group || '', description: n.description || '',
+                keyFunctions: n.keyFunctions || [], mdFiles: n.mdFiles || [],
+                degree: degree[n.id] || 0,
+            },
+        }));
+        const cyEdges = edges.map(e => ({
+            data: {
+                id: `${e.source}_${e.target}`,
+                source: e.source, target: e.target,
+                label: e.label || '', relation: e.relation || '',
+            },
+        }));
 
         const nodeCount = nodes.length;
-        const dagreOpts = nodeCount > 100 ? { ranksep: 140, nodesep: 70 } : nodeCount > 50 ? { ranksep: 110, nodesep: 60 } : { ranksep: 90, nodesep: 50 };
+        // 节点 170×46，间距需大幅提升。dagre 参数: nodeSep(同级水平间隙) rankSep(层级垂直间隙) edgeSep(边间隙)
+        const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+            : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+            : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
 
-        const rect = container.getBoundingClientRect();
-        const graph = new G6.Graph({
-            container, width: rect.width || 800, height: rect.height || 600,
-            fitView: true, fitViewPadding: 50, animate: true, minZoom: 0.06, maxZoom: 3.5,
-            modes: { default: ['drag-canvas', 'zoom-canvas', 'drag-node'] },
-            defaultNode: { type: 'ft-node' },
-            defaultEdge: { type: 'polyline', style: { stroke: '#334155', lineWidth: 1.2, endArrow: { path: G6.Arrow.triangle(6, 8, 0), fill: '#475569' }, opacity: 0.45 }, labelCfg: { style: { fill: '#64748B', fontSize: 8 }, autoRotate: true }, stateStyles: { hover: { stroke: '#60A5FA', lineWidth: 2, opacity: 0.65, endArrow: { fill: '#60A5FA' } }, highlight: { stroke: '#E2E8F0', lineWidth: 2.5, opacity: 0.85, endArrow: { fill: '#E2E8F0' } }, dimmed: { opacity: 0.04 } } },
-            layout: { type: 'dagre', rankdir: 'TB', ranksep: dagreOpts.ranksep, nodesep: dagreOpts.nodesep, controlPoints: true },
-            plugins: [new G6.Minimap({ size: [160, 120], className: 'ft-graph-minimap', type: 'delegate', delegateStyle: { fill: '#ffffff', stroke: '#3B82F6', lineWidth: 0.5 } })],
+        const cy = cytoscape({
+            container,
+            elements: { nodes: cyNodes, edges: cyEdges },
+            style: this._getFtCyStylesheet(),
+            layout: {
+                name: 'dagre',
+                rankDir: 'TB',
+                rankSep: dagreOpts.rankSep,
+                nodeSep: dagreOpts.nodeSep,
+                edgeSep: dagreOpts.edgeSep,
+                ranker: dagreOpts.ranker,
+                nodeDimensionsIncludeLabels: true,
+                fit: true,
+                padding: 50,
+                animate: true,
+                animationDuration: 400,
+                animationEasing: 'ease-out',
+            },
+            minZoom: 0.06, maxZoom: 3.5,
+            wheelSensitivity: 0.3,
+            autoungrabify: false,
+            autounselectify: false,
         });
-        graph.data({ nodes: g6Nodes, edges: g6Edges });
-        graph.render();
-        this._ftGraph = graph;
-        this._wireGraphEvents(graph);
+        this._ftGraph = cy;
+        this._wireGraphEvents(cy);
 
         if (fromApi && this._ftStoryTitle) { this.ftGraphTitle = this._ftStoryTitle; }
         else { const tl = (Array.isArray(this.tree) && this.tree.length === 1 && this.tree[0].type === 'folder') ? this.tree[0].name : ''; this.ftGraphTitle = tl ? `📁 ${tl}` : '文件图谱'; }
         this.ftGraphStatsText = `${nodes.length} 节点 · ${edges.length} 边`;
         this.ftGraphOverview = fromApi ? this._buildFtGraphOverviewFromDeps(nodes, edges) : this._buildFtGraphOverview(nodes, edges);
 
+        // ResizeObserver
         this._ftResizeObserver = new ResizeObserver(() => {
-            if (this._ftGraph && !this._ftGraph.destroyed) { const r = container.getBoundingClientRect(); this._ftGraph.changeSize(r.width, r.height); this._ftGraph.fitView(30); }
+            if (this._ftGraph && !this._ftGraph.destroyed()) {
+                this._ftGraph.resize();
+                this._ftGraph.fit(undefined, 30);
+            }
         });
         this._ftResizeObserver.observe(container);
 
+        // Escape 键监听
         this._onFtGraphKeydown = (e) => {
             if (!e || e.key !== 'Escape') return;
-            if (!this._ftGraph || this._ftGraph.destroyed) return;
+            if (!this._ftGraph || this._ftGraph.destroyed()) return;
             if (this.ftFilterType) { e.preventDefault(); this.ftFilterByStoryType(); return; }
-            if (this._ftDrillNodeId) { e.preventDefault(); this._ftDrillNodeId = null; this._clearAllGraphHighlights(this._ftGraph); this._ftGraph.fitView(40); this.ftSelectedNode = null; }
+            if (this._ftDrillNodeId) { e.preventDefault(); this._ftDrillNodeId = null; this._clearAllGraphHighlights(this._ftGraph); this._ftGraph.fit(undefined, 40); this.ftSelectedNode = null; }
             else if (this.ftSelectedNode) { e.preventDefault(); this.ftSelectedNode = null; }
         };
         document.addEventListener('keydown', this._onFtGraphKeydown, true);
     },
 
-    /* ── G6 事件绑定 ── */
-    _wireGraphEvents(graph) {
+    /* ── 布局回退链 ── */
+    _runGraphLayout(cy) {
+        const nodeCount = cy.nodes().length;
+        // 节点 170×46，间距需大幅提升
+        const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }
+            : nodeCount > 50 ? { rankSep: 150, nodeSep: 100, edgeSep: 30, ranker: 'network-simplex' }
+            : { rankSep: 130, nodeSep: 80, edgeSep: 25, ranker: 'network-simplex' };
+        const layouts = [
+            { name: 'dagre', rankDir: 'TB', rankSep: dagreOpts.rankSep,
+              nodeSep: dagreOpts.nodeSep, edgeSep: dagreOpts.edgeSep,
+              ranker: dagreOpts.ranker,
+              nodeDimensionsIncludeLabels: true,
+              animate: true, animationDuration: 400,
+              animationEasing: 'ease-out', fit: true, padding: 50 },
+            { name: 'breadthfirst', directed: true, spacingFactor: 1.5, animate: true,
+              animationDuration: 400, fit: true, padding: 50 },
+            { name: 'cose', animate: true, animationDuration: 500, fit: true, padding: 50,
+              nodeRepulsion: 20000, idealEdgeLength: 200, gravity: 0.25,
+              nodeDimensionsIncludeLabels: true },
+            { name: 'grid', animate: false, fit: true, padding: 50 },
+        ];
+        for (const opts of layouts) {
+            try {
+                cy.layout(opts).run();
+                return;
+            } catch (_) {}
+        }
+    },
+
+    /* ── Cytoscape 事件绑定 ── */
+    _wireGraphEvents(cy) {
         let ftTapTimer = null;
-        graph.on('node:click', (evt) => {
+        cy.on('tap', 'node', (evt) => {
             if (ftTapTimer) { clearTimeout(ftTapTimer); ftTapTimer = null; }
-            const item = evt.item;
-            ftTapTimer = setTimeout(() => { ftTapTimer = null; if (!item.destroyed) this._selectFtNodeDetail(item, graph); }, 280);
+            const node = evt.target;
+            ftTapTimer = setTimeout(() => {
+                ftTapTimer = null;
+                if (!cy.destroyed() && !node.removed()) this._selectFtNodeDetail(node, cy);
+            }, 280);
         });
-        graph.on('canvas:click', () => {
-            if (this._ftDrillNodeId) { this._ftDrillNodeId = null; this._clearAllGraphHighlights(graph); graph.fitView(40); this._updateFtBreadcrumb(); }
+        cy.on('tap', (evt) => {
+            if (evt.target !== cy) return;
+            if (this._ftDrillNodeId) { this._ftDrillNodeId = null; this._clearAllGraphHighlights(cy); cy.fit(undefined, 40); this._updateFtBreadcrumb(); }
             this.ftSelectedNode = null;
         });
-        graph.on('node:dblclick', (evt) => {
+        cy.on('dbltap', 'node', (evt) => {
             if (ftTapTimer) { clearTimeout(ftTapTimer); ftTapTimer = null; }
-            const item = evt.item, model = item.getModel();
+            const node = evt.target;
+            const model = node.data();
             this._ftDrillNodeId = model.id;
             const nb = new Set(); nb.add(model.id);
-            graph.getEdges().forEach(e => { const em = e.getModel(); if (em.source === model.id) nb.add(em.target); if (em.target === model.id) nb.add(em.source); });
-            this._clearAllGraphHighlights(graph);
-            graph.getNodes().forEach(n => { if (nb.has(n.getModel().id)) graph.setItemState(n, 'highlight', true); else graph.setItemState(n, 'dimmed', true); });
-            graph.getEdges().forEach(e => { const em = e.getModel(); if (nb.has(em.source) && nb.has(em.target)) graph.setItemState(e, 'highlight', true); else graph.setItemState(e, 'dimmed', true); });
-            graph.focusItem(item, true, { duration: 420, easing: 'easeCubic' });
-            this._selectFtNodeDetail(item, graph);
+            cy.edges().forEach(e => { const d = e.data(); if (d.source === model.id) nb.add(d.target); if (d.target === model.id) nb.add(d.source); });
+            this._clearAllGraphHighlights(cy);
+            cy.nodes().forEach(n => { if (nb.has(n.data('id'))) n.addClass('highlighted'); else n.addClass('dimmed'); });
+            cy.edges().forEach(e => { const d = e.data(); if (nb.has(d.source) && nb.has(d.target)) e.addClass('highlighted'); else e.addClass('dimmed'); });
+            cy.animate({ center: { x: node.position('x'), y: node.position('y') }, zoom: Math.min(cy.zoom(), 1.2), duration: 420, easing: 'ease-out-cubic' }, {});
+            this._selectFtNodeDetail(node, cy);
             this._updateFtBreadcrumb();
         });
-        graph.on('canvas:dblclick', () => {
+        cy.on('dbltap', (evt) => {
+            if (evt.target !== cy) return;
             if (this.ftFilterType) { this.ftFilterByStoryType(); return; }
-            this._ftDrillNodeId = null; this._clearAllGraphHighlights(graph); graph.fitView(40);
+            this._ftDrillNodeId = null; this._clearAllGraphHighlights(cy); cy.fit(undefined, 40);
             this.ftSelectedNode = null; this._updateFtBreadcrumb();
         });
-        graph.on('node:mouseenter', (evt) => {
-            graph.setItemState(evt.item, 'hover', true);
-            graph.getEdges().forEach(e => { const em = e.getModel(); if (em.source === evt.item.getModel().id || em.target === evt.item.getModel().id) graph.setItemState(e, 'hover', true); });
-            graph.paint();
+        cy.on('mouseover', 'node', (evt) => {
+            const id = evt.target.data('id');
+            evt.target.addClass('hover');
+            cy.edges().forEach(e => { const d = e.data(); if (d.source === id || d.target === id) e.addClass('hover'); });
         });
-        graph.on('node:mouseleave', (evt) => {
-            graph.setItemState(evt.item, 'hover', false);
-            graph.getEdges().forEach(e => graph.setItemState(e, 'hover', false));
-            graph.paint();
+        cy.on('mouseout', 'node', (evt) => {
+            evt.target.removeClass('hover');
+            cy.edges().removeClass('hover');
         });
     },
 
@@ -833,40 +868,41 @@ const fileTreeMethods = {
     },
 
     /* ── 选中节点详情 ── */
-    _selectFtNodeDetail(item, graph) {
-        const model = item.getModel();
+    _selectFtNodeDetail(node, cy) {
+        const model = node.data();
         if (this._ftDrillNodeId) {
-            const drillNode = graph.findById(this._ftDrillNodeId);
-            if (drillNode && drillNode.getModel().id !== model.id) {
+            const drillNode = cy.getElementById(this._ftDrillNodeId);
+            if (drillNode && !drillNode.removed() && drillNode.data('id') !== model.id) {
                 const nb = new Set(); nb.add(model.id);
-                graph.getEdges().forEach(e => { const em = e.getModel(); if (em.source === model.id) nb.add(em.target); if (em.target === model.id) nb.add(em.source); });
-                graph.getNodes().forEach(n => { graph.clearItemStates(n, ['highlight', 'dimmed']); if (nb.has(n.getModel().id)) graph.setItemState(n, 'highlight', true); else graph.setItemState(n, 'dimmed', true); });
-                graph.getEdges().forEach(e => { graph.clearItemStates(e, ['highlight', 'dimmed']); const em = e.getModel(); if (nb.has(em.source) && nb.has(em.target)) graph.setItemState(e, 'highlight', true); else graph.setItemState(e, 'dimmed', true); });
+                cy.edges().forEach(e => { const d = e.data(); if (d.source === model.id) nb.add(d.target); if (d.target === model.id) nb.add(d.source); });
+                cy.elements().removeClass('highlighted dimmed');
+                cy.nodes().forEach(n => { if (nb.has(n.data('id'))) n.addClass('highlighted'); else n.addClass('dimmed'); });
+                cy.edges().forEach(e => { const d = e.data(); if (nb.has(d.source) && nb.has(d.target)) e.addClass('highlighted'); else e.addClass('dimmed'); });
             }
         } else {
-            this._clearAllGraphHighlights(graph);
-            graph.setItemState(item, 'highlight', true);
-            graph.getEdges().forEach(e => { const em = e.getModel(); if (em.source === model.id || em.target === model.id) graph.setItemState(e, 'highlight', true); });
+            this._clearAllGraphHighlights(cy);
+            node.addClass('highlighted');
+            cy.edges().forEach(e => { const d = e.data(); if (d.source === model.id || d.target === model.id) e.addClass('highlighted'); });
         }
 
         const connected = [];
         const nbIds = new Set();
-        graph.getEdges().forEach(e => {
-            const em = e.getModel();
-            if (em.source === model.id || em.target === model.id) {
-                const isOut = em.source === model.id, tgtId = isOut ? em.target : em.source;
+        cy.edges().forEach(e => {
+            const d = e.data();
+            if (d.source === model.id || d.target === model.id) {
+                const isOut = d.source === model.id, tgtId = isOut ? d.target : d.source;
                 nbIds.add(tgtId);
-                connected.push({ edgeId: em.id, label: em.label || '', relation: em.relation || '', sourceId: em.source, targetId: tgtId, targetLabel: '', direction: isOut ? '→' : '←' });
+                connected.push({ edgeId: d.id, label: d.label || '', relation: d.relation || '', sourceId: d.source, targetId: tgtId, targetLabel: '', direction: isOut ? '→' : '←' });
             }
         });
         for (const c of connected) {
-            const tgtNode = graph.findById(c.targetId);
-            c.targetLabel = tgtNode ? (tgtNode.getModel().label || '') : '';
+            const tgtNode = cy.getElementById(c.targetId);
+            c.targetLabel = (tgtNode && !tgtNode.removed()) ? (tgtNode.data('label') || '') : '';
         }
         const neighbors = [];
         for (const nId of nbIds) {
-            const n = graph.findById(nId);
-            if (n) { const nm = n.getModel(); neighbors.push({ id: nm.id, label: nm.label, color: nm.color, kind: nm.kind }); }
+            const n = cy.getElementById(nId);
+            if (n && !n.removed()) { const nd = n.data(); neighbors.push({ id: nd.id, label: nd.label, color: nd.color, kind: nd.kind }); }
         }
 
         const isDepsData = !!(model.type || model.groupName);
@@ -889,88 +925,89 @@ const fileTreeMethods = {
 
     /* ── 点击节点列表定位 ── */
     ftFocusGraphNode(nodeId) {
-        if (!this._ftGraph || this._ftGraph.destroyed || !nodeId) return;
-        const graph = this._ftGraph;
-        const target = graph.findById(nodeId);
-        if (!target) return;
-        this._clearAllGraphHighlights(graph);
-        graph.setItemState(target, 'highlight', true);
-        graph.getEdges().forEach(e => { const em = e.getModel(); if (em.source === nodeId || em.target === nodeId) graph.setItemState(e, 'highlight', true); });
-        graph.focusItem(target, true, { duration: 400 });
-        graph.zoomTo(1.4, { x: graph.getWidth() / 2, y: graph.getHeight() / 2 });
-        this._selectFtNodeDetail(target, graph);
+        if (!this._ftGraph || this._ftGraph.destroyed() || !nodeId) return;
+        const cy = this._ftGraph;
+        const target = cy.getElementById(nodeId);
+        if (!target || target.removed()) return;
+        this._clearAllGraphHighlights(cy);
+        target.addClass('highlighted');
+        cy.edges().forEach(e => { const d = e.data(); if (d.source === nodeId || d.target === nodeId) e.addClass('highlighted'); });
+        cy.animate({ center: { x: target.position('x'), y: target.position('y') }, zoom: 1.4, duration: 400, easing: 'ease-out' }, {});
+        this._selectFtNodeDetail(target, cy);
     },
 
     /* ── 高亮边 ── */
     ftHighlightEdge(edgeId) {
-        if (!this._ftGraph || this._ftGraph.destroyed || !edgeId) return;
-        const graph = this._ftGraph;
-        const edge = graph.findById(edgeId);
-        if (!edge) return;
-        this._clearAllGraphHighlights(graph);
-        graph.setItemState(edge, 'highlight', true);
-        edge.update({ style: { stroke: '#FBBF24', lineWidth: 3, opacity: 1, endArrow: { fill: '#FBBF24' } } });
-        const em = edge.getModel();
-        [em.source, em.target].forEach(nid => { const n = graph.findById(nid); if (n) graph.setItemState(n, 'highlight', true); });
-        graph.focusItem(edge, true, { duration: 300 });
-        setTimeout(() => { if (!edge.destroyed) edge.update({ style: { stroke: '#334155', lineWidth: 1.2, opacity: 0.45, endArrow: { fill: '#475569' } } }); }, 1500);
+        if (!this._ftGraph || this._ftGraph.destroyed() || !edgeId) return;
+        const cy = this._ftGraph;
+        const edge = cy.getElementById(edgeId);
+        if (!edge || edge.removed()) return;
+        this._clearAllGraphHighlights(cy);
+        edge.addClass('highlighted');
+        edge.style({ 'line-color': '#FBBF24', 'width': 3, 'opacity': 1, 'target-arrow-color': '#FBBF24' });
+        const d = edge.data();
+        [d.source, d.target].forEach(nid => { const n = cy.getElementById(nid); if (n && !n.removed()) n.addClass('highlighted'); });
+        const mid = { x: (edge.sourceEndpoint().x + edge.targetEndpoint().x) / 2, y: (edge.sourceEndpoint().y + edge.targetEndpoint().y) / 2 };
+        cy.animate({ center: mid, duration: 300, easing: 'ease-out' }, {});
+        setTimeout(() => { if (!cy.destroyed() && !edge.removed()) edge.style({ 'line-color': '#334155', 'width': 1.2, 'opacity': 0.45, 'target-arrow-color': '#475569' }); }, 1500);
     },
 
     /* ── Story 类型筛选 ── */
     ftFilterByStoryType() {
-        if (!this._ftGraph || this._ftGraph.destroyed) return;
-        const graph = this._ftGraph;
+        if (!this._ftGraph || this._ftGraph.destroyed()) return;
+        const cy = this._ftGraph;
         if (this.ftFilterType === 'story') {
             this.ftFilterType = null; this.ftSelectedNode = null;
-            this._clearAllGraphHighlights(graph); graph.fitView(40);
+            this._clearAllGraphHighlights(cy); cy.fit(undefined, 40);
             this.ftGraphOverview = this.ftGraphOverviewOriginal ? { ...this.ftGraphOverviewOriginal } : this.ftGraphOverview;
             this._updateFtBreadcrumb(); return;
         }
-        const storyNodes = graph.getNodes().filter(n => { const m = n.getModel(); return m.type === 'story' || m.kind === 'story'; });
+        const storyNodes = cy.nodes().filter(n => { const d = n.data(); return d.type === 'story' || d.kind === 'story'; });
         if (!storyNodes.length) return;
         this.ftFilterType = 'story'; this.ftSelectedNode = null;
         if (!this.ftGraphOverviewOriginal) this.ftGraphOverviewOriginal = { ...this.ftGraphOverview };
-        this._clearAllGraphHighlights(graph);
-        const storyIds = new Set(storyNodes.map(n => n.getModel().id));
-        graph.getNodes().forEach(n => { if (storyIds.has(n.getModel().id)) graph.setItemState(n, 'highlight', true); else graph.setItemState(n, 'dimmed', true); });
-        graph.getEdges().forEach(e => { const em = e.getModel(); if (storyIds.has(em.source) && storyIds.has(em.target)) graph.setItemState(e, 'highlight', true); else graph.setItemState(e, 'dimmed', true); });
-        graph.fitView(40); this._updateFtBreadcrumb();
+        this._clearAllGraphHighlights(cy);
+        const storyIds = new Set(storyNodes.map(n => n.data('id')));
+        cy.nodes().forEach(n => { if (storyIds.has(n.data('id'))) n.addClass('highlighted'); else n.addClass('dimmed'); });
+        cy.edges().forEach(e => { const d = e.data(); if (storyIds.has(d.source) && storyIds.has(d.target)) e.addClass('highlighted'); else e.addClass('dimmed'); });
+        cy.fit(undefined, 40); this._updateFtBreadcrumb();
     },
 
     /* ── 适应视图 ── */
     ftFitGraph() {
-        if (!this._ftGraph || this._ftGraph.destroyed) return;
-        const graph = this._ftGraph;
-        if (this._ftDrillNodeId) { const n = graph.findById(this._ftDrillNodeId); if (n) { graph.focusItem(n, true); return; } }
-        graph.fitView(40);
+        if (!this._ftGraph || this._ftGraph.destroyed()) return;
+        const cy = this._ftGraph;
+        if (this._ftDrillNodeId) {
+            const n = cy.getElementById(this._ftDrillNodeId);
+            if (n && !n.removed()) { cy.animate({ center: { x: n.position('x'), y: n.position('y') }, duration: 300 }, {}); return; }
+        }
+        cy.fit(undefined, 40);
     },
 
     /* ── 重置布局 ── */
     ftResetGraph() {
-        if (!this._ftGraph || this._ftGraph.destroyed) return;
+        if (!this._ftGraph || this._ftGraph.destroyed()) return;
         this._ftDrillNodeId = null; this.ftFilterType = null; this.ftGraphOverviewOriginal = null; this.ftSelectedNode = null;
         this._clearAllGraphHighlights(this._ftGraph);
-        const graph = this._ftGraph;
-        const nodeCount = graph.getNodes().length;
-        const dagreOpts = nodeCount > 100 ? { ranksep: 140, nodesep: 70 } : nodeCount > 50 ? { ranksep: 110, nodesep: 60 } : { ranksep: 90, nodesep: 50 };
-        try { graph.updateLayout({ type: 'dagre', rankdir: 'TB', ranksep: dagreOpts.ranksep, nodesep: dagreOpts.nodesep, controlPoints: true }); } catch (_) {}
-        graph.fitView(50); this._updateFtBreadcrumb();
+        this._runGraphLayout(this._ftGraph);
+        this._ftGraph.fit(undefined, 50);
+        this._updateFtBreadcrumb();
     },
 
     /* ── 面包屑 ── */
     _updateFtBreadcrumb() {
-        if (this._ftDrillNodeId && this._ftGraph && !this._ftGraph.destroyed) {
-            const node = this._ftGraph.findById(this._ftDrillNodeId);
-            this.ftBreadcrumb = { drillNodeId: this._ftDrillNodeId, drillLabel: node ? (node.getModel().label || '') : '' };
+        if (this._ftDrillNodeId && this._ftGraph && !this._ftGraph.destroyed()) {
+            const node = this._ftGraph.getElementById(this._ftDrillNodeId);
+            this.ftBreadcrumb = { drillNodeId: this._ftDrillNodeId, drillLabel: (node && !node.removed()) ? (node.data('label') || '') : '' };
         } else { this.ftBreadcrumb = { drillNodeId: null, drillLabel: '' }; }
     },
 
     /* ── 面包屑导航 ── */
     navigateFtBreadcrumb(item) {
         if (!item || item.action !== 'overview') return;
-        if (!this._ftGraph || this._ftGraph.destroyed) return;
+        if (!this._ftGraph || this._ftGraph.destroyed()) return;
         this._ftDrillNodeId = null; this.ftFilterType = null; this.ftSelectedNode = null;
-        this._clearAllGraphHighlights(this._ftGraph); this._ftGraph.fitView(40);
+        this._clearAllGraphHighlights(this._ftGraph); this._ftGraph.fit(undefined, 40);
         if (this.ftGraphOverviewOriginal) { this.ftGraphOverview = { ...this.ftGraphOverviewOriginal }; this.ftGraphOverviewOriginal = null; }
         this._updateFtBreadcrumb();
     },
@@ -985,17 +1022,17 @@ const fileTreeMethods = {
 
     /* ── 筛选/下钻后重新聚焦 ── */
     _ftRefocusAfterFilter() {
-        if (!this._ftGraph || this._ftGraph.destroyed) return;
-        const graph = this._ftGraph;
+        if (!this._ftGraph || this._ftGraph.destroyed()) return;
+        const cy = this._ftGraph;
         if (this._ftDrillNodeId) {
-            const drill = graph.findById(this._ftDrillNodeId);
-            if (drill) {
+            const drill = cy.getElementById(this._ftDrillNodeId);
+            if (drill && !drill.removed()) {
                 const nb = new Set(); nb.add(this._ftDrillNodeId);
-                graph.getEdges().forEach(e => { const em = e.getModel(); if (em.source === this._ftDrillNodeId) nb.add(em.target); if (em.target === this._ftDrillNodeId) nb.add(em.source); });
-                this._clearAllGraphHighlights(graph);
-                graph.getNodes().forEach(n => { if (nb.has(n.getModel().id)) graph.setItemState(n, 'highlight', true); else graph.setItemState(n, 'dimmed', true); });
-                graph.getEdges().forEach(e => { const em = e.getModel(); if (nb.has(em.source) && nb.has(em.target)) graph.setItemState(e, 'highlight', true); else graph.setItemState(e, 'dimmed', true); });
-                graph.focusItem(drill, true, { duration: 400 });
+                cy.edges().forEach(e => { const d = e.data(); if (d.source === this._ftDrillNodeId) nb.add(d.target); if (d.target === this._ftDrillNodeId) nb.add(d.source); });
+                this._clearAllGraphHighlights(cy);
+                cy.nodes().forEach(n => { if (nb.has(n.data('id'))) n.addClass('highlighted'); else n.addClass('dimmed'); });
+                cy.edges().forEach(e => { const d = e.data(); if (nb.has(d.source) && nb.has(d.target)) e.addClass('highlighted'); else e.addClass('dimmed'); });
+                cy.animate({ center: { x: drill.position('x'), y: drill.position('y') }, duration: 400, easing: 'ease-out' }, {});
             }
         } else if (this.ftFilterType) {
             this.ftFilterByStoryType();

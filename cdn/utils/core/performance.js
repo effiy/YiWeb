@@ -190,7 +190,9 @@ function monitorErrors() {
         }
 
         window.addEventListener('error', (e) => {
-            console.error('[性能监控] 页面错误:', e.error || e.message || e);
+            const err = e.error;
+            const detail = err && err.stack ? `${err}\n${err.stack}` : (err || e.message || e);
+            console.error('[性能监控] 页面错误:', detail);
             showError('页面出现错误，请刷新重试');
         });
 
