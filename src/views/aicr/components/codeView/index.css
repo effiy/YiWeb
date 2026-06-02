@@ -395,6 +395,35 @@
     line-height: 1.3;
 }
 
+/* 可折叠区块标题 */
+.graph-section-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--yi-text-secondary, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+}
+.graph-section-header:hover {
+    color: var(--yi-text-primary, #e2e8f0);
+}
+.graph-section-arrow {
+    font-size: 8px;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+}
+.graph-section-arrow.collapsed {
+    transform: rotate(-90deg);
+}
+
 /* 详情 header：标签 + 面包屑上下文路径 */
 .graph-node-detail-header-info {
     display: flex;

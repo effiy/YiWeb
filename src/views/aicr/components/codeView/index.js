@@ -189,6 +189,7 @@ const componentOptions = {
             kgActiveFilterNodeIds: null,
             kgLayer: 1,
             kgFullscreen: false,
+            kgCollapsed: {},
             _isDestroyed: false
         };
     },
@@ -2091,6 +2092,10 @@ const componentOptions = {
 
         /* ── 详情面板交互：点击关联边 / 邻居节点 → 图谱高亮 ── */
 
+        toggleKgSection(key) {
+            this.kgCollapsed = { ...this.kgCollapsed, [key]: !this.kgCollapsed[key] };
+        },
+
         toggleEdgeGroup(grp) {
             if (!grp || !this.kgSelectedNode) return;
             grp._expanded = !grp._expanded;
@@ -2404,6 +2409,7 @@ const componentOptions = {
                 }
             }
 
+            this.kgCollapsed = {};
             this.kgSelectedNode = {
                 label: nd.label, type: nd.type, group: nd.group,
                 typeLabel: typeLabel,
@@ -2441,6 +2447,7 @@ const componentOptions = {
             if (this.kgActiveFilter) {
                 // 有激活筛选 + 选中节点 → 退回到筛选概览（保留筛选）
                 this.kgSelectedNode = null;
+                this.kgCollapsed = {};
                 this._updateBreadcrumb();
                 // 重新显示筛选后的概览
                 if (this.kgGraphOverview) {
@@ -2453,6 +2460,7 @@ const componentOptions = {
             } else if (this.kgSelectedNode) {
                 // 无筛选 + 选中节点 → 退回到全景概览
                 this.kgSelectedNode = null;
+                this.kgCollapsed = {};
                 this._updateBreadcrumb();
                 this.resetKgLayout();
             }

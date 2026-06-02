@@ -241,8 +241,11 @@
 
           <!-- 1. 图谱统计数字 -->
           <div>
-            <div>图谱统计</div>
-            <div class="graph-overview-stats">
+            <div class="graph-section-header" @click="toggleKgSection('ovStats')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovStats'] }">▼</span>
+              图谱统计
+            </div>
+            <div v-if="!kgCollapsed['ovStats']" class="graph-overview-stats">
               <div class="graph-overview-stat clickable"
                    :class="{ active: kgActiveFilter && kgActiveFilter.type === 'story' }"
                    @click="filterKgByStoryType"
@@ -273,13 +276,22 @@
             </div>
           </div>
 
-          <!-- 3. 描述 -->
-          <p v-if="kgGraphOverview.description" class="graph-node-detail-desc">{{ firstSentence(kgGraphOverview.description) }}</p>
+          <!-- 2. 描述 -->
+          <div v-if="kgGraphOverview.description">
+            <div class="graph-section-header" @click="toggleKgSection('ovDesc')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovDesc'] }">▼</span>
+              描述
+            </div>
+            <p v-if="!kgCollapsed['ovDesc']" class="graph-node-detail-desc">{{ firstSentence(kgGraphOverview.description) }}</p>
+          </div>
 
-          <!-- 4. 跨故事依赖 -->
+          <!-- 3. 跨故事依赖 -->
           <div v-if="kgGraphOverview.storyDeps && kgGraphOverview.storyDeps.length">
-            <div>跨故事依赖 ({{ kgGraphOverview.storyDeps.length }})</div>
-            <div class="graph-overview-story-deps">
+            <div class="graph-section-header" @click="toggleKgSection('ovStoryDeps')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovStoryDeps'] }">▼</span>
+              跨故事依赖 ({{ kgGraphOverview.storyDeps.length }})
+            </div>
+            <div v-if="!kgCollapsed['ovStoryDeps']" class="graph-overview-story-deps">
               <div v-for="dep in kgGraphOverview.storyDeps" :key="dep.from + '→' + dep.to" class="graph-overview-story-dep">
                 <span class="graph-overview-story-dep-from">{{ dep.fromLabel }}</span>
                 <span class="graph-overview-story-dep-arrow">{{ dep.typeLabel }}</span>
@@ -288,10 +300,13 @@
             </div>
           </div>
 
-          <!-- 5. 节点分组 -->
+          <!-- 4. 节点分组 -->
           <div v-if="kgGraphOverview.topGroups.length">
-            <div>节点分组 ({{ kgGraphOverview.topGroups.length }})</div>
-            <div class="graph-overview-bars">
+            <div class="graph-section-header" @click="toggleKgSection('ovGroups')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovGroups'] }">▼</span>
+              节点分组 ({{ kgGraphOverview.topGroups.length }})
+            </div>
+            <div v-if="!kgCollapsed['ovGroups']" class="graph-overview-bars">
               <div v-for="[name, count] in kgGraphOverview.topGroups" :key="name" class="graph-overview-bar">
                 <span class="graph-overview-bar-label">{{ name }}</span>
                 <span class="graph-overview-bar-count">{{ count }}</span>
@@ -300,13 +315,14 @@
             </div>
           </div>
 
-          <!-- 6. 关联场景文档 -->
+          <!-- 5. 场景文档 -->
           <div v-if="kgGraphOverview.sceneNodes && kgGraphOverview.sceneNodes.length">
-            <div>
+            <div class="graph-section-header" @click="toggleKgSection('ovScenes')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovScenes'] }">▼</span>
               场景文档 ({{ kgGraphOverview.sceneNodes.length }})
               <span class="graph-node-detail-hint">点击场景筛选 · 点击节点定位</span>
             </div>
-            <div class="graph-overview-scenes">
+            <div v-if="!kgCollapsed['ovScenes']" class="graph-overview-scenes">
               <div v-for="scene in kgGraphOverview.sceneNodes" :key="scene.name"
                    class="graph-overview-scene clickable"
                    :class="{ active: kgActiveFilter && kgActiveFilter.value === scene.name }"
@@ -329,23 +345,27 @@
             </div>
           </div>
 
-          <!-- 7. 边类型分布 -->
+          <!-- 6. 边类型分布 -->
           <div v-if="kgGraphOverview.topRelations.length">
-            <div>边类型 ({{ kgGraphOverview.topRelations.length }})</div>
-            <div class="graph-overview-rels">
+            <div class="graph-section-header" @click="toggleKgSection('ovRelations')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovRelations'] }">▼</span>
+              边类型 ({{ kgGraphOverview.topRelations.length }})
+            </div>
+            <div v-if="!kgCollapsed['ovRelations']" class="graph-overview-rels">
               <span v-for="[name, count] in kgGraphOverview.topRelations" :key="name" class="graph-overview-rel">
                 {{ name }} ({{ count }})
               </span>
             </div>
           </div>
 
-          <!-- 8. 邻居节点 -->
+          <!-- 7. 跨场景节点 -->
           <div v-if="kgGraphOverview.nodeSceneList && kgGraphOverview.nodeSceneList.length">
-            <div>
+            <div class="graph-section-header" @click="toggleKgSection('ovCrossSceneNodes')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['ovCrossSceneNodes'] }">▼</span>
               跨场景节点 ({{ kgGraphOverview.nodeSceneList.length }})
               <span class="graph-node-detail-hint">点击节点定位</span>
             </div>
-            <div class="graph-overview-node-scenes">
+            <div v-if="!kgCollapsed['ovCrossSceneNodes']" class="graph-overview-node-scenes">
               <div v-for="ns in kgGraphOverview.nodeSceneList" :key="ns.id"
                    class="graph-overview-node-scene clickable"
                    @click="focusKgNode(ns.id)">
@@ -386,8 +406,11 @@
 
           <!-- 1. 图谱统计 -->
           <div>
-            <div>图谱统计</div>
-            <div class="graph-overview-stats">
+            <div class="graph-section-header" @click="toggleKgSection('stats')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['stats'] }">▼</span>
+              图谱统计
+            </div>
+            <div v-if="!kgCollapsed['stats']" class="graph-overview-stats">
               <div class="graph-overview-stat"
                    :class="{ highlight: kgSelectedNode.hasActiveFilter }">
                 <span class="graph-overview-stat-num">
@@ -412,15 +435,19 @@
           <!-- 2. 场景节点特殊内容 -->
           <div v-if="kgSelectedNode.isSceneNode">
             <div v-if="kgSelectedNode.sceneOwnDescription">
-              <div>场景描述</div>
-              <p class="graph-node-detail-desc">{{ kgSelectedNode.sceneOwnDescription }}</p>
+              <div class="graph-section-header" @click="toggleKgSection('sceneDesc')">
+                <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['sceneDesc'] }">▼</span>
+                场景描述
+              </div>
+              <p v-if="!kgCollapsed['sceneDesc']" class="graph-node-detail-desc">{{ kgSelectedNode.sceneOwnDescription }}</p>
             </div>
             <div v-if="kgSelectedNode.sceneContainedNodes && kgSelectedNode.sceneContainedNodes.length">
-              <div>
+              <div class="graph-section-header" @click="toggleKgSection('sceneNodes')">
+                <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['sceneNodes'] }">▼</span>
                 包含节点 ({{ kgSelectedNode.sceneContainedNodes.length }})
                 <span class="graph-node-detail-hint">点击定位</span>
               </div>
-              <div class="graph-node-detail-neighbors">
+              <div v-if="!kgCollapsed['sceneNodes']" class="graph-node-detail-neighbors">
                 <div v-for="n in kgSelectedNode.sceneContainedNodes" :key="n.id"
                      class="graph-node-neighbor-card clickable"
                      :style="{borderColor: n.color || '#4B5563'}"
@@ -435,34 +462,45 @@
 
           <!-- 3. 节点分组（非场景节点） -->
           <div v-if="!kgSelectedNode.isSceneNode">
-            <div>节点分组</div>
-            <div class="graph-node-detail-meta">
-              <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.typeLabel }}</span>
-              <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
+            <div class="graph-section-header" @click="toggleKgSection('grouping')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['grouping'] }">▼</span>
+              节点分组
             </div>
-            <p v-if="kgSelectedNode.roleSummary" class="graph-node-detail-role" v-html="kgSelectedNode.roleSummary"></p>
+            <div v-if="!kgCollapsed['grouping']">
+              <div class="graph-node-detail-meta">
+                <span v-if="kgSelectedNode.type" class="graph-node-badge">{{ kgSelectedNode.typeLabel }}</span>
+                <span v-if="kgSelectedNode.group" class="graph-node-badge group">{{ kgSelectedNode.group }}</span>
+              </div>
+              <p v-if="kgSelectedNode.roleSummary" class="graph-node-detail-role" v-html="kgSelectedNode.roleSummary"></p>
+            </div>
           </div>
 
-          <!-- 3. 描述 -->
+          <!-- 4. 描述 -->
           <div v-if="kgSelectedNode.description || kgSelectedNode.file || (kgSelectedNode.functionList && kgSelectedNode.functionList.length)">
-            <div>描述</div>
-            <p v-if="kgSelectedNode.description" class="graph-node-detail-desc">{{ firstSentence(kgSelectedNode.description) }}</p>
-            <div v-if="kgSelectedNode.relNarrative" class="graph-node-detail-narrative" v-html="kgSelectedNode.relNarrative"></div>
-            <div v-if="kgSelectedNode.file" style="margin-top:8px;">
-              <code class="graph-node-detail-file">{{ kgSelectedNode.file }}</code>
+            <div class="graph-section-header" @click="toggleKgSection('desc')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['desc'] }">▼</span>
+              描述
             </div>
-            <div v-if="kgSelectedNode.functionList && kgSelectedNode.functionList.length" class="graph-node-func-chips" style="margin-top:8px;">
-              <span v-for="(fn, i) in kgSelectedNode.functionList" :key="i" class="graph-node-func-chip">{{ fn }}</span>
+            <div v-if="!kgCollapsed['desc']">
+              <p v-if="kgSelectedNode.description" class="graph-node-detail-desc">{{ firstSentence(kgSelectedNode.description) }}</p>
+              <div v-if="kgSelectedNode.relNarrative" class="graph-node-detail-narrative" v-html="kgSelectedNode.relNarrative"></div>
+              <div v-if="kgSelectedNode.file" style="margin-top:8px;">
+                <code class="graph-node-detail-file">{{ kgSelectedNode.file }}</code>
+              </div>
+              <div v-if="kgSelectedNode.functionList && kgSelectedNode.functionList.length" class="graph-node-func-chips" style="margin-top:8px;">
+                <span v-for="(fn, i) in kgSelectedNode.functionList" :key="i" class="graph-node-func-chip">{{ fn }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- 4. 关联场景文档 -->
+          <!-- 5. 关联场景文档 -->
           <div v-if="kgSelectedNode.mdFiles && kgSelectedNode.mdFiles.length">
-            <div>
+            <div class="graph-section-header" @click="toggleKgSection('mdFiles')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['mdFiles'] }">▼</span>
               关联场景文档 ({{ kgSelectedNode.mdFiles.length }})
               <span class="graph-node-detail-hint">点击筛选图谱</span>
             </div>
-            <div class="graph-node-detail-mdfiles">
+            <div v-if="!kgCollapsed['mdFiles']" class="graph-node-detail-mdfiles">
               <div v-for="mf in kgSelectedNode.mdFiles" :key="mf.file"
                    class="graph-node-mdfile clickable"
                    :class="{ active: kgActiveFilter && kgActiveFilter.value === mf.scenario }"
@@ -479,10 +517,14 @@
             </div>
           </div>
 
-          <!-- 5. 邻居节点 -->
+          <!-- 6. 邻居节点 -->
           <div v-if="kgSelectedNode.neighbors && kgSelectedNode.neighbors.length">
-            <div>邻居节点 ({{ kgSelectedNode.neighbors.length }}) <span class="graph-node-detail-hint">点击定位</span></div>
-            <div class="graph-node-detail-neighbors">
+            <div class="graph-section-header" @click="toggleKgSection('neighbors')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['neighbors'] }">▼</span>
+              邻居节点 ({{ kgSelectedNode.neighbors.length }})
+              <span class="graph-node-detail-hint">点击定位</span>
+            </div>
+            <div v-if="!kgCollapsed['neighbors']" class="graph-node-detail-neighbors">
               <div v-for="n in kgSelectedNode.neighbors" :key="n.id"
                    class="graph-node-neighbor-card clickable"
                    :style="{borderColor: n.color || '#4B5563'}"
@@ -497,13 +539,14 @@
             </div>
           </div>
 
-          <!-- 6. 关联边 -->
+          <!-- 7. 关联边 -->
           <div v-if="kgSelectedNode.edgeGroups && kgSelectedNode.edgeGroups.length">
-            <div>
+            <div class="graph-section-header" @click="toggleKgSection('edges')">
+              <span class="graph-section-arrow" :class="{ collapsed: kgCollapsed['edges'] }">▼</span>
               关联边 ({{ kgSelectedNode.totalEdges }})
               <span class="graph-node-detail-hint">点击高亮 · 出={{ kgSelectedNode.outgoing }} 入={{ kgSelectedNode.incoming }}</span>
             </div>
-            <div class="graph-node-detail-edges">
+            <div v-if="!kgCollapsed['edges']" class="graph-node-detail-edges">
               <div v-for="grp in kgSelectedNode.edgeGroups" :key="grp.relation" class="graph-node-edge-group">
                 <div class="graph-node-edge-group-header">
                   <span class="graph-node-edge-group-label">{{ grp.label }}</span>
