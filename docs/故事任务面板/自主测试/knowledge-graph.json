@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "generatedAt": "2026-05-30T12:00:00Z",
-  "projectRoot": "docs/故事任务面板/yiweb-self-test/",
+  "projectRoot": "docs/故事任务面板/自主测试/",
   "graph": {
     "nodes": [
       {
@@ -554,7 +554,7 @@
         "label": "架构文档基线",
         "type": "source",
         "group": "参照基线",
-        "file": "docs/故事任务面板/yiweb-arch/",
+        "file": "docs/故事任务面板/系统架构/",
         "description": "架构文档基线",
         "mdFiles": [
           {
@@ -572,7 +572,7 @@
         "label": "模块地图基线",
         "type": "source",
         "group": "参照基线",
-        "file": "docs/故事任务面板/yiweb-arch-modules/",
+        "file": "docs/故事任务面板/模块地图/",
         "description": "模块清单基线",
         "mdFiles": [
           {
@@ -690,11 +690,11 @@
         ]
       },
       {
-        "id": "yiweb-self-test",
+        "id": "自主测试",
         "label": "YiWeb 自主测试方案 · 故事任务",
         "type": "story",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-self-test/故事任务.md",
+        "file": "docs/故事任务面板/自主测试/故事任务.md",
         "description": "YiWeb 自主测试方案（下称\"自检方案\"）是项目级健康检查策略，用于在 rui 工作流的各个阶段自动验证项目基线是否完整、一致、合规。自检方案不依赖任何后端服务或第三方工具，仅在浏览器环境或 Node.js 环境中执行文件级与结构级校验。",
         "keyFunctions": [],
         "mdFiles": [],
@@ -722,11 +722,11 @@
         ]
       },
       {
-        "id": "yiweb-self-test-scene-1",
+        "id": "自主测试-scene-1",
         "label": "场景1-全量自检",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-self-test/场景1-全量自检.md",
+        "file": "docs/故事任务面板/自主测试/场景1-全量自检.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -755,11 +755,11 @@
         ]
       },
       {
-        "id": "yiweb-self-test-scene-2",
+        "id": "自主测试-scene-2",
         "label": "场景2-增量自检",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-self-test/场景2-增量自检.md",
+        "file": "docs/故事任务面板/自主测试/场景2-增量自检.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -779,11 +779,11 @@
         ]
       },
       {
-        "id": "yiweb-self-test-scene-3",
+        "id": "自主测试-scene-3",
         "label": "场景3-一致性校验",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-self-test/场景3-一致性校验.md",
+        "file": "docs/故事任务面板/自主测试/场景3-一致性校验.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -803,11 +803,11 @@
         ]
       },
       {
-        "id": "yiweb-self-test-scene-4",
+        "id": "自主测试-scene-4",
         "label": "场景4-安全回归",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-self-test/场景4-安全回归.md",
+        "file": "docs/故事任务面板/自主测试/场景4-安全回归.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -980,205 +980,205 @@
         "label": "验证"
       },
       {
-        "source": "yiweb-self-test",
-        "target": "yiweb-self-test-scene-1",
+        "source": "自主测试",
+        "target": "自主测试-scene-1",
         "relation": "contains",
         "label": "场景1"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-full",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-rule-registry",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-engine",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-reporter",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-completeness",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-arch",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-security",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-version",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-branch",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-doc-format",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-code-style",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-check-deps",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-doc-claude",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-1",
+        "source": "自主测试-scene-1",
         "target": "ST-test-full",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test",
-        "target": "yiweb-self-test-scene-2",
+        "source": "自主测试",
+        "target": "自主测试-scene-2",
         "relation": "contains",
         "label": "场景2"
       },
       {
-        "source": "yiweb-self-test-scene-2",
+        "source": "自主测试-scene-2",
         "target": "ST-incremental",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-2",
+        "source": "自主测试-scene-2",
         "target": "ST-rule-registry",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-2",
+        "source": "自主测试-scene-2",
         "target": "ST-engine",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-2",
+        "source": "自主测试-scene-2",
         "target": "ST-reporter",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-2",
+        "source": "自主测试-scene-2",
         "target": "ST-test-incremental",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test",
-        "target": "yiweb-self-test-scene-3",
+        "source": "自主测试",
+        "target": "自主测试-scene-3",
         "relation": "contains",
         "label": "场景3"
       },
       {
-        "source": "yiweb-self-test-scene-3",
+        "source": "自主测试-scene-3",
         "target": "ST-consistency",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-3",
+        "source": "自主测试-scene-3",
         "target": "ST-doc-modules",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-3",
+        "source": "自主测试-scene-3",
         "target": "ST-code-actual",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-3",
+        "source": "自主测试-scene-3",
         "target": "ST-reporter",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-3",
+        "source": "自主测试-scene-3",
         "target": "ST-check-deps",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test",
-        "target": "yiweb-self-test-scene-4",
+        "source": "自主测试",
+        "target": "自主测试-scene-4",
         "relation": "contains",
         "label": "场景4"
       },
       {
-        "source": "yiweb-self-test-scene-4",
+        "source": "自主测试-scene-4",
         "target": "ST-check-security",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-4",
+        "source": "自主测试-scene-4",
         "target": "ST-full",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-4",
+        "source": "自主测试-scene-4",
         "target": "ST-incremental",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-4",
+        "source": "自主测试-scene-4",
         "target": "ST-doc-claude",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-4",
+        "source": "自主测试-scene-4",
         "target": "ST-test-full",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-self-test-scene-4",
+        "source": "自主测试-scene-4",
         "target": "ST-test-incremental",
         "relation": "documents",
         "label": "§7 关联源码"
@@ -1275,9 +1275,9 @@
           }
         ],
         "wireframe": "全量自检流程:\n\n  ┌──────────────────────────────────────────────────────────┐\n  │                    全量自检引擎                          │\n  ├──────────────────────────────────────────────────────────┤\n  │  输入: 项目根目录                                        │\n  │  输出: 健康报告 (JSON + 终端)                            │\n  ├──────────────────────────────────────────────────────────┤\n  │                                                          │\n  │  ① 扫描根目录  →  ② 加载15项规则  →  ③ 顺序/并行执行    │\n  │       │                  │                    │          │\n  │       ▼                  ▼                    ▼          │\n  │  ┌─────────┐      ┌───────────┐        ┌───────────┐    │\n  │  │检查项目 │      │claude-    │        │architecture│    │\n  │  │说明     │      │completenes│        │-rules      │    │\n  │  │(5字段)  │      │s (标记段) │        │(分层约束)  │    │\n  │  └─────────┘      └───────────┘        └───────────┘    │\n  │                                                          │\n  │  ┌─────────┐      ┌───────────┐        ┌───────────┐    │\n  │  │检查故事 │      │security-  │        │version-    │    │\n  │  │目录     │      │scan       │        │consistency │    │\n  │  │(文档完整)│      │(密钥检测) │        │(版本一致)  │    │\n  │  └─────────┘      └───────────┘        └───────────┘    │\n  │                                                          │\n  │  ┌─────────┐      ┌───────────┐        ┌───────────┐    │\n  │  │branch-  │      │doc-format │        │code-style  │    │\n  │  │naming   │      │(引用完整) │        │(风格一致)  │    │\n  │  │(feat/*) │      └───────────┘        └───────────┘    │\n  │  └─────────┘                                             │\n  │                                                          │\n  │  ④ 汇总结果 → ⑤ 生成健康度报告 (全部通过/部分失败)       │\n  └──────────────────────────────────────────────────────────┘",
-        "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
+        "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/分层结构/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
         "graphNodes": [
-          "yiweb-self-test-scene-1",
+          "自主测试-scene-1",
           "ST-full",
           "ST-rule-registry",
           "ST-engine",
@@ -1293,7 +1293,7 @@
           "ST-doc-claude",
           "ST-test-full"
         ],
-        "_sourceDir": "yiweb-self-test"
+        "_sourceDir": "自主测试"
       },
       {
         "name": "场景2-增量自检",
@@ -1319,16 +1319,16 @@
           }
         ],
         "wireframe": "增量自检流程 (提交前):\n\n  git commit 触发\n        │\n        ▼\n  ┌──────────────────┐\n  │ git diff         │\n  │ --name-only      │\n  └────────┬─────────┘\n           ▼\n  ┌──────────────────┐\n  │ 按文件类型分类   │\n  └────────┬─────────┘\n           │\n    ┌──────┼──────┐\n    ▼      ▼      ▼\n  文档   代码    配置\n  (.md)  (.js)  (.json)\n    │      │      │\n    ▼      ▼      ▼\n  格式   安全    环境\n  引用   日志    切换\n  完整   架构    ENDPOINTS\n    │      │      │\n    └──────┼──────┘\n           ▼\n  ┌──────────────────┐\n  │ 全部通过 → 允许  │\n  │ 有失败   → 阻断  │\n  └──────────────────┘",
-        "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
+        "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/分层结构/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
         "graphNodes": [
-          "yiweb-self-test-scene-2",
+          "自主测试-scene-2",
           "ST-incremental",
           "ST-rule-registry",
           "ST-engine",
           "ST-reporter",
           "ST-test-incremental"
         ],
-        "_sourceDir": "yiweb-self-test"
+        "_sourceDir": "自主测试"
       },
       {
         "name": "场景3-一致性校验",
@@ -1342,16 +1342,16 @@
           }
         ],
         "wireframe": "一致性校验:\n\n  ┌─────────────────────┐         ┌─────────────────────┐\n  │   文档基线 (声称)    │         │   代码实际 (真实)    │\n  ├─────────────────────┤         ├─────────────────────┤\n  │ 模块地图文档        │         │ git 仓库文件结构     │\n  │  ├─ 视图层: aicr    │  对比   │  ├─ src/views/aicr/  │\n  │  │  claude story    │ ◄─────► │  │  claude/ story/   │\n  │  ├─ 服务层: crud    │         │  ├─ src/core/        │\n  │  │  request auth    │         │  │  services/        │\n  │  ├─ 框架层: baseView│         │  ├─ cdn/utils/       │\n  │  │  componentLoader │         │  │  view/ core/      │\n  │  └─ 测试层: tests/  │         │  └─ tests/           │\n  └─────────────────────┘         └─────────────────────┘\n                    │\n                    ▼\n  ┌──────────────────────────────────────────────┐\n  │  差异清单:                                   │\n  │  文档有·代码无 → 文档过期 (需更新)           │\n  │  代码有·文档无 → 文档缺失 (需补充)           │\n  │  一致          → 评审可继续                   │\n  └──────────────────────────────────────────────┘",
-        "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/yiweb-arch-layers/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
+        "curl": "# 运行全量自检 — 检查 CLAUDE.md 完整性\ngrep -c \"项目画像\\|项目约束\\|执行准则\\|退化对策\\|安全面\" CLAUDE.md\n\n# 检查分支命名规范\ngit branch --show-current | grep -q \"^feat/\" && echo \"✓ 分支名符合规范\" || echo \"⚠️ 分支名不符合 feat/<name> 规范\"\n\n# 检查版本一致性\ngrep -rn \"version.*:\" docs/故事任务面板/story-deps.json cdn/ --include=\"*.json\" | head -5\n\n# 一致性校验 — 文档声称 vs 代码实际\necho \"=== 文档中的视图列表 ===\"\ncurl -s /docs/故事任务面板/分层结构/knowledge-graph.json | jq -r '.graph.nodes[] | select(.group==\"L1-Views\") | .file'\necho \"\"\necho \"=== 代码中的视图目录 ===\"\nls -d src/views/*/\n\n# 增量自检 — 仅检查变更文件\ngit diff --name-only HEAD~1 | while read f; do\n  case \"$f\" in\n    *.md) echo \"[文档] $f — 检查格式+引用\" ;;\n    *.js) echo \"[代码] $f — 检查安全+日志+架构\" ;;\n    *.json) echo \"[配置] $f — 检查环境切换\" ;;\n  esac\ndone",
         "graphNodes": [
-          "yiweb-self-test-scene-3",
+          "自主测试-scene-3",
           "ST-consistency",
           "ST-doc-modules",
           "ST-code-actual",
           "ST-reporter",
           "ST-check-deps"
         ],
-        "_sourceDir": "yiweb-self-test"
+        "_sourceDir": "自主测试"
       },
       {
         "name": "场景4-安全回归",
@@ -1395,7 +1395,7 @@
           }
         ],
         "graphNodes": [
-          "yiweb-self-test-scene-4",
+          "自主测试-scene-4",
           "ST-check-security",
           "ST-full",
           "ST-incremental",
@@ -1403,7 +1403,7 @@
           "ST-test-full",
           "ST-test-incremental"
         ],
-        "_sourceDir": "yiweb-self-test"
+        "_sourceDir": "自主测试"
       }
     ]
   }

@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "generatedAt": "2026-05-30T17:00:00Z",
-  "projectRoot": "docs/故事任务面板/yiweb-arch/",
+  "projectRoot": "docs/故事任务面板/系统架构/",
   "story": {
     "name": "YiWeb-系统架构 · 故事任务",
     "description": "",
@@ -92,7 +92,7 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-scene-1",
+          "系统架构-scene-1",
           "baseView",
           "tests-cdn-baseView-test",
           "componentLoader",
@@ -106,7 +106,7 @@
           "index",
           "claude-index"
         ],
-        "_sourceDir": "yiweb-arch"
+        "_sourceDir": "系统架构"
       },
       {
         "name": "场景2-数据流追踪",
@@ -203,7 +203,7 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-scene-2",
+          "系统架构-scene-2",
           "svc-authErrorHandler",
           "svc-authUtils",
           "tests-authUtils-test",
@@ -218,7 +218,7 @@
           "useComputed",
           "hooks-useMethods"
         ],
-        "_sourceDir": "yiweb-arch"
+        "_sourceDir": "系统架构"
       },
       {
         "name": "场景3-新人上手",
@@ -292,7 +292,7 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-scene-3",
+          "系统架构-scene-3",
           "CLAUDE",
           "baseView",
           "tests-cdn-baseView-test",
@@ -305,7 +305,7 @@
           "index",
           "index-html"
         ],
-        "_sourceDir": "yiweb-arch"
+        "_sourceDir": "系统架构"
       },
       {
         "name": "场景4-依赖变更影响",
@@ -380,7 +380,7 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-scene-4",
+          "系统架构-scene-4",
           "svc-authUtils",
           "tests-authUtils-test",
           "baseView",
@@ -392,7 +392,7 @@
           "svc-requestHelper",
           "svc-sessionSyncService"
         ],
-        "_sourceDir": "yiweb-arch"
+        "_sourceDir": "系统架构"
       }
     ]
   },
@@ -1207,11 +1207,11 @@
         ]
       },
       {
-        "id": "yiweb-arch",
+        "id": "系统架构",
         "label": "YiWeb-系统架构 · 故事任务",
         "type": "story",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch/故事任务.md",
+        "file": "docs/故事任务面板/系统架构/故事任务.md",
         "description": "YiWeb 作为一个零构建的浏览器原生 ESM 单页应用，采用自研 `createBaseView` 视图框架，包含 3 个独立视图（aicr / claude / story）和 CDN 基础设施层。将系统架构知识固化为可查询、可验证的文",
         "keyFunctions": [],
         "mdFiles": [],
@@ -1239,11 +1239,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-scene-1",
+        "id": "系统架构-scene-1",
         "label": "场景1-模块定位",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch/场景1-模块定位.md",
+        "file": "docs/故事任务面板/系统架构/场景1-模块定位.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -1270,11 +1270,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-scene-2",
+        "id": "系统架构-scene-2",
         "label": "场景2-数据流追踪",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch/场景2-数据流追踪.md",
+        "file": "docs/故事任务面板/系统架构/场景2-数据流追踪.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -1302,11 +1302,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-scene-3",
+        "id": "系统架构-scene-3",
         "label": "场景3-新人上手",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch/场景3-新人上手.md",
+        "file": "docs/故事任务面板/系统架构/场景3-新人上手.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -1332,11 +1332,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-scene-4",
+        "id": "系统架构-scene-4",
         "label": "场景4-依赖变更影响",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch/场景4-依赖变更影响.md",
+        "file": "docs/故事任务面板/系统架构/场景4-依赖变更影响.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -1567,301 +1567,301 @@
         "label": "error"
       },
       {
-        "source": "yiweb-arch",
-        "target": "yiweb-arch-scene-1",
+        "source": "系统架构",
+        "target": "系统架构-scene-1",
         "relation": "contains",
         "label": "场景1"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "baseView",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "tests-cdn-baseView-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "componentLoader",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "tests-cdn-componentLoader-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "src-core-config",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "tests-core-config-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "svc-crud",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "tests-services-crud-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "story-index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "svc-index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-1",
+        "source": "系统架构-scene-1",
         "target": "claude-index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch",
-        "target": "yiweb-arch-scene-2",
+        "source": "系统架构",
+        "target": "系统架构-scene-2",
         "relation": "contains",
         "label": "场景2"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "svc-authErrorHandler",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "svc-authUtils",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "tests-authUtils-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "svc-checkStatus",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "svc-crud",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "core-error",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "inputMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "core-log",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "svc-requestHelper",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "tests-requestHelper-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "storeState",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "useComputed",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-2",
+        "source": "系统架构-scene-2",
         "target": "hooks-useMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch",
-        "target": "yiweb-arch-scene-3",
+        "source": "系统架构",
+        "target": "系统架构-scene-3",
         "relation": "contains",
         "label": "场景3"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "CLAUDE",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "baseView",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "tests-cdn-baseView-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "componentLoader",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "tests-cdn-componentLoader-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "src-core-config",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "tests-core-config-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "story-index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "svc-index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-3",
+        "source": "系统架构-scene-3",
         "target": "index-html",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch",
-        "target": "yiweb-arch-scene-4",
+        "source": "系统架构",
+        "target": "系统架构-scene-4",
         "relation": "contains",
         "label": "场景4"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "svc-authUtils",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "tests-authUtils-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "baseView",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "tests-cdn-baseView-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "svc-crud",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "tests-services-crud-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "core-error",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "utils-filterHelpers",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "svc-requestHelper",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-scene-4",
+        "source": "系统架构-scene-4",
         "target": "svc-sessionSyncService",
         "relation": "documents",
         "label": "§7 关联源码"

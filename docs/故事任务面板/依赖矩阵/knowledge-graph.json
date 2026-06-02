@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "generatedAt": "2026-05-30T17:00:00Z",
-  "projectRoot": "docs/故事任务面板/yiweb-arch-deps/",
+  "projectRoot": "docs/故事任务面板/依赖矩阵/",
   "story": {
     "name": "YiWeb-系统架构-依赖矩阵 · 故事任务",
     "description": "",
@@ -59,7 +59,7 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-deps-scene-1",
+          "依赖矩阵-scene-1",
           "baseView",
           "baseView-test",
           "crud",
@@ -68,7 +68,7 @@
           "filterHelpers",
           "requestHelper"
         ],
-        "_sourceDir": "yiweb-arch-deps"
+        "_sourceDir": "依赖矩阵"
       },
       {
         "name": "场景2-健康度检查",
@@ -97,12 +97,12 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-deps-scene-2",
+          "依赖矩阵-scene-2",
           "filterHelpers",
           "index",
           "sessionSyncService"
         ],
-        "_sourceDir": "yiweb-arch-deps"
+        "_sourceDir": "依赖矩阵"
       },
       {
         "name": "场景3-新增依赖评估",
@@ -116,17 +116,17 @@
           },
           {
             "type": "source",
-            "file": "分层边界定义 (yiweb-arch-layers)",
+            "file": "分层边界定义 (分层结构)",
             "keyContent": "四层拓扑模型",
             "description": "层级归属判定"
           }
         ],
         "graphNodes": [
-          "yiweb-arch-deps-scene-3",
+          "依赖矩阵-scene-3",
           "-------",
-          "--------yiweb-arch-layers-"
+          "--------分层结构-"
         ],
-        "_sourceDir": "yiweb-arch-deps"
+        "_sourceDir": "依赖矩阵"
       },
       {
         "name": "场景4-重构规划",
@@ -154,12 +154,12 @@
           }
         ],
         "graphNodes": [
-          "yiweb-arch-deps-scene-4",
+          "依赖矩阵-scene-4",
           "aiSearchMethods",
           "crud",
           "crud-test"
         ],
-        "_sourceDir": "yiweb-arch-deps"
+        "_sourceDir": "依赖矩阵"
       }
     ]
   },
@@ -417,11 +417,11 @@
         "relatedNodes": []
       },
       {
-        "id": "--------yiweb-arch-layers-",
-        "label": "分层边界定义 (yiweb-arch-layers)",
+        "id": "--------分层结构-",
+        "label": "分层边界定义 (分层结构)",
         "type": "source",
         "group": "Other",
-        "file": "分层边界定义 (yiweb-arch-layers)",
+        "file": "分层边界定义 (分层结构)",
         "description": "层级归属判定",
         "keyFunctions": [
           "四层拓扑模型"
@@ -462,11 +462,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-deps",
+        "id": "依赖矩阵",
         "label": "YiWeb-系统架构-依赖矩阵 · 故事任务",
         "type": "story",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-deps/故事任务.md",
+        "file": "docs/故事任务面板/依赖矩阵/故事任务.md",
         "description": "<a id=\"sec1\"></a>",
         "keyFunctions": [],
         "mdFiles": [],
@@ -482,18 +482,18 @@
           "index",
           "sessionSyncService",
           "-------",
-          "--------yiweb-arch-layers-",
+          "--------分层结构-",
           "aiSearchMethods",
           "crud",
           "crud-test"
         ]
       },
       {
-        "id": "yiweb-arch-deps-scene-1",
+        "id": "依赖矩阵-scene-1",
         "label": "场景1-影响评估",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-deps/场景1-影响评估.md",
+        "file": "docs/故事任务面板/依赖矩阵/场景1-影响评估.md",
         "description": "flowchart TD",
         "keyFunctions": [],
         "mdFiles": [
@@ -515,11 +515,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-deps-scene-2",
+        "id": "依赖矩阵-scene-2",
         "label": "场景2-健康度检查",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-deps/场景2-健康度检查.md",
+        "file": "docs/故事任务面板/依赖矩阵/场景2-健康度检查.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -537,11 +537,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-deps-scene-3",
+        "id": "依赖矩阵-scene-3",
         "label": "场景3-新增依赖评估",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-deps/场景3-新增依赖评估.md",
+        "file": "docs/故事任务面板/依赖矩阵/场景3-新增依赖评估.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -554,15 +554,15 @@
         ],
         "relatedNodes": [
           "-------",
-          "--------yiweb-arch-layers-"
+          "--------分层结构-"
         ]
       },
       {
-        "id": "yiweb-arch-deps-scene-4",
+        "id": "依赖矩阵-scene-4",
         "label": "场景4-重构规划",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-deps/场景4-重构规划.md",
+        "file": "docs/故事任务面板/依赖矩阵/场景4-重构规划.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -642,115 +642,115 @@
         "label": "index"
       },
       {
-        "source": "yiweb-arch-deps",
-        "target": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵",
+        "target": "依赖矩阵-scene-1",
         "relation": "contains",
         "label": "场景1"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "baseView",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "baseView-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "crud",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "crud-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "error",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "filterHelpers",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-1",
+        "source": "依赖矩阵-scene-1",
         "target": "requestHelper",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps",
-        "target": "yiweb-arch-deps-scene-2",
+        "source": "依赖矩阵",
+        "target": "依赖矩阵-scene-2",
         "relation": "contains",
         "label": "场景2"
       },
       {
-        "source": "yiweb-arch-deps-scene-2",
+        "source": "依赖矩阵-scene-2",
         "target": "filterHelpers",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-2",
+        "source": "依赖矩阵-scene-2",
         "target": "index",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-2",
+        "source": "依赖矩阵-scene-2",
         "target": "sessionSyncService",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps",
-        "target": "yiweb-arch-deps-scene-3",
+        "source": "依赖矩阵",
+        "target": "依赖矩阵-scene-3",
         "relation": "contains",
         "label": "场景3"
       },
       {
-        "source": "yiweb-arch-deps-scene-3",
+        "source": "依赖矩阵-scene-3",
         "target": "-------",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-3",
-        "target": "--------yiweb-arch-layers-",
+        "source": "依赖矩阵-scene-3",
+        "target": "--------分层结构-",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps",
-        "target": "yiweb-arch-deps-scene-4",
+        "source": "依赖矩阵",
+        "target": "依赖矩阵-scene-4",
         "relation": "contains",
         "label": "场景4"
       },
       {
-        "source": "yiweb-arch-deps-scene-4",
+        "source": "依赖矩阵-scene-4",
         "target": "aiSearchMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-4",
+        "source": "依赖矩阵-scene-4",
         "target": "crud",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-deps-scene-4",
+        "source": "依赖矩阵-scene-4",
         "target": "crud-test",
         "relation": "documents",
         "label": "§7 关联源码"

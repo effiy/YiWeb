@@ -1,7 +1,7 @@
 {
   "version": "3.0.0",
   "generatedAt": "2026-05-30T18:00:00Z",
-  "projectRoot": "docs/故事任务面板/yiweb-arch-security/",
+  "projectRoot": "docs/故事任务面板/安全边界/",
   "story": {
     "name": "YiWeb-系统架构-安全边界 · 故事任务",
     "description": "五面安全审计：输入面→接口面→存储面→认证面→渲染面的防护措施检查",
@@ -10,7 +10,7 @@
         "name": "场景1-安全审计",
         "description": "检查输入面(地址栏参数/文件上传/文本输入/数据加载) → 检查接口面(请求凭证/认证头/401拦截) → 检查存储面(本地存储内容审计) → 检查认证面(凭证生命周期管理) → 检查渲染面(SanitizePlugin启用状态) → 汇总审计发现",
         "graphNodes": [
-          "yiweb-arch-security-scene-1",
+          "安全边界-scene-1",
           "config",
           "projectZipMethods",
           "inputMethods",
@@ -100,13 +100,13 @@
             "description": "验证 token 生命周期"
           }
         ],
-        "_sourceDir": "yiweb-arch-security"
+        "_sourceDir": "安全边界"
       },
       {
         "name": "场景2-安全自查",
         "description": "新功能涉及用户输入?(确认输入有校验或清洗) → 新功能涉及请求发送?(确认使用封装的请求方法) → 新功能涉及本地存储?(确认仅存非敏感数据) → 新功能涉及动态内容渲染?(确认经过 SanitizePlugin) → 安全自查通过可提交",
         "graphNodes": [
-          "yiweb-arch-security-scene-2",
+          "安全边界-scene-2",
           "config",
           "projectZipMethods",
           "inputMethods",
@@ -143,13 +143,13 @@
             "code": "/**\n * Sanitize Plugin\n * Cleans HTML to prevent XSS\n */\n\nconst sanitizeClassName = (className) => {\n  if (!className || typeof className !== 'string') return '';\n  const cleaned = className.replace(/[^a-zA-Z0-9 _-]/g, ' ').replace(/\\s+/g, ' ').trim();\n  return cleaned.length > 128 ? cleaned.slice(0, 128).trim() : cleaned;\n};\n\nconst isSafeCssColor = (color) => {\n  if (!color || typeof color !== 'string') return false;\n  const value = color.trim();\n  if (!value || value.length > 48) return false;\n  if (/^#[0-9a-fA-F]{3}$/.test(value) || /^#[0-9a-fA-F]{6}$/.test(value)) return true;\n  if (/^[a-zA-Z]+$/.test(value)) return true;\n  const rgbMatch = value.match(/^rgb\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*\\)$/i);\n  if (rgbMatch) {\n    const r = Number(rgbMatch[1]);\n    const g = Number(rgbMatch[2]);\n    const b = Number(rgbMatch[3]);\n    return r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255;\n  }\n  const rgbaMatch = value.match(/^rgba\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(0|1|0?\\.\\d+)\\s*\\)$/i);"
           }
         ],
-        "_sourceDir": "yiweb-arch-security"
+        "_sourceDir": "安全边界"
       },
       {
         "name": "场景3-认证排查",
         "description": "检查本地存储凭证是否存在 → 凭证存在? → 检查请求头凭证是否正确注入 → 认证头存在? → 检查响应是否收到 401 → 收到 401? → 检查 authErrorHandler 是否触发登录弹窗 / 问题在后端联系后端排查",
         "graphNodes": [
-          "yiweb-arch-security-scene-3",
+          "安全边界-scene-3",
           "requestHelper",
           "authUtils",
           "authErrorHandler",
@@ -191,13 +191,13 @@
             "description": "验证 credentials"
           }
         ],
-        "_sourceDir": "yiweb-arch-security"
+        "_sourceDir": "安全边界"
       },
       {
         "name": "场景4-XSS评估",
         "description": "检查 SanitizePlugin 是否启用 → 插件已启用? → 检查插件在链中的排序是否为第一位 → 排序正确? → 检查输入面是否有未校验的输入点 → 检查是否有绕过清洗插件的渲染路径 → 汇总风险评估结果",
         "graphNodes": [
-          "yiweb-arch-security-scene-4",
+          "安全边界-scene-4",
           "SanitizePlugin",
           "PluginSystem",
           "MarkdownRenderer",
@@ -233,7 +233,7 @@
             "code": "/**\n * 输入处理方法模块\n * author: YiWeb\n * 说明：处理消息输入、输入法事件等\n */\n\nimport { safeExecute } from '/cdn/utils/core/error.js';\n\n/**\n * 创建输入处理方法\n * @param {Object} deps - 依赖注入对象\n * @returns {Object} 输入处理方法集合\n */\nexport const createInputMethods = () => {\n    /**\n     * 处理消息输入键盘事件\n     * @param {Event} event - 键盘事件\n     */\n    const handleMessageInput = async (event) => {\n        return safeExecute(() => {\n        }, '消息输入键盘事件处理');\n    };\n\n    /**\n     * 处理输入法开始事件"
           }
         ],
-        "_sourceDir": "yiweb-arch-security"
+        "_sourceDir": "安全边界"
       }
     ]
   },
@@ -840,11 +840,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-security",
+        "id": "安全边界",
         "label": "YiWeb-系统架构-安全边界 · 故事任务",
         "type": "story",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-security/故事任务.md",
+        "file": "docs/故事任务面板/安全边界/故事任务.md",
         "description": "<a id=\"sec1\"></a>",
         "keyFunctions": [],
         "mdFiles": [],
@@ -872,11 +872,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-security-scene-1",
+        "id": "安全边界-scene-1",
         "label": "场景1-安全审计",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-security/场景1-安全审计.md",
+        "file": "docs/故事任务面板/安全边界/场景1-安全审计.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -903,11 +903,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-security-scene-2",
+        "id": "安全边界-scene-2",
         "label": "场景2-安全自查",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-security/场景2-安全自查.md",
+        "file": "docs/故事任务面板/安全边界/场景2-安全自查.md",
         "description": "flowchart TD",
         "keyFunctions": [],
         "mdFiles": [
@@ -935,11 +935,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-security-scene-3",
+        "id": "安全边界-scene-3",
         "label": "场景3-认证排查",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-security/场景3-认证排查.md",
+        "file": "docs/故事任务面板/安全边界/场景3-认证排查.md",
         "description": "flowchart TB",
         "keyFunctions": [],
         "mdFiles": [
@@ -959,11 +959,11 @@
         ]
       },
       {
-        "id": "yiweb-arch-security-scene-4",
+        "id": "安全边界-scene-4",
         "label": "场景4-XSS评估",
         "type": "scenario",
         "group": "Documentation",
-        "file": "docs/故事任务面板/yiweb-arch-security/场景4-XSS评估.md",
+        "file": "docs/故事任务面板/安全边界/场景4-XSS评估.md",
         "description": "flowchart LR",
         "keyFunctions": [],
         "mdFiles": [
@@ -1008,229 +1008,229 @@
         "label": "PluginSystem"
       },
       {
-        "source": "yiweb-arch-security",
-        "target": "yiweb-arch-security-scene-1",
+        "source": "安全边界",
+        "target": "安全边界-scene-1",
         "relation": "contains",
         "label": "场景1"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "config",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "projectZipMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "inputMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "requestHelper",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "authUtils",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "authErrorHandler",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "SanitizePlugin",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "PluginSystem",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "MarkdownRenderer",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "config-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "requestHelper-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-1",
+        "source": "安全边界-scene-1",
         "target": "authUtils-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security",
-        "target": "yiweb-arch-security-scene-2",
+        "source": "安全边界",
+        "target": "安全边界-scene-2",
         "relation": "contains",
         "label": "场景2"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "config",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "projectZipMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "inputMethods",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "requestHelper",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "authUtils",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "authErrorHandler",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "SanitizePlugin",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "PluginSystem",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "MarkdownRenderer",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "config-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "requestHelper-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "authUtils-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-2",
+        "source": "安全边界-scene-2",
         "target": "manage",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security",
-        "target": "yiweb-arch-security-scene-3",
+        "source": "安全边界",
+        "target": "安全边界-scene-3",
         "relation": "contains",
         "label": "场景3"
       },
       {
-        "source": "yiweb-arch-security-scene-3",
+        "source": "安全边界-scene-3",
         "target": "requestHelper",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-3",
+        "source": "安全边界-scene-3",
         "target": "authUtils",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-3",
+        "source": "安全边界-scene-3",
         "target": "authErrorHandler",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-3",
+        "source": "安全边界-scene-3",
         "target": "requestHelper-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-3",
+        "source": "安全边界-scene-3",
         "target": "authUtils-test",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security",
-        "target": "yiweb-arch-security-scene-4",
+        "source": "安全边界",
+        "target": "安全边界-scene-4",
         "relation": "contains",
         "label": "场景4"
       },
       {
-        "source": "yiweb-arch-security-scene-4",
+        "source": "安全边界-scene-4",
         "target": "SanitizePlugin",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-4",
+        "source": "安全边界-scene-4",
         "target": "PluginSystem",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-4",
+        "source": "安全边界-scene-4",
         "target": "MarkdownRenderer",
         "relation": "documents",
         "label": "§7 关联源码"
       },
       {
-        "source": "yiweb-arch-security-scene-4",
+        "source": "安全边界-scene-4",
         "target": "inputMethods",
         "relation": "documents",
         "label": "§7 关联源码"
