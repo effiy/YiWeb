@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiTag Demo · YiWeb</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #161620; --bg-card: #22222e; --bg-elevated: #2a2a38;
+      --accent: #6366f1; --accent-2: #22d3ee; --danger: #ef4444;
+      --text: #fafafc; --text-2: #a0a0a4; --text-3: #6e6e72;
+      --border: rgba(255,255,255,0.06); --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
+    .topbar h1 { font-size: 0.95rem; font-weight: 700; }
+    .topbar .back { color: var(--text-3); text-decoration: none; font-size: 0.8rem; }
+    .topbar .back:hover { color: var(--accent); }
+    .main { flex:1; padding: 32px 24px; max-width: 1000px; margin:0 auto; width:100%; }
+    .section { margin-bottom: 32px; }
+    .section h2 { font-size: 1rem; color: var(--text-2); margin-bottom: 14px; padding-left:10px; border-left:3px solid var(--accent); }
+
+    .demo-row {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      padding: 20px; background: var(--bg-card); border:1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px;
+    }
+    .demo-row .label { font-size:0.72rem; color:var(--text-3); min-width:70px; text-transform:uppercase; letter-spacing:0.05em; }
+
+    /* ── Tag styles matching YiTag component ── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: inherit; font-size: 0.76rem; font-weight: 500;
+      padding: 3px 10px; border-radius: 4px; line-height: 1.5;
+      background: rgba(255,255,255,0.06); color: var(--text-2);
+      border: 1px solid rgba(255,255,255,0.1); transition: all 0.15s;
+      white-space: nowrap; user-select: none;
+    }
+    .tag-primary { background: rgba(99,102,241,0.15); color: var(--accent); border-color: rgba(99,102,241,0.3); }
+    .tag-success { background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3); }
+    .tag-warning { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+    .tag-danger { background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+    .tag-info { background: rgba(34,211,238,0.15); color: var(--accent-2); border-color: rgba(34,211,238,0.3); }
+    .tag-accent { background: rgba(168,85,247,0.15); color: #a855f7; border-color: rgba(168,85,247,0.3); }
+
+    .tag-clickable { cursor: pointer; }
+    .tag-clickable:hover { filter: brightness(1.2); }
+    .tag-active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tag-disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+    .tag-sm { font-size: 0.68rem; padding: 1px 7px; }
+    .tag-lg { font-size: 0.84rem; padding: 5px 14px; }
+
+    .tag .close-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
+      font-size: 0.6rem; margin-left: 2px; opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+    .tag .close-icon:hover { opacity: 1; background: rgba(0,0,0,0.2); }
+
+    .tag-event-log { font-size:0.74rem; color:var(--accent-2); margin-top:8px; min-height:20px; }
+
+    .props-table { width:100%; border-collapse:collapse; font-size:0.78rem; margin-top:14px; }
+    .props-table th { text-align:left; padding:8px 10px; color:var(--text-3); font-weight:500; border-bottom:1px solid var(--border); }
+    .props-table td { padding:8px 10px; color:var(--text-2); border-bottom:1px solid var(--border); }
+    .props-table code { color:var(--accent); }
+    .props-table .type { color:var(--accent-2); }
+
+    .active-demo { display:flex; flex-wrap:wrap; gap:8px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <a href="../index.html" class="back"><i class="fas fa-arrow-left"></i> Demo Center</a>
+    <h1>🏷️ YiTag 标签组件</h1>
+  </div>
+
+  <div class="main">
+    <!-- Variants -->
+    <div class="section">
+      <h2>🎨 Variant 主题变体</h2>
+      <div class="demo-row">
+        <span class="label">default</span>
+        <span class="tag">默认标签</span>
+        <span class="label" style="margin-left:16px">primary</span>
+        <span class="tag tag-primary">主要标签</span>
+        <span class="label" style="margin-left:16px">success</span>
+        <span class="tag tag-success">成功标签</span>
+        <span class="label" style="margin-left:16px">warning</span>
+        <span class="tag tag-warning">警告标签</span>
+        <span class="label" style="margin-left:16px">danger</span>
+        <span class="tag tag-danger">危险标签</span>
+        <span class="label" style="margin-left:16px">info</span>
+        <span class="tag tag-info">信息标签</span>
+        <span class="label" style="margin-left:16px">accent</span>
+        <span class="tag tag-accent">强调标签</span>
+      </div>
+    </div>
+
+    <!-- Sizes -->
+    <div class="section">
+      <h2>📏 Size 尺寸</h2>
+      <div class="demo-row">
+        <span class="label">sm</span>
+        <span class="tag tag-primary tag-sm">小标签</span>
+        <span class="tag tag-success tag-sm">小标签</span>
+        <span class="label" style="margin-left:16px">default</span>
+        <span class="tag tag-primary">默认标签</span>
+        <span class="tag tag-success">默认标签</span>
+        <span class="label" style="margin-left:16px">lg</span>
+        <span class="tag tag-primary tag-lg">大标签</span>
+        <span class="tag tag-success tag-lg">大标签</span>
+      </div>
+    </div>
+
+    <!-- Interactive: clickable + closable -->
+    <div class="section">
+      <h2>🖱️ 交互：Clickable + Closable</h2>
+      <div class="demo-row">
+        <span class="label">clickable</span>
+        <span class="tag tag-primary tag-clickable" @click="logEvent('click', '前端')">前端</span>
+        <span class="tag tag-success tag-clickable" @click="logEvent('click', '已完成')">已完成</span>
+        <span class="tag tag-warning tag-clickable" @click="logEvent('click', '进行中')">进行中</span>
+        <span class="label" style="margin-left:16px">closable</span>
+        <span class="tag tag-primary" v-if="tags.react"><span>React</span><span class="close-icon" @click="closeTag('react')">✕</span></span>
+        <span class="tag tag-success" v-if="tags.vue"><span>Vue</span><span class="close-icon" @click="closeTag('vue')">✕</span></span>
+        <span class="tag tag-info" v-if="tags.svelte"><span>Svelte</span><span class="close-icon" @click="closeTag('svelte')">✕</span></span>
+        <span v-if="!tags.react && !tags.vue && !tags.svelte" style="color:var(--text-3);font-size:0.8rem;">所有标签已关闭 — 刷新页面重置</span>
+      </div>
+      <div class="tag-event-log">{{ eventLog || '👆 点击标签或关闭按钮查看事件反馈' }}</div>
+    </div>
+
+    <!-- Active (selected) state -->
+    <div class="section">
+      <h2>✅ Active 多选状态</h2>
+      <div class="demo-row">
+        <span class="label">filter</span>
+        <div class="active-demo">
+          <span v-for="opt in filterOptions" :key="opt"
+                :class="['tag tag-clickable', selectedFilters.includes(opt) ? 'tag-active' : '']"
+                @click="toggleFilter(opt)">{{ opt }}</span>
+        </div>
+      </div>
+      <div class="tag-event-log" style="color:var(--text-2)">已选: {{ selectedFilters.join(', ') || '（无）' }}</div>
+    </div>
+
+    <!-- Disabled -->
+    <div class="section">
+      <h2>🔒 Disabled 禁用</h2>
+      <div class="demo-row">
+        <span class="tag tag-primary tag-disabled">禁用</span>
+        <span class="tag tag-success tag-disabled">禁用</span>
+        <span class="tag tag-clickable tag-disabled">不可点击</span>
+      </div>
+    </div>
+
+    <!-- API -->
+    <div class="section">
+      <h2>📋 YiTag API 属性</h2>
+      <table class="props-table">
+        <thead><tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>variant</code></td><td class="type">String</td><td>''</td><td>primary / success / warning / danger / info / accent</td></tr>
+          <tr><td><code>size</code></td><td class="type">String</td><td>''</td><td>sm / lg</td></tr>
+          <tr><td><code>clickable</code></td><td class="type">Boolean</td><td>false</td><td>是否可点击（hover + cursor:pointer）</td></tr>
+          <tr><td><code>closable</code></td><td class="type">Boolean</td><td>false</td><td>是否可关闭（显示关闭图标）</td></tr>
+          <tr><td><code>active</code></td><td class="type">Boolean</td><td>false</td><td>激活/选中状态</td></tr>
+          <tr><td><code>disabled</code></td><td class="type">Boolean</td><td>false</td><td>禁用状态</td></tr>
+          <tr><td><code>as</code></td><td class="type">String</td><td>'span'</td><td>渲染为 span 或 button</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { createApp, ref, reactive } = Vue;
+  createApp({
+    setup() {
+      const eventLog = ref('');
+      const tags = reactive({ react: true, vue: true, svelte: true });
+      const filterOptions = ['JavaScript', 'TypeScript', 'Python', 'Rust', 'Go'];
+      const selectedFilters = ref(['JavaScript', 'TypeScript']);
+
+      function logEvent(type, name) {
+        eventLog.value = `📡 ${type} 事件触发: "${name}" @ ${new Date().toLocaleTimeString()}`;
+      }
+      function closeTag(name) {
+        tags[name] = false;
+        logEvent('close', name);
+      }
+      function toggleFilter(opt) {
+        const idx = selectedFilters.value.indexOf(opt);
+        if (idx >= 0) selectedFilters.value.splice(idx, 1);
+        else selectedFilters.value.push(opt);
+        logEvent('click', opt);
+      }
+      return { eventLog, tags, filterOptions, selectedFilters, logEvent, closeTag, toggleFilter };
+    }
+  }).mount('#app');
+</script>
+</body>
+</html>

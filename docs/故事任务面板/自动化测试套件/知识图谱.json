@@ -1,0 +1,174 @@
+{
+  "story": {
+    "id": "yiweb-auto-test-suite",
+    "name": "自动化测试套件",
+    "version": "1.0.0",
+    "description": "基于 Vitest + jsdom 的可执行自动化测试体系，覆盖核心业务逻辑、API 接口、数据持久化、异常路径与边界、集成回归五大维度",
+    "testFramework": "Vitest 3.x + jsdom 26.x",
+    "totalTests": 72,
+    "totalPassed": 72,
+    "totalFailed": 0
+  },
+  "nodes": [
+    { "id": "story", "label": "自动化测试套件", "type": "story", "status": "实现中" },
+    { "id": "fp1", "label": "FP1: 核心业务逻辑测试", "type": "feature", "priority": "P0", "parent": "story" },
+    { "id": "fp2", "label": "FP2: API 接口测试", "type": "feature", "priority": "P0", "parent": "story" },
+    { "id": "fp3", "label": "FP3: 数据持久化测试", "type": "feature", "priority": "P1", "parent": "story" },
+    { "id": "fp4", "label": "FP4: 异常路径与边界测试", "type": "feature", "priority": "P1", "parent": "story" },
+    { "id": "fp5", "label": "FP5: 集成与回归测试", "type": "feature", "priority": "P2", "parent": "story" },
+
+    { "id": "scene-1", "label": "场景-1: 核心业务逻辑测试", "type": "scene", "doc": "场景-1-核心业务逻辑测试.md", "parent": "fp1" },
+    { "id": "scene-2", "label": "场景-2: API 接口测试", "type": "scene", "doc": "场景-2-API接口测试.md", "parent": "fp2" },
+    { "id": "scene-3", "label": "场景-3: 数据持久化测试", "type": "scene", "doc": "场景-3-数据持久化测试.md", "parent": "fp3" },
+    { "id": "scene-4", "label": "场景-4: 异常路径与边界测试", "type": "scene", "doc": "场景-4-异常路径与边界测试.md", "parent": "fp4" },
+    { "id": "scene-5", "label": "场景-5: 集成与回归测试", "type": "scene", "doc": "场景-5-集成与回归测试.md", "parent": "fp5" },
+
+    { "id": "test-1", "label": "scene-1-core-logic.test.js", "type": "test_file", "path": "tests/scene-1-core-logic.test.js", "testCount": 25, "parent": "scene-1" },
+    { "id": "test-2", "label": "scene-2-api.test.js", "type": "test_file", "path": "tests/scene-2-api.test.js", "testCount": 19, "parent": "scene-2" },
+    { "id": "test-3", "label": "scene-3-persistence.test.js", "type": "test_file", "path": "tests/scene-3-persistence.test.js", "testCount": 13, "parent": "scene-3" },
+    { "id": "test-4", "label": "scene-4-boundary.test.js", "type": "test_file", "path": "tests/scene-4-boundary.test.js", "testCount": 8, "parent": "scene-4" },
+    { "id": "test-5", "label": "scene-5-integration.test.js", "type": "test_file", "path": "tests/scene-5-integration.test.js", "testCount": 17, "parent": "scene-5" },
+
+    { "id": "src-log", "label": "log.js", "type": "source_module", "path": "cdn/utils/core/log.js", "layer": "基础设施层" },
+    { "id": "src-error", "label": "error.js", "type": "source_module", "path": "cdn/utils/core/error.js", "layer": "基础设施层" },
+    { "id": "src-config", "label": "config.js", "type": "source_module", "path": "src/core/config.js", "layer": "基础设施层" },
+    { "id": "src-baseView", "label": "baseView.js", "type": "source_module", "path": "cdn/utils/view/baseView.js", "layer": "框架层" },
+    { "id": "src-authUtils", "label": "authUtils.js", "type": "source_module", "path": "src/core/services/helper/authUtils.js", "layer": "服务层" },
+    { "id": "src-authErrorHandler", "label": "authErrorHandler.js", "type": "source_module", "path": "src/core/services/helper/authErrorHandler.js", "layer": "服务层" },
+    { "id": "src-requestHelper", "label": "requestHelper.js", "type": "source_module", "path": "src/core/services/helper/requestHelper.js", "layer": "服务层" },
+    { "id": "src-crud", "label": "crud.js", "type": "source_module", "path": "src/core/services/modules/crud.js", "layer": "服务层" },
+    { "id": "src-checkStatus", "label": "checkStatus.js", "type": "source_module", "path": "src/core/services/helper/checkStatus.js", "layer": "服务层" },
+    { "id": "src-services-index", "label": "services/index.js", "type": "source_module", "path": "src/core/services/index.js", "layer": "服务层" },
+
+    { "id": "ac1", "label": "AC1: P0 用例通过率 100%", "type": "acceptance_criteria", "status": "✅", "parent": "story" },
+    { "id": "ac2", "label": "AC2: 行覆盖率 ≥ 60%", "type": "acceptance_criteria", "status": "待验证", "parent": "story" },
+    { "id": "ac3", "label": "AC3: 核心模块覆盖率 ≥ 80%", "type": "acceptance_criteria", "status": "待验证", "parent": "story" },
+    { "id": "ac4", "label": "AC4: 每测试文件 ≥ 3 用例", "type": "acceptance_criteria", "status": "✅", "parent": "story" },
+    { "id": "ac5", "label": "AC5: npm test 可直接运行", "type": "acceptance_criteria", "status": "✅", "parent": "story" },
+    { "id": "ac6", "label": "AC6: describe/it/expect 模式", "type": "acceptance_criteria", "status": "✅", "parent": "story" },
+
+    { "id": "risk-1", "label": "ESM 路径解析失败", "type": "risk", "severity": "中", "mitigation": "vitest.config.js alias 映射" },
+    { "id": "risk-2", "label": "Vue CDN 不可用", "type": "risk", "severity": "高", "mitigation": "mock 全局 Vue + jsdom" },
+    { "id": "risk-3", "label": "异步组件测试不稳定", "type": "risk", "severity": "中", "mitigation": "fake timers + waitFor" },
+    { "id": "risk-4", "label": "覆盖率统计偏差", "type": "risk", "severity": "低", "mitigation": "排除动态 import 标记" }
+  ],
+  "edges": [
+    { "from": "test-1", "to": "src-log", "type": "covers", "label": "日志系统测试" },
+    { "from": "test-1", "to": "src-error", "type": "covers", "label": "错误处理测试" },
+    { "from": "test-1", "to": "src-config", "type": "covers", "label": "配置管理测试" },
+    { "from": "test-1", "to": "src-baseView", "type": "covers", "label": "视图工厂测试" },
+
+    { "from": "test-2", "to": "src-authUtils", "type": "covers", "label": "Token 读写/认证头" },
+    { "from": "test-2", "to": "src-authErrorHandler", "type": "covers", "label": "401 拦截/配置" },
+    { "from": "test-2", "to": "src-requestHelper", "type": "covers", "label": "HTTP 方法/重试/凭据" },
+    { "from": "test-2", "to": "src-crud", "type": "covers", "label": "CRUD 导出完整性" },
+    { "from": "test-2", "to": "src-checkStatus", "type": "covers", "label": "状态码检查" },
+
+    { "from": "test-3", "to": "src-authUtils", "type": "covers", "label": "Token 持久化往返" },
+    { "from": "test-3", "to": "src-config", "type": "covers", "label": "环境配置持久化" },
+    { "from": "test-3", "to": "src-requestHelper", "type": "covers", "label": "缓存管理器" },
+    { "from": "test-3", "to": "src-crud", "type": "covers", "label": "CacheManager" },
+
+    { "from": "test-4", "to": "src-requestHelper", "type": "covers", "label": "网络异常/并发" },
+    { "from": "test-4", "to": "src-baseView", "type": "covers", "label": "组件加载异常" },
+
+    { "from": "test-5", "to": "src-services-index", "type": "covers", "label": "聚合导出完整性" },
+    { "from": "test-5", "to": "src-config", "type": "covers", "label": "config→API 集成链路" },
+    { "from": "test-5", "to": "src-requestHelper", "type": "covers", "label": "认证头注入验证" },
+    { "from": "test-5", "to": "src-log", "type": "covers", "label": "冒烟导入" },
+    { "from": "test-5", "to": "src-error", "type": "covers", "label": "冒烟导入" },
+    { "from": "test-5", "to": "src-baseView", "type": "covers", "label": "冒烟导入" },
+
+    { "from": "ac1", "to": "fp1", "type": "validates" },
+    { "from": "ac1", "to": "fp2", "type": "validates" },
+    { "from": "ac2", "to": "fp1", "type": "validates" },
+    { "from": "ac2", "to": "fp2", "type": "validates" },
+    { "from": "ac2", "to": "fp3", "type": "validates" },
+    { "from": "ac2", "to": "fp4", "type": "validates" },
+    { "from": "ac2", "to": "fp5", "type": "validates" },
+    { "from": "ac3", "to": "fp1", "type": "validates" },
+    { "from": "ac3", "to": "fp2", "type": "validates" },
+    { "from": "ac3", "to": "fp3", "type": "validates" },
+    { "from": "ac4", "to": "fp1", "type": "validates" },
+    { "from": "ac4", "to": "fp2", "type": "validates" },
+    { "from": "ac4", "to": "fp3", "type": "validates" },
+    { "from": "ac4", "to": "fp4", "type": "validates" },
+    { "from": "ac4", "to": "fp5", "type": "validates" },
+
+    { "from": "risk-1", "to": "test-1", "type": "affects" },
+    { "from": "risk-1", "to": "test-2", "type": "affects" },
+    { "from": "risk-2", "to": "test-1", "type": "affects" },
+    { "from": "risk-3", "to": "test-4", "type": "affects" },
+    { "from": "risk-4", "to": "test-1", "type": "affects" },
+    { "from": "risk-4", "to": "test-5", "type": "affects" }
+  ],
+  "testCategories": [
+    {
+      "id": "unit",
+      "name": "单元测试",
+      "targets": ["log.js", "error.js", "config.js", "authUtils.js", "checkStatus.js", "authErrorHandler.js"],
+      "strategy": "mock 外部依赖（localStorage, fetch, console）"
+    },
+    {
+      "id": "integration",
+      "name": "集成测试",
+      "targets": ["baseView.js", "requestHelper.js", "crud.js", "services/index.js"],
+      "strategy": "mock 全局对象（Vue CDN, fetch），验证模块间协作"
+    },
+    {
+      "id": "boundary",
+      "name": "边界测试",
+      "targets": ["XSS 防护", "网络异常", "并发竞态", "组件加载超时"],
+      "strategy": "输入 null/undefined/超大数据 + mock reject/timeout"
+    },
+    {
+      "id": "regression",
+      "name": "回归测试",
+      "targets": ["全量 ESM 导入", "聚合导出完整性", "Store 响应式链"],
+      "strategy": "冒烟导入 + 快照对比"
+    }
+  ],
+  "coverageMap": {
+    "src-log": { "testFiles": ["test-1", "test-5"], "testCount": 7 },
+    "src-error": { "testFiles": ["test-1", "test-5"], "testCount": 7 },
+    "src-config": { "testFiles": ["test-1", "test-3", "test-5"], "testCount": 13 },
+    "src-baseView": { "testFiles": ["test-1", "test-4", "test-5"], "testCount": 10 },
+    "src-authUtils": { "testFiles": ["test-2", "test-3"], "testCount": 16 },
+    "src-authErrorHandler": { "testFiles": ["test-2"], "testCount": 6 },
+    "src-requestHelper": { "testFiles": ["test-2", "test-3", "test-4", "test-5"], "testCount": 14 },
+    "src-crud": { "testFiles": ["test-2", "test-3"], "testCount": 7 },
+    "src-checkStatus": { "testFiles": ["test-2"], "testCount": 2 },
+    "src-services-index": { "testFiles": ["test-5"], "testCount": 7 }
+  },
+  "execution": {
+    "command": "npm test",
+    "runner": "vitest run",
+    "environment": "jsdom",
+    "config": "vitest.config.js",
+    "aliases": {
+      "/cdn": "cdn",
+      "/src": "src",
+      "/tests": "tests"
+    },
+    "testFiles": {
+      "total": 11,
+      "new": 5,
+      "existing": 6,
+      "passing": 7,
+      "preExistingFailures": 4
+    },
+    "preExistingFailureReason": "缺少 tests/scanner.js, tests/engine.js, tests/ruleRegistry.js"
+  },
+  "qualityGates": {
+    "gateA": {
+      "name": "测试先行",
+      "rule": "禁止在测试失败时进入实现阶段",
+      "status": "✅ 全部通过"
+    },
+    "gateB": {
+      "name": "验证",
+      "rule": ">2 轮修复阻断交付",
+      "status": "— 未触发"
+    }
+  }
+}

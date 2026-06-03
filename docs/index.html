@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiWeb 文档中心</title>
+  <style>
+    :root {
+      --bg-content: rgba(22,22,32,1);
+      --bg-card: linear-gradient(159deg, rgba(38,38,52,1) 0%, rgba(34,34,46,1) 100%);
+      --bg-card-flat: rgba(34,34,46,1);
+      --color-accent: #6366f1;
+      --color-accent-2: #22d3ee;
+      --text-primary: rgba(250,250,252,1);
+      --text-secondary: rgba(160,160,164,1);
+      --text-muted: rgba(110,110,114,1);
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.3);
+      --shadow-hover: 0 12px 32px rgba(0,0,0,0.45);
+      --radius-card: 12px;
+      --border-subtle: 1px solid rgba(255,255,255,0.06);
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg-content); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+    .header { text-align: center; margin-bottom: 32px; animation: fadeInDown 0.5s ease both; }
+    .header h1 { font-size: 2.2rem; font-weight: 700; }
+    .header h1 .accent { color: var(--color-accent); }
+    .header p { color: var(--text-secondary); margin-top: 8px; font-size: 0.92rem; }
+
+    .stats { display: flex; gap: 14px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; animation: fadeInDown 0.5s 0.1s ease both; }
+    .stat {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 16px 24px; text-align: center;
+      box-shadow: var(--shadow-card); min-width: 100px;
+      text-decoration: none; color: inherit; display: block;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    a.stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: rgba(99,102,241,0.35); }
+    .stat .num { font-size: 1.7rem; font-weight: 700; color: var(--color-accent); }
+    .stat .num.green { color: var(--color-accent-2); }
+    .stat .label { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Cross-panel navigation ──────────────── */
+    .cross-nav {
+      display: flex; gap: 10px; justify-content: center; margin-bottom: 36px;
+      flex-wrap: wrap; align-items: stretch;
+      animation: fadeInDown 0.5s 0.15s ease both;
+    }
+    .cross-nav .cross-card {
+      background: var(--bg-card); border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 10px; padding: 12px 18px; box-shadow: var(--shadow-card);
+      text-decoration: none; color: inherit; display: flex; gap: 10px; align-items: center;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      min-width: 180px;
+    }
+    .cross-nav .cross-card:hover {
+      transform: translateY(-2px); box-shadow: var(--shadow-hover);
+      border-color: rgba(99,102,241,0.35);
+    }
+    .cross-nav .cross-card .cross-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .cross-nav .cross-card .cross-info { flex: 1; min-width: 0; }
+    .cross-nav .cross-card .cross-info .cross-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+    .cross-nav .cross-card .cross-info .cross-stats { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .cross-nav .cross-card .cross-arrow { color: var(--color-accent); font-size: 0.85rem; flex-shrink: 0; opacity: 0.6; transition: opacity 0.15s; }
+    .cross-nav .cross-card:hover .cross-arrow { opacity: 1; }
+
+    .layer { margin-bottom: 36px; }
+    .layer-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+      padding-bottom: 8px; border-bottom: 2px solid var(--color-accent);
+    }
+    .layer-header .layer-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--color-accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+    }
+    .layer-header h2 { font-size: 1.2rem; margin: 0; flex: 1; }
+    .layer-header .layer-stats { font-size: 0.78rem; color: var(--text-muted); }
+
+    .sub-title {
+      font-size: 0.95rem; font-weight: 600; color: var(--text-secondary);
+      margin: 16px 0 10px; padding-left: 10px; border-left: 3px solid rgba(99,102,241,0.4);
+    }
+    .sub-title .accent { color: var(--color-accent); }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .item-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: 10px; padding: 13px 16px; box-shadow: var(--shadow-card);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      display: flex; gap: 10px; align-items: flex-start;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .item-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); border-color: rgba(99,102,241,0.2); }
+    .item-card .icon {
+      width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+    }
+    .item-card .icon.component { background: rgba(99,102,241,0.15); color: var(--color-accent); }
+    .item-card .icon.util { background: rgba(34,211,238,0.15); color: var(--color-accent-2); }
+    .item-card .icon.render { background: rgba(168,85,247,0.15); color: #a855f7; }
+    .item-card .icon.dev { background: rgba(144,238,144,0.15); color: #90EE90; }
+    .item-card .icon.view { background: rgba(251,146,60,0.15); color: #fb923c; }
+    .item-card .icon.test { background: rgba(100,220,180,0.15); color: #64DCB4; }
+    .item-card .body { flex: 1; min-width: 0; }
+    .item-card .body .name { color: var(--text-primary); font-weight: 600; font-size: 0.9rem; }
+    .item-card .body .desc { color: var(--text-muted); font-size: 0.74rem; margin-top: 2px; }
+    .item-card .body .meta { color: var(--text-muted); font-size: 0.7rem; margin-top: 3px; }
+        .item-card .body .meta .demo-link {
+          color: var(--color-accent-2); text-decoration: none;
+          font-weight: 500; margin-left: 4px;
+        }
+        .item-card .body .meta .demo-link:hover { text-decoration: underline; }
+
+    .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 12px; margin-bottom: 10px; }
+    .story-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 20px 22px; box-shadow: var(--shadow-card);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .story-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: rgba(99,102,241,0.2); }
+    .story-card .story-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .story-card .story-head .story-icon {
+      width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(99,102,241,0.12); color: var(--color-accent);
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+    }
+    .story-card .story-head .story-name { font-size: 1rem; font-weight: 700; flex: 1; }
+    .story-card .story-head .story-badge {
+      font-size: 0.68rem; color: var(--color-accent);
+      border: 1px solid var(--color-accent); border-radius: 4px; padding: 1px 8px;
+    }
+    .story-card .story-desc { color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 12px; line-height: 1.5; }
+    .story-card .story-scenes { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+    .story-card .story-scenes .scene-tag {
+      font-size: 0.7rem; color: var(--text-muted); text-decoration: none;
+      background: rgba(255,255,255,0.04); border-radius: 4px; padding: 2px 8px;
+    }
+    .story-card .story-foot {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      padding-top: 10px; border-top: var(--border-subtle);
+    }
+    .story-card .story-foot a {
+      font-size: 0.78rem; color: var(--color-accent); text-decoration: none;
+    }
+    .story-card .story-foot a:hover { text-decoration: underline; }
+    .story-card .story-foot .story-meta-text { font-size: 0.72rem; color: var(--text-muted); }
+
+    hr { border-color: rgba(255,255,255,0.08); margin: 8px 0 24px; }
+    .footer-note { text-align: center; color: var(--text-muted); font-size: 0.78rem; margin-top: 8px; padding-bottom: 20px; }
+    .footer-note a { color: var(--color-accent); text-decoration: none; }
+    .footer-note a:hover { text-decoration: underline; }
+
+    /* ── Back to top ───────────────────────── */
+    .back-top {
+      position: fixed; bottom: 28px; right: 28px;
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--bg-card-flat); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: var(--shadow-card);
+      transition: all 0.2s ease;
+      opacity: 0; pointer-events: none; z-index: 100;
+    }
+    .back-top.visible { opacity: 1; pointer-events: auto; }
+    .back-top:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+    /* ── Responsive ────────────────────────── */
+    @media (max-width: 768px) {
+      .container { padding: 24px 12px 12px; }
+      .header h1 { font-size: 1.5rem; }
+      .card-grid { grid-template-columns: 1fr; }
+      .story-grid { grid-template-columns: 1fr; }
+      .stats { gap: 8px; }
+      .stat { padding: 10px 14px; min-width: 70px; }
+      .stat .num { font-size: 1.3rem; }
+      .cross-nav { flex-direction: column; align-items: center; }
+      .back-top { bottom: 16px; right: 16px; width: 36px; height: 36px; }
+    }
+    @media (max-width: 480px) {
+      .header h1 { font-size: 1.3rem; }
+      .item-card { padding: 12px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><span class="accent">⬡</span> YiWeb 文档中心</h1>
+      <p>零构建 · 纯 ESM · 浏览器原生运行 — AI 辅助代码审查与协作平台</p>
+    </div>
+
+    <div class="stats">
+      <a class="stat" href="#layer-cdn"><div class="num">9</div><div class="label">CDN 依赖</div></a>
+      <a class="stat" href="#layer-story"><div class="num">2</div><div class="label">故事</div></a>
+      <a class="stat" href="#layer-story"><div class="num">10</div><div class="label">场景</div></a>
+      <a class="stat" href="#layer-source"><div class="num">3</div><div class="label">业务模块</div></a>
+      <a class="stat" href="#layer-source"><div class="num">303</div><div class="label">源文件</div></a>
+      <a class="stat" href="#layer-source"><div class="num green">196</div><div class="label">测试用例</div></a>
+      <a class="stat" href="#layer-demo"><div class="num">10</div><div class="label">交互式Demo</div></a>
+    </div>
+
+    <!-- Cross-panel navigation -->
+    <div class="cross-nav">
+      <a href="../demos/index.html" class="cross-card">
+        <span class="cross-icon">🎮</span>
+        <span class="cross-info">
+          <span class="cross-name">Demo 中心</span>
+          <span class="cross-stats">9 交互式 Demo · 11 CDN 组件 · 14 渲染插件</span>
+        </span>
+        <span class="cross-arrow">→</span>
+      </a>
+      <a href="../tests/index.html" class="cross-card">
+        <span class="cross-icon">🧪</span>
+        <span class="cross-info">
+          <span class="cross-name">测试套件</span>
+          <span class="cross-stats">11 测试文件 · 197 测试用例 · 100% 通过率</span>
+        </span>
+        <span class="cross-arrow">→</span>
+      </a>
+    </div>
+
+    <!-- ===== Layer 1: 第三方依赖 / 框架 ===== -->
+    <div class="layer" id="layer-cdn">
+      <div class="layer-header">
+        <span class="layer-num">1</span>
+        <h2>第三方依赖 / 框架</h2>
+        <span class="layer-stats">9 CDN 运行时 · 10 内部组件 · 10 工具分类 · 14 渲染/可视化插件 · 2 dev</span>
+      </div>
+
+      <div class="sub-title"><span class="accent">🌐</span> CDN 运行时依赖 (9)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon view">V</span>
+          <div class="body">
+            <div class="name">Vue 3</div>
+            <div class="desc">核心响应式框架：Composition API、组件系统、模板编译</div>
+            <div class="meta">v3.5.26 · jsdelivr · 全局构建版 · <span class="accent">3 视图 + 6 Demo</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">M</span>
+          <div class="body">
+            <div class="name">marked</div>
+            <div class="desc">Markdown 解析引擎，将 Markdown 文本编译为 HTML</div>
+            <div class="meta">v9.1.6 · jsdelivr · aicr 视图 + Markdown 渲染 Demo</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">D</span>
+          <div class="body">
+            <div class="name">Mermaid</div>
+            <div class="desc">图表渲染库：流程图、时序图、甘特图、类图等</div>
+            <div class="meta">v10.9.1 · jsdelivr · aicr 视图 + Mermaid Demo</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">C</span>
+          <div class="body">
+            <div class="name">Cytoscape.js</div>
+            <div class="desc">图论/网络可视化引擎，节点/边交互、布局算法</div>
+            <div class="meta">v3.30.4 · jsdelivr · aicr + story 视图 + 图谱 Demo</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">L</span>
+          <div class="body">
+            <div class="name">cytoscape-dagre</div>
+            <div class="desc">Cytoscape 的 Dagre 布局扩展，层次化有向图自动布局</div>
+            <div class="meta">v2.5.0 · jsdelivr · Cytoscape Dagre 布局适配器 · <span class="accent">3 视图</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">g</span>
+          <div class="body">
+            <div class="name">dagre</div>
+            <div class="desc">有向图分层布局算法（DAG 布局引擎），生成美观的层级节点排列</div>
+            <div class="meta">v0.8.5 · jsdelivr · cytoscape-dagre 底层依赖 · <span class="accent">aicr + story + 图谱</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">Z</span>
+          <div class="body">
+            <div class="name">JSZip</div>
+            <div class="desc">浏览器端 ZIP 压缩/解压，用于项目文件打包下载</div>
+            <div class="meta">v3.10.1 · jsdelivr · 动态 import 按需加载</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">F</span>
+          <div class="body">
+            <div class="name">Font Awesome</div>
+            <div class="desc">矢量图标库，提供 2000+ 免费 SVG 图标</div>
+            <div class="meta">v6.4.0 · cdnjs · CSS 引入 · <span class="accent">3 视图 + 6 Demo</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">G</span>
+          <div class="body">
+            <div class="name">Google Fonts</div>
+            <div class="desc">Web 字体：Inter (UI) + JetBrains Mono (代码)</div>
+            <div class="meta">fonts.googleapis.com · <span class="accent">3 视图</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title"><span class="accent">🧩</span> 内部通用组件 (10)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon component">M</span>
+          <div class="body">
+            <div class="name">YiModal</div>
+            <div class="desc">通用模态框组件，支持自定义 header/body/footer</div>
+            <div class="meta">cdn/components/common/modals/ · <a href="../demos/yi-modal/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">B</span>
+          <div class="body">
+            <div class="name">YiButton / YiIconButton</div>
+            <div class="desc">通用按钮 + 图标按钮组件</div>
+            <div class="meta">cdn/components/common/buttons/ · <a href="../demos/yi-button/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">T</span>
+          <div class="body">
+            <div class="name">YiTag</div>
+            <div class="desc">标签组件，支持多选/单选/关闭</div>
+            <div class="meta">cdn/components/common/tags/ · <a href="../demos/yi-tag/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">S</span>
+          <div class="body">
+            <div class="name">YiSelect / YiInput / YiTextarea</div>
+            <div class="desc">表单控件组：下拉选择、文本输入、多行文本</div>
+            <div class="meta">cdn/components/common/forms/ · <a href="../demos/yi-form/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">L</span>
+          <div class="body">
+            <div class="name">YiLoading / YiEmptyState / YiErrorState</div>
+            <div class="desc">状态反馈组件：加载中 / 空数据 / 错误态</div>
+            <div class="meta">cdn/components/common/ · <a href="../demos/yi-feedback/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">★</span>
+          <div class="body">
+            <div class="name">YiIcon + iconMap 图标库</div>
+            <div class="desc">61 语义 SVG 图标 · 8 类 · 搜索过滤 · 点击复制</div>
+            <div class="meta">cdn/icons/YiIcon/ · <a href="../demos/yi-icon/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">H</span>
+          <div class="body">
+            <div class="name">HeaderActions / SearchHeader</div>
+            <div class="desc">页面头部操作栏、搜索头部（业务组件）</div>
+            <div class="meta">cdn/components/business/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">V</span>
+          <div class="body">
+            <div class="name">MarkdownView / SkeletonLoader</div>
+            <div class="desc">Markdown 渲染视图、骨架屏加载器（业务组件）</div>
+            <div class="meta">cdn/components/business/</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title"><span class="accent">🔧</span> 内部工具库 (10 分类 · 41 文件)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon util">L</span>
+          <div class="body">
+            <div class="name">log.js</div>
+            <div class="desc">分级日志（debug/info/warn/error），DEBUG 开关控制，性能计时器</div>
+            <div class="meta">cdn/utils/core/ · 扇入 <span class="accent">15+</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">E</span>
+          <div class="body">
+            <div class="name">error.js</div>
+            <div class="desc">统一错误类型/错误码/createError/safeExecute 异常封装</div>
+            <div class="meta">cdn/utils/core/ · 扇入 <span class="accent">8+</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">B</span>
+          <div class="body">
+            <div class="name">eventBus.js</div>
+            <div class="desc">事件总线，模块间松耦合通信</div>
+            <div class="meta">cdn/utils/core/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">S</span>
+          <div class="body">
+            <div class="name">storage.js / common.js / validation.js</div>
+            <div class="desc">localStorage 安全读写、通用工具、数据验证 + form/object/array 辅助</div>
+            <div class="meta">cdn/utils/core/ · <span class="accent">6 模块</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">H</span>
+          <div class="body">
+            <div class="name">http.js / animation.js / i18n.js</div>
+            <div class="desc">HTTP 请求封装（get/post/upload）、CSS 动画辅助、国际化文本映射</div>
+            <div class="meta">cdn/utils/core/ · 运行时网络与 UI 基础</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">A</span>
+          <div class="body">
+            <div class="name">api.js / string.js / constants.js / ...</div>
+            <div class="desc">API 端点管理、字符串处理、全局常量、性能监控、缓存管理</div>
+            <div class="meta">cdn/utils/core/ · 扇入 <span class="accent">20+</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">D</span>
+          <div class="body">
+            <div class="name">dom.js / events.js</div>
+            <div class="desc">DOM 操作辅助 + 浏览器事件封装</div>
+            <div class="meta">cdn/utils/browser/ · <span class="accent">3 文件</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">P</span>
+          <div class="body">
+            <div class="name">dialog.js / message.js / loading.js / ...</div>
+            <div class="desc">模态对话框、Toast 消息、全局加载状态、DOM 模板渲染、Tooltip 传送门</div>
+            <div class="meta">cdn/utils/ui/ · <span class="accent">6 文件</span> · UI 交互反馈层</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">T</span>
+          <div class="body">
+            <div class="name">date.js / timeParams.js / timeSelectors.js</div>
+            <div class="desc">日期格式化、相对时间计算、时间范围参数、时间选择器辅助函数</div>
+            <div class="meta">cdn/utils/time/ · <span class="accent">4 文件</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">F</span>
+          <div class="body">
+            <div class="name">baseView.js / componentLoader.js / registry.js</div>
+            <div class="desc">createBaseView 视图工厂 · 动态组件加载器 · 全局组件注册表</div>
+            <div class="meta">cdn/utils/view/ · 视图层入口 · <span class="accent">4 文件</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title"><span class="accent">📝</span> Markdown 渲染引擎 & 插件 (10 插件)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon render">M</span>
+          <div class="body">
+            <div class="name">MarkdownRenderer</div>
+            <div class="desc">marked 引擎封装 + PluginSystem 插件架构 · 自研</div>
+            <div class="meta">cdn/markdown/core/ · <a href="../demos/markdown-render/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">S</span>
+          <div class="body">
+            <div class="name">SanitizePlugin</div>
+            <div class="desc">自研 XSS 防护：白名单标签/属性/CSS 校验 · 非 DOMPurify</div>
+            <div class="meta">cdn/markdown/plugins/ · priority 200</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">D</span>
+          <div class="body">
+            <div class="name">MermaidPlugin / MermaidRenderer</div>
+            <div class="desc">流程图/时序图/甘特图渲染，含工具栏/AI修复/剪贴板</div>
+            <div class="meta">cdn/markdown/plugins/ + cdn/mermaid/ · <a href="../demos/mermaid/index.html" class="demo-link">Demo →</a> · <span class="accent">含 5 子插件</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">T</span>
+          <div class="body">
+            <div class="name">TocPlugin / AccordionPlugin</div>
+            <div class="desc">自动目录生成 + 折叠面板</div>
+            <div class="meta">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">N</span>
+          <div class="body">
+            <div class="name">NestedMarkdownPlugin / TableCellMarkdownPlugin</div>
+            <div class="desc">嵌套 Markdown 渲染 + 表格单元格内 Markdown 支持</div>
+            <div class="meta">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">I</span>
+          <div class="body">
+            <div class="name">InternalLinkPlugin / FrontmatterPlugin / ContainersPlugin</div>
+            <div class="desc">Wiki 链接 · YAML 头解析 · 自定义容器（info/warn/tip）</div>
+            <div class="meta">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title"><span class="accent">🧜</span> Mermaid 渲染器插件 (5)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon render">C</span>
+          <div class="body">
+            <div class="name">ClipboardPlugin</div>
+            <div class="desc">复制 Mermaid 图表为 SVG 源码或 PNG 位图到剪贴板</div>
+            <div class="meta">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">D</span>
+          <div class="body">
+            <div class="name">DownloadPlugin</div>
+            <div class="desc">下载图表为 SVG / PNG 文件（内联样式 + 命名空间注入）</div>
+            <div class="meta">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">F</span>
+          <div class="body">
+            <div class="name">FullscreenPlugin</div>
+            <div class="desc">全屏查看图表（深色遮罩 + 居中放大 + ESC 退出）</div>
+            <div class="meta">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">T</span>
+          <div class="body">
+            <div class="name">ToolbarPlugin</div>
+            <div class="desc">悬浮工具栏（hover 显示），集成复制/下载/全屏快捷操作</div>
+            <div class="meta">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">A</span>
+          <div class="body">
+            <div class="name">AIFixPlugin</div>
+            <div class="desc">调用 AI API 自动修复 Mermaid 语法错误（可选启用）</div>
+            <div class="meta">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title"><span class="accent">🛠</span> 开发依赖 (2)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon dev">V</span>
+          <div class="body">
+            <div class="name">Vitest</div>
+            <div class="desc">Vite-native 测试运行器，零配置 ESM 支持</div>
+            <div class="meta">^3.1.0 · <span class="accent">npm test</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon dev">J</span>
+          <div class="body">
+            <div class="name">jsdom</div>
+            <div class="desc">Node.js DOM 模拟，提供 window/document/localStorage</div>
+            <div class="meta">^26.0.0 · 测试环境基线</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ===== Layer 2: 故事任务面板 ===== -->
+    <div class="layer" id="layer-story">
+      <div class="layer-header">
+        <span class="layer-num">2</span>
+        <h2>故事任务面板</h2>
+        <span class="layer-stats">2 故事 · 10 场景 · 2 知识图谱</span>
+      </div>
+
+      <div class="story-grid">
+        <!-- 故事 1: 系统架构 -->
+        <div class="story-card">
+          <div class="story-head">
+            <span class="story-icon">🏗</span>
+            <span class="story-name">系统架构</span>
+            <span class="story-badge">v1.1.0</span>
+          </div>
+          <div class="story-desc">系统化梳理 YiWeb 的架构全貌：5 层分层结构、14 核心模块依赖关系、读写流 3 链路数据流转、5 类安全防护边界、扇入/扇出依赖矩阵。0 循环依赖。</div>
+          <div class="story-scenes">
+            <span class="scene-tag">1. 分层结构</span>
+            <span class="scene-tag">2. 模块关系图谱</span>
+            <span class="scene-tag">3. 数据流转路径</span>
+            <span class="scene-tag">4. 安全防护边界</span>
+            <span class="scene-tag">5. 依赖关系矩阵</span>
+          </div>
+          <div class="story-foot">
+            <a href="故事任务面板/系统架构/index.html">打开故事 →</a>
+            <span class="story-meta-text">2026-06-03 · 5 场景 · 知识图谱</span>
+          </div>
+        </div>
+
+        <!-- 故事 2: 自动化测试套件 -->
+        <div class="story-card">
+          <div class="story-head">
+            <span class="story-icon">🧪</span>
+            <span class="story-name">自动化测试套件</span>
+            <span class="story-badge">v1.0.0</span>
+          </div>
+          <div class="story-desc">基于 Vitest + jsdom 的可执行自动化测试体系。覆盖核心业务逻辑、API 接口、数据持久化、异常路径与边界、集成回归五大维度。132 测试用例全部通过。</div>
+          <div class="story-scenes">
+            <span class="scene-tag">1. 核心业务逻辑测试</span>
+            <span class="scene-tag">2. API 接口测试</span>
+            <span class="scene-tag">3. 数据持久化测试</span>
+            <span class="scene-tag">4. 异常路径与边界测试</span>
+            <span class="scene-tag">5. 集成与回归测试</span>
+          </div>
+          <div class="story-foot">
+            <a href="故事任务面板/自动化测试套件/index.html">打开故事 →</a>
+            <span class="story-meta-text">2026-06-03 · 5 场景 · 5 测试文件 · 知识图谱</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ===== Layer 3: 主要源代码 ===== -->
+    <div class="layer" id="layer-source">
+      <div class="layer-header">
+        <span class="layer-num">3</span>
+        <h2>主要源代码</h2>
+        <span class="layer-stats">3 视图 · 12 服务模块 · 18 工具模块 · 11 测试文件</span>
+      </div>
+
+      <div class="sub-title"><span class="accent">📱</span> 视图层 (src/views/)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon view">A</span>
+          <div class="body">
+            <div class="name">aicr — AI 代码审查</div>
+            <div class="desc">核心业务视图：会话列表、文件树、代码查看、AI 聊天（SSE 流式）、标签筛选</div>
+            <div class="meta">src/views/aicr/ · <span class="accent">~80 文件</span> · 最复杂视图</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon view">C</span>
+          <div class="body">
+            <div class="name">claude — Claude 管理面板</div>
+            <div class="desc">.claude/ 配置浏览：skills / agents / rules / templates 卡片展示</div>
+            <div class="meta">src/views/claude/ · 8 文件</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon view">S</span>
+          <div class="body">
+            <div class="name">story — 故事任务面板</div>
+            <div class="desc">故事任务浏览/编辑：表格视图、详情卡片、依赖编辑器、知识图谱查看器</div>
+            <div class="meta">src/views/story/ · 20 文件</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title" style="margin-top:18px;"><span class="accent">⚙</span> 服务层 (src/core/services/)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon util">R</span>
+          <div class="body">
+            <div class="name">requestHelper.js</div>
+            <div class="desc">HTTP 封装：get/post/put/delete + 自动重试 + 批量请求 + 内存缓存</div>
+            <div class="meta">helper/ · credentials:omit · X-Token 注入</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">C</span>
+          <div class="body">
+            <div class="name">crud.js</div>
+            <div class="desc">数据操作：getData/postData/updateData/deleteData/streamPrompt/batchOperations</div>
+            <div class="meta">modules/ · CacheManager · validateData</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">A</span>
+          <div class="body">
+            <div class="name">authUtils.js + authErrorHandler.js</div>
+            <div class="desc">Token 生命周期管理 · 401 拦截 (2s 防抖 + 防重复锁) · 登录弹窗</div>
+            <div class="meta">helper/ · YiWeb.apiToken.v1</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon util">B</span>
+          <div class="body">
+            <div class="name">business/ 业务分析</div>
+            <div class="desc">BusinessProcessManager · BusinessScenarioAnalyzer · RequirementAnalysisManager</div>
+            <div class="meta">business/ · 3 文件</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title" style="margin-top:18px;"><span class="accent">🧪</span> 测试文件 (tests/)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon test">1</span>
+          <div class="body">
+            <div class="name">scene-1-core-logic.test.js</div>
+            <div class="desc">日志系统、错误处理、配置管理、createBaseView 视图工厂</div>
+            <div class="meta"><span class="accent">25 tests</span> · 全部通过</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon test">2</span>
+          <div class="body">
+            <div class="name">scene-2-api.test.js</div>
+            <div class="desc">认证工具、请求辅助、CRUD 操作、401 错误处理</div>
+            <div class="meta"><span class="accent">19 tests</span> · 全部通过</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon test">3</span>
+          <div class="body">
+            <div class="name">scene-3-persistence.test.js</div>
+            <div class="desc">Token 持久化、环境配置持久化、缓存管理</div>
+            <div class="meta"><span class="accent">13 tests</span> · 全部通过</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon test">4</span>
+          <div class="body">
+            <div class="name">scene-4-boundary.test.js</div>
+            <div class="desc">空值与边界、XSS 防护、网络异常、并发竞态</div>
+            <div class="meta"><span class="accent">8 tests</span> · 全部通过</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon test">5</span>
+          <div class="body">
+            <div class="name">scene-5-integration.test.js</div>
+            <div class="desc">服务聚合导出、config→API 链路、Store 响应式链、冒烟导入</div>
+            <div class="meta"><span class="accent">17 tests</span> · 全部通过</div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon test">★</span>
+          <div class="body">
+            <div class="name">utils.test.js</div>
+            <div class="desc">escapeHtml、normalizeFilePath 等工具函数测试</div>
+            <div class="meta"><span class="accent">23 tests</span> · 全部通过</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ===== Layer 4: 交互式 Demo ===== -->
+    <div class="layer" id="layer-demo">
+      <div class="layer-header">
+        <span class="layer-num">4</span>
+        <h2>交互式 Demo</h2>
+        <span class="layer-stats">9 交互式演示 · 3 引擎/可视化 · 6 组件 Demo</span>
+      </div>
+
+      <div class="sub-title"><span class="accent">🎨</span> 组件交互 Demo (6)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon component">B</span>
+          <div class="body">
+            <div class="name">YiButton / YiIconButton</div>
+            <div class="desc">实时切换 variant、size、disabled、loading 状态，完整 API 展示</div>
+            <div class="meta"><a href="../demos/yi-button/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">T</span>
+          <div class="body">
+            <div class="name">YiTag</div>
+            <div class="desc">主题色、clickable、closable、active 多选、size 等完整 API 演示</div>
+            <div class="meta"><a href="../demos/yi-tag/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">M</span>
+          <div class="body">
+            <div class="name">YiModal</div>
+            <div class="desc">size / showHeader / showFooter / maskClosable 实时控制</div>
+            <div class="meta"><a href="../demos/yi-modal/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">S</span>
+          <div class="body">
+            <div class="name">YiInput / YiSelect / YiTextarea</div>
+            <div class="desc">表单控件组：variant / disabled / 下拉搜索 / 组合表单</div>
+            <div class="meta"><a href="../demos/yi-form/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">L</span>
+          <div class="body">
+            <div class="name">YiLoading / YiEmptyState / YiErrorState</div>
+            <div class="desc">spinner/dots/pulse/wave + 空数据 + 错误态，含全屏模式</div>
+            <div class="meta"><a href="../demos/yi-feedback/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon component">★</span>
+          <div class="body">
+            <div class="name">YiIcon + iconMap 图标库</div>
+            <div class="desc">61 语义图标 · 8 大类别 · 搜索过滤 · 点击复制 · size/spin 演示</div>
+            <div class="meta"><a href="../demos/yi-icon/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-title" style="margin-top:18px;"><span class="accent">⚡</span> 引擎 / 可视化 Demo (3)</div>
+      <div class="card-grid">
+        <div class="item-card">
+          <span class="icon render">C</span>
+          <div class="body">
+            <div class="name">Cytoscape.js + dagre 图谱布局</div>
+            <div class="desc">交互式依赖图谱：节点拖拽、缩放、布局切换、JSON 数据驱动</div>
+            <div class="meta"><a href="../demos/cytoscape-graph/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">M</span>
+          <div class="body">
+            <div class="name">Markdown 渲染引擎</div>
+            <div class="desc">marked + 10 插件实时渲染，含 Sanitize / TOC / Mermaid / Accordion</div>
+            <div class="meta"><a href="../demos/markdown-render/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <span class="icon render">D</span>
+          <div class="body">
+            <div class="name">Mermaid 图表渲染</div>
+            <div class="desc">实时编辑 & 预览，含复制/下载/全屏/工具栏 5 插件</div>
+            <div class="meta"><a href="../demos/mermaid/index.html" class="demo-link">Demo →</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      YiWeb · 零构建 ESM SPA · <a href="../demos/index.html">Demo 中心</a> · <a href="../tests/index.html">测试套件</a> · <a href="../CLAUDE.md">CLAUDE.md</a> · <a href="../README.md">README.md</a> · <a href="故事任务面板/通知日志.md">通知日志</a>
+    </div>
+  </div>
+
+  <!-- Back to top button -->
+  <button class="back-top" id="backTop" title="回到顶部" aria-label="回到顶部">↑</button>
+
+  <script>
+    /* Staggered card animations for Layer 1 */
+    document.querySelectorAll('#layer-cdn .item-card').forEach((card, i) => {
+      card.style.animationDelay = `${0.01 + i * 0.012}s`;
+    });
+
+    /* Back to top */
+    const backTop = document.getElementById('backTop');
+    function toggleBackTop() {
+      backTop.classList.toggle('visible', window.scrollY > 400);
+    }
+    window.addEventListener('scroll', toggleBackTop, { passive: true });
+    backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  </script>
+</body>
+</html>

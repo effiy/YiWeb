@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiLoading / YiEmptyState / YiErrorState Demo · YiWeb</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #161620; --bg-card: #22222e; --bg-elevated: #2a2a38;
+      --accent: #6366f1; --accent-2: #22d3ee; --danger: #ef4444;
+      --text: #fafafc; --text-2: #a0a0a4; --text-3: #6e6e72;
+      --border: rgba(255,255,255,0.06); --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
+    .topbar h1 { font-size: 0.95rem; font-weight: 700; }
+    .topbar .back { color: var(--text-3); text-decoration: none; font-size: 0.8rem; }
+    .topbar .back:hover { color: var(--accent); }
+    .main { flex:1; padding: 32px 24px; max-width: 1000px; margin:0 auto; width:100%; }
+    .section { margin-bottom: 32px; }
+    .section h2 { font-size: 1rem; color: var(--text-2); margin-bottom: 14px; padding-left:10px; border-left:3px solid var(--accent); }
+
+    .demo-row {
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;
+      padding: 20px; background: var(--bg-card); border:1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px;
+    }
+    .demo-col { display:flex; flex-direction:column; gap:8px; align-items:center; flex:1; min-width:140px; }
+    .demo-col .col-label { font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em; }
+
+    .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:16px; }
+    .control-group { display:flex; flex-direction:column; gap:4px; }
+    .control-group label { font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em; }
+    .control-group select, .control-group input {
+      background: var(--bg); color: var(--text); border:1px solid rgba(255,255,255,0.12);
+      border-radius:6px; padding:5px 10px; font-size:0.82rem; font-family:inherit;
+    }
+    .btn {
+      display:inline-flex; align-items:center; gap:6px; font-size:0.82rem;
+      padding:6px 16px; border-radius:6px; border:1px solid var(--accent);
+      color:var(--accent); background:transparent; cursor:pointer; transition: all 0.15s;
+    }
+    .btn:hover { background:var(--accent); color:#fff; }
+
+    /* ── Loading ── */
+    .loading-container {
+      display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px;
+    }
+    .loading-spinner {
+      width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.08);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .loading-spinner.large { width: 48px; height: 48px; border-width: 4px; }
+    .loading-spinner.small { width: 20px; height: 20px; border-width: 2px; }
+
+    .loading-dots { display: flex; gap: 5px; }
+    .loading-dots span {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+      animation: dotBounce 1.2s ease infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    .loading-pulse {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--accent);
+      animation: pulse 1.2s ease infinite;
+    }
+
+    .loading-wave { display: flex; gap: 3px; align-items: flex-end; height: 32px; }
+    .loading-wave span {
+      width: 4px; background: var(--accent); border-radius: 2px;
+      animation: wave 1s ease infinite;
+    }
+    .loading-wave span:nth-child(1) { height:16px; animation-delay: 0s; }
+    .loading-wave span:nth-child(2) { height:24px; animation-delay: 0.1s; }
+    .loading-wave span:nth-child(3) { height:20px; animation-delay: 0.2s; }
+    .loading-wave span:nth-child(4) { height:28px; animation-delay: 0.3s; }
+    .loading-wave span:nth-child(5) { height:18px; animation-delay: 0.4s; }
+
+    .loading-text { font-size: 0.84rem; color: var(--text-2); }
+    .loading-subtext { font-size: 0.74rem; color: var(--text-3); }
+    .loading-fullscreen {
+      position: fixed; inset: 0; background: rgba(22,22,32,0.92);
+      display:flex; align-items:center; justify-content:center; z-index: 999;
+    }
+    .loading-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.3);
+      display:flex; align-items:center; justify-content:center; border-radius: var(--radius);
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity:0.4; } 40% { transform: scale(1); opacity:1; } }
+    @keyframes pulse { 0% { transform: scale(0.8); opacity:0.6; } 50% { transform: scale(1.1); opacity:1; } 100% { transform: scale(0.8); opacity:0.6; } }
+    @keyframes wave { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+
+    /* ── Empty State ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 40px 24px; text-align: center;
+    }
+    .empty-icon {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: rgba(255,255,255,0.04); display: flex;
+      align-items: center; justify-content: center; font-size: 1.3rem;
+      color: var(--text-3);
+    }
+    .empty-title { font-size: 0.95rem; font-weight: 600; color: var(--text-2); }
+    .empty-subtitle { font-size: 0.8rem; color: var(--text-3); max-width: 280px; }
+    .empty-hint { font-size: 0.72rem; color: var(--text-3); opacity: 0.7; }
+    .empty-card {
+      background: var(--bg-card); border:1px solid var(--border); border-radius: var(--radius);
+    }
+
+    /* ── Error State ── */
+    .error-container {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 28px 24px; text-align: center;
+    }
+    .error-icon {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(239,68,68,0.1); display: flex;
+      align-items: center; justify-content: center; font-size: 1.2rem;
+      color: var(--danger);
+    }
+    .error-message { font-size: 0.88rem; color: var(--text-2); font-weight: 500; }
+    .retry-btn {
+      margin-top: 4px; padding: 6px 18px; border-radius: 6px; font-size: 0.82rem;
+      background: transparent; border: 1px solid var(--accent); color: var(--accent);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .retry-btn:hover { background: var(--accent); color: #fff; }
+    .retry-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .retry-feedback { font-size:0.74rem; color:var(--accent-2); margin-top:4px; min-height:18px; }
+
+    .toggle-panel {
+      display:flex; flex-wrap:wrap; gap:10px; padding:14px;
+      background: var(--bg); border:1px solid var(--border); border-radius:8px;
+      margin-bottom:14px;
+    }
+    .toggle-panel button {
+      padding:5px 14px; border-radius:6px; font-size:0.78rem; cursor:pointer;
+      border:1px solid rgba(255,255,255,0.12); background:transparent; color:var(--text-2);
+      transition: all 0.15s;
+    }
+    .toggle-panel button:hover, .toggle-panel button.active {
+      border-color:var(--accent); color:var(--accent); background:rgba(99,102,241,0.08);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <a href="../index.html" class="back"><i class="fas fa-arrow-left"></i> Demo Center</a>
+    <h1>💬 YiLoading / YiEmptyState / YiErrorState 状态反馈组件</h1>
+  </div>
+
+  <div class="main">
+    <!-- Loading -->
+    <div class="section">
+      <h2>⏳ YiLoading 加载状态</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label>类型 type</label>
+          <select v-model="loadType">
+            <option value="spinner">spinner</option>
+            <option value="dots">dots</option>
+            <option value="pulse">pulse</option>
+            <option value="wave">wave</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>尺寸 size</label>
+          <select v-model="loadSize">
+            <option value="">default</option>
+            <option value="small">small</option>
+            <option value="large">large</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>文本</label>
+          <input v-model="loadText" style="width:140px">
+        </div>
+        <button class="btn" @click="showFullscreen = !showFullscreen">
+          {{ showFullscreen ? '关闭全屏' : '全屏加载' }}
+        </button>
+      </div>
+      <div class="demo-row" style="position:relative">
+        <div class="demo-col">
+          <div class="col-label">{{ loadType }} · {{ loadSize || 'default' }}</div>
+          <div class="loading-container" :class="{ 'loading-overlay': false }">
+            <template v-if="loadType==='spinner'">
+              <div :class="['loading-spinner', loadSize]"></div>
+            </template>
+            <template v-else-if="loadType==='dots'">
+              <div class="loading-dots"><span></span><span></span><span></span></div>
+            </template>
+            <template v-else-if="loadType==='pulse'">
+              <div class="loading-pulse" :style="loadSize==='large'?'width:56px;height:56px':loadSize==='small'?'width:24px;height:24px':''"></div>
+            </template>
+            <template v-else>
+              <div class="loading-wave"><span></span><span></span><span></span><span></span><span></span></div>
+            </template>
+            <div class="loading-text">{{ loadText }}</div>
+            <div class="loading-subtext" v-if="loadSubtext">{{ loadSubtext }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen overlay demo -->
+    <div v-if="showFullscreen" class="loading-fullscreen" @click="showFullscreen=false">
+      <div class="loading-container">
+        <div class="loading-spinner large"></div>
+        <div class="loading-text">{{ loadText }}</div>
+        <div class="loading-subtext">点击任意位置关闭</div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="section">
+      <h2>📭 YiEmptyState 空状态</h2>
+      <div class="toggle-panel">
+        <button :class="{active:emptyVariant==='a'}" @click="emptyVariant='a'">搜索无结果</button>
+        <button :class="{active:emptyVariant==='b'}" @click="emptyVariant='b'">无数据</button>
+        <button :class="{active:emptyVariant==='c'}" @click="emptyVariant='c'">收件箱为空</button>
+        <button :class="{active:emptyVariant==='d'}" @click="emptyVariant='d'">Cardless</button>
+      </div>
+      <div class="demo-row">
+        <div :class="['empty-state', emptyVariant!=='d' ? 'empty-card' : '']" :style="emptyVariant==='d'?'border:none;background:transparent':''">
+          <div class="empty-icon">
+            <i v-if="emptyVariant==='a'" class="fas fa-search"></i>
+            <i v-else-if="emptyVariant==='c'" class="fas fa-inbox"></i>
+            <i v-else class="fas fa-folder-open"></i>
+          </div>
+          <div class="empty-title">
+            {{ emptyTitle }}
+          </div>
+          <div class="empty-subtitle">{{ emptySubtitle }}</div>
+          <div class="empty-hint">{{ emptyHint }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div class="section">
+      <h2>⚠️ YiErrorState 错误状态</h2>
+      <div class="demo-row">
+        <div class="demo-col">
+          <div class="col-label">网络错误 (可重试)</div>
+          <div class="error-container">
+            <div class="error-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="error-message">网络连接失败</div>
+            <button class="retry-btn" @click="retryWithFeedback" :disabled="retrying">
+              <i class="fas fa-redo" :class="{'fa-spin':retrying}"></i> {{ retryText }}
+            </button>
+            <div class="retry-feedback" v-if="retryMsg">{{ retryMsg }}</div>
+          </div>
+        </div>
+        <div class="demo-col">
+          <div class="col-label">权限错误 (无重试)</div>
+          <div class="error-container">
+            <div class="error-icon"><i class="fas fa-ban"></i></div>
+            <div class="error-message">无权访问此资源</div>
+          </div>
+        </div>
+        <div class="demo-col">
+          <div class="col-label">服务器错误</div>
+          <div class="error-container">
+            <div class="error-icon"><i class="fas fa-server"></i></div>
+            <div class="error-message">服务器内部错误 (500)</div>
+            <button class="retry-btn" @click="retryWithFeedback">
+              <i class="fas fa-redo"></i> 重试
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APIs -->
+    <div class="section">
+      <h2>📋 组件 API</h2>
+      <table class="props-table">
+        <thead><tr><th>组件</th><th>关键属性</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>YiLoading</code></td><td>text, subtext, size(small/large), type(spinner/dots/pulse/wave), fullscreen, overlay</td><td>4 种动画类型，支持全屏/行内/叠加模式</td></tr>
+          <tr><td><code>YiEmptyState</code></td><td>title, subtitle, hint, iconClass, cardless, srText</td><td>统一空状态占位，支持无障碍文本</td></tr>
+          <tr><td><code>YiErrorState</code></td><td>message, showRetry, retryText, retryDisabled, iconClass</td><td>错误态 + 可选重试按钮，@retry 事件</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { createApp, ref, computed } = Vue;
+  createApp({
+    setup() {
+      const loadType = ref('spinner'), loadSize = ref(''), loadText = ref('正在加载...');
+      const loadSubtext = ref('请稍候');
+      const showFullscreen = ref(false);
+
+      const emptyVariant = ref('a');
+      const emptyTitle = computed(() => ({
+        a:'未找到匹配结果', b:'暂无数据', c:'收件箱为空', d:'暂无内容'
+      }[emptyVariant.value]));
+      const emptySubtitle = computed(() => ({
+        a:'请尝试调整搜索条件或关键词', b:'数据将在创建后显示在此处', c:'新的消息将显示在这里', d:''
+      }[emptyVariant.value]));
+      const emptyHint = computed(() => ({
+        a:'💡 提示：使用更短的关键词试试', b:'点击 + 按钮创建第一条数据', c:'', d:'开始添加内容吧'
+      }[emptyVariant.value]));
+
+      const retrying = ref(false), retryText = ref('重试'), retryMsg = ref('');
+      function retryWithFeedback() {
+        if (retrying.value) return;
+        retrying.value = true; retryText.value = '重试中...'; retryMsg.value = '';
+        setTimeout(() => {
+          retrying.value = false; retryText.value = '重试';
+          retryMsg.value = '✅ 重试成功！数据已恢复 @ ' + new Date().toLocaleTimeString();
+          setTimeout(() => retryMsg.value = '', 3000);
+        }, 1500);
+      }
+      return { loadType,loadSize,loadText,loadSubtext,showFullscreen, emptyVariant,emptyTitle,emptySubtitle,emptyHint, retrying,retryText,retryMsg,retryWithFeedback };
+    }
+  }).mount('#app');
+</script>
+</body>
+</html>

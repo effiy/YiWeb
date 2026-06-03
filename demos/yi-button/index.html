@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiButton Demo · YiWeb</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #161620; --bg-card: #22222e; --bg-elevated: #2a2a38;
+      --accent: #6366f1; --accent-2: #22d3ee; --danger: #ef4444;
+      --text: #fafafc; --text-2: #a0a0a4; --text-3: #6e6e72;
+      --border: rgba(255,255,255,0.06); --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
+    .topbar h1 { font-size: 0.95rem; font-weight: 700; }
+    .topbar .back { color: var(--text-3); text-decoration: none; font-size: 0.8rem; }
+    .topbar .back:hover { color: var(--accent); }
+    .main { flex:1; padding: 32px 24px; max-width: 1000px; margin:0 auto; width:100%; }
+    .section { margin-bottom: 32px; }
+    .section h2 { font-size: 1rem; color: var(--text-2); margin-bottom: 14px; padding-left:10px; border-left:3px solid var(--accent); }
+
+    .demo-row {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      padding: 20px; background: var(--bg-card); border:1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px;
+    }
+    .demo-row .label { font-size:0.72rem; color:var(--text-3); min-width:80px; text-transform:uppercase; letter-spacing:0.05em; }
+
+    /* ── Button styles matching YiButton component ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: inherit; font-size: 0.84rem; font-weight: 500;
+      padding: 7px 18px; border-radius: 6px; cursor: pointer;
+      border: 1px solid transparent; transition: all 0.15s;
+      line-height: 1.4; white-space: nowrap; user-select: none;
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { filter: brightness(1.12); }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.12); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    .btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+    .btn-outline:hover { background: var(--accent); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--text-2); border-color: transparent; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-danger:hover { filter: brightness(1.12); }
+    .btn-accent { background: var(--accent-2); color: #0a0a12; border-color: var(--accent-2); }
+    .btn-accent:hover { filter: brightness(1.12); }
+
+    .btn-small { font-size:0.76rem; padding:4px 12px; }
+    .btn-large { font-size:0.95rem; padding:10px 24px; }
+    .btn-block { display:flex; width:100%; justify-content:center; }
+    .btn:disabled, .btn-loading { opacity:0.5; cursor:not-allowed; pointer-events:none; }
+
+    /* ── Icon button ── */
+    .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 6px; cursor: pointer;
+      background: transparent; color: var(--text-2); border: 1px solid transparent;
+      transition: all 0.15s; font-size: 1rem;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .icon-btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .icon-btn-primary:hover { filter: brightness(1.12); }
+    .icon-btn-ghost { background: transparent; color: var(--text-3); }
+    .icon-btn-sm { width: 30px; height: 30px; font-size: 0.82rem; }
+    .icon-btn-lg { width: 46px; height: 46px; font-size: 1.15rem; }
+    .icon-btn.active { background: rgba(99,102,241,0.15); color: var(--accent); border-color: var(--accent); }
+
+    .api-badge {
+      display:inline-block; font-size:0.66rem; padding:1px 6px; border-radius:3px;
+      background:rgba(99,102,241,0.12); color:var(--accent); margin-right:3px;
+    }
+    .props-table { width:100%; border-collapse:collapse; font-size:0.78rem; margin-top:14px; }
+    .props-table th { text-align:left; padding:8px 10px; color:var(--text-3); font-weight:500; border-bottom:1px solid var(--border); }
+    .props-table td { padding:8px 10px; color:var(--text-2); border-bottom:1px solid var(--border); }
+    .props-table code { color:var(--accent); }
+    .props-table .type { color:var(--accent-2); }
+
+    .click-feedback { font-size:0.74rem; color:var(--accent-2); margin-top:8px; min-height:20px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <a href="../index.html" class="back"><i class="fas fa-arrow-left"></i> Demo Center</a>
+    <h1>🔘 YiButton / YiIconButton 按钮组件</h1>
+  </div>
+
+  <div class="main">
+    <!-- YiButton Variants -->
+    <div class="section">
+      <h2>🎨 YiButton — Variant 变体</h2>
+      <div class="demo-row">
+        <span class="label">primary</span>
+        <button class="btn btn-primary"><i class="fas fa-check"></i> 主要按钮</button>
+        <span class="label" style="margin-left:20px">secondary</span>
+        <button class="btn btn-secondary">次要按钮</button>
+        <span class="label" style="margin-left:20px">outline</span>
+        <button class="btn btn-outline"><i class="fas fa-external-link-alt"></i> 描边按钮</button>
+      </div>
+      <div class="demo-row">
+        <span class="label">ghost</span>
+        <button class="btn btn-ghost"><i class="fas fa-pen"></i> 幽灵按钮</button>
+        <span class="label" style="margin-left:20px">danger</span>
+        <button class="btn btn-danger"><i class="fas fa-ban"></i> 危险按钮</button>
+        <span class="label" style="margin-left:20px">accent</span>
+        <button class="btn btn-accent"><i class="fas fa-lightbulb"></i> 强调按钮</button>
+      </div>
+    </div>
+
+    <!-- Sizes -->
+    <div class="section">
+      <h2>📏 Size 尺寸</h2>
+      <div class="demo-row">
+        <span class="label">small</span>
+        <button class="btn btn-primary btn-small">小按钮</button>
+        <button class="btn btn-outline btn-small">小描边</button>
+        <span class="label" style="margin-left:20px">default</span>
+        <button class="btn btn-primary">默认按钮</button>
+        <button class="btn btn-outline">默认描边</button>
+        <span class="label" style="margin-left:20px">large</span>
+        <button class="btn btn-primary btn-large">大按钮</button>
+        <button class="btn btn-outline btn-large">大描边</button>
+      </div>
+    </div>
+
+    <!-- States -->
+    <div class="section">
+      <h2>🔒 States 状态</h2>
+      <div class="demo-row">
+        <span class="label">normal</span>
+        <button class="btn btn-primary" @click="lastClick='主要按钮点击 @ '+new Date().toLocaleTimeString()">可点击</button>
+        <span class="label" style="margin-left:20px">disabled</span>
+        <button class="btn btn-primary" disabled>已禁用</button>
+        <span class="label" style="margin-left:20px">loading</span>
+        <button class="btn btn-primary btn-loading"><i class="fas fa-spinner fa-spin"></i> 加载中</button>
+        <span class="label" style="margin-left:20px">block</span>
+        <div style="flex:1;min-width:200px"><button class="btn btn-outline btn-block">块级按钮 (width:100%)</button></div>
+      </div>
+      <div class="click-feedback">{{ lastClick || '👆 点击上方按钮查看 click 事件反馈' }}</div>
+    </div>
+
+    <!-- With icons -->
+    <div class="section">
+      <h2>⭐ Icon 图标</h2>
+      <div class="demo-row">
+        <span class="label">icon-left</span>
+        <button class="btn btn-primary"><i class="fas fa-download"></i> 下载</button>
+        <button class="btn btn-outline"><i class="fas fa-save"></i> 保存</button>
+        <span class="label" style="margin-left:20px">icon-right</span>
+        <button class="btn btn-secondary">下一步 <i class="fas fa-chevron-right"></i></button>
+        <button class="btn btn-ghost">更多 <i class="fas fa-chevron-down"></i></button>
+      </div>
+    </div>
+
+    <!-- YiIconButton -->
+    <div class="section">
+      <h2>🔲 YiIconButton 图标按钮</h2>
+      <div class="demo-row">
+        <span class="label">default</span>
+        <button class="icon-btn" title="搜索"><i class="fas fa-search"></i></button>
+        <button class="icon-btn" title="编辑"><i class="fas fa-pen"></i></button>
+        <button class="icon-btn" title="刷新"><i class="fas fa-sync-alt"></i></button>
+        <button class="icon-btn" title="复制"><i class="fas fa-copy"></i></button>
+        <button class="icon-btn" title="删除"><i class="fas fa-ban"></i></button>
+        <span class="label" style="margin-left:20px">primary</span>
+        <button class="icon-btn icon-btn-primary" title="新增"><i class="fas fa-plus"></i></button>
+        <span class="label" style="margin-left:20px">ghost</span>
+        <button class="icon-btn icon-btn-ghost" title="设置"><i class="fas fa-cog"></i></button>
+        <span class="label" style="margin-left:20px">active</span>
+        <button class="icon-btn active" title="收藏"><i class="fas fa-star"></i></button>
+        <span class="label" style="margin-left:20px">disabled</span>
+        <button class="icon-btn" disabled title="禁用"><i class="fas fa-link"></i></button>
+      </div>
+      <div class="demo-row">
+        <span class="label">size:sm</span>
+        <button class="icon-btn icon-btn-sm"><i class="fas fa-search"></i></button>
+        <span class="label" style="margin-left:20px">default</span>
+        <button class="icon-btn"><i class="fas fa-search"></i></button>
+        <span class="label" style="margin-left:20px">size:lg</span>
+        <button class="icon-btn icon-btn-lg"><i class="fas fa-search"></i></button>
+      </div>
+    </div>
+
+    <!-- YiButton API -->
+    <div class="section">
+      <h2>📋 YiButton API 属性</h2>
+      <table class="props-table">
+        <thead><tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>variant</code></td><td class="type">String</td><td>''</td><td>primary / secondary / outline / ghost / danger / accent</td></tr>
+          <tr><td><code>size</code></td><td class="type">String</td><td>''</td><td>small / large</td></tr>
+          <tr><td><code>loading</code></td><td class="type">Boolean</td><td>false</td><td>加载状态，同时禁用点击</td></tr>
+          <tr><td><code>disabled</code></td><td class="type">Boolean</td><td>false</td><td>禁用状态</td></tr>
+          <tr><td><code>block</code></td><td class="type">Boolean</td><td>false</td><td>块级宽度 100%</td></tr>
+          <tr><td><code>icon</code></td><td class="type">String</td><td>''</td><td>图标语义名（iconMap 查找）</td></tr>
+          <tr><td><code>iconPosition</code></td><td class="type">String</td><td>'left'</td><td>图标位置: left / right</td></tr>
+          <tr><td><code>as</code></td><td class="type">String</td><td>'button'</td><td>渲染为 button 或 a 标签</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { createApp, ref } = Vue;
+  createApp({
+    setup() {
+      const lastClick = ref('');
+      return { lastClick };
+    }
+  }).mount('#app');
+</script>
+</body>
+</html>

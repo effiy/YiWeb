@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiModal Demo · YiWeb</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #161620; --bg-card: #22222e; --bg-elevated: #2a2a38;
+      --accent: #6366f1; --accent-2: #22d3ee; --danger: #ef4444;
+      --text: #fafafc; --text-2: #a0a0a4; --text-3: #6e6e72;
+      --border: rgba(255,255,255,0.06); --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .topbar {
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
+      padding: 12px 20px; display: flex; align-items: center; gap: 14px;
+    }
+    .topbar h1 { font-size: 0.95rem; font-weight: 700; }
+    .topbar .back { color: var(--text-3); text-decoration: none; font-size: 0.8rem; }
+    .topbar .back:hover { color: var(--accent); }
+
+    .main { flex:1; padding: 32px 24px; max-width: 900px; margin:0 auto; width:100%; }
+    .section { margin-bottom: 32px; }
+    .section h2 { font-size: 1rem; color: var(--text-2); margin-bottom: 14px; padding-left:10px; border-left:3px solid var(--accent); }
+    .section h2 .badge { font-size:0.7rem; color:var(--text-3); font-weight:400; margin-left:8px; }
+
+    /* ── Control panel ── */
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
+      padding:16px; background: var(--bg-card); border:1px solid var(--border); border-radius: var(--radius);
+    }
+    .control-group { display:flex; flex-direction:column; gap:4px; }
+    .control-group label { font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em; }
+    .control-group select, .control-group input {
+      background: var(--bg); color: var(--text); border:1px solid rgba(255,255,255,0.12);
+      border-radius:6px; padding:5px 10px; font-size:0.82rem;
+    }
+    .btn {
+      display:inline-flex; align-items:center; gap:6px; font-size:0.82rem;
+      padding:6px 16px; border-radius:6px; border:1px solid var(--accent);
+      color:var(--accent); background:transparent; cursor:pointer;
+      transition: all 0.15s; align-self:flex-end;
+    }
+    .btn:hover { background:var(--accent); color:#fff; }
+    .btn.fill { align-self:stretch; }
+
+    /* ── Preview area ── */
+    .preview {
+      padding:40px 24px; background: var(--bg-card); border:1px solid var(--border);
+      border-radius: var(--radius); text-align:center; min-height:160px;
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* ── Modal overlay (custom, no Vue needed for the visual) ── */
+    .modal-mask {
+      position: fixed; inset:0; background: rgba(0,0,0,0.55);
+      display:flex; align-items:center; justify-content:center; z-index:1000;
+      animation: fadeIn 0.15s ease;
+    }
+    .modal-content {
+      background: var(--bg-elevated); border:1px solid var(--border);
+      border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      width:90%; max-width:520px; animation: slideUp 0.2s ease;
+    }
+    .modal-header {
+      display:flex; align-items:center; padding:14px 20px;
+      border-bottom:1px solid var(--border);
+    }
+    .modal-header .title { font-size:0.95rem; font-weight:700; flex:1; }
+    .modal-header .close-btn {
+      width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+      background:none; border:none; color:var(--text-3); cursor:pointer; border-radius:6px;
+      font-size:1rem; transition: all 0.15s;
+    }
+    .modal-header .close-btn:hover { background:rgba(255,255,255,0.08); color:var(--text); }
+    .modal-body { padding:20px; font-size:0.88rem; color:var(--text-2); line-height:1.6; }
+    .modal-footer {
+      display:flex; gap:8px; justify-content:flex-end; padding:12px 20px;
+      border-top:1px solid var(--border);
+    }
+    .modal-footer .btn-cancel {
+      padding:6px 16px; border-radius:6px; font-size:0.82rem;
+      border:1px solid rgba(255,255,255,0.12); background:transparent;
+      color:var(--text-2); cursor:pointer;
+    }
+    .modal-footer .btn-cancel:hover { border-color:var(--text-2); color:var(--text); }
+    .modal-footer .btn-confirm {
+      padding:6px 16px; border-radius:6px; font-size:0.82rem;
+      border:none; background:var(--accent); color:#fff; cursor:pointer;
+    }
+    .modal-footer .btn-confirm:hover { filter: brightness(1.1); }
+
+    .modal-sm { max-width:360px; }
+    .modal-lg { max-width:720px; }
+
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Props table ── */
+    .props-table { width:100%; border-collapse:collapse; font-size:0.78rem; margin-top:14px; }
+    .props-table th { text-align:left; padding:8px 10px; color:var(--text-3); font-weight:500; border-bottom:1px solid var(--border); }
+    .props-table td { padding:8px 10px; color:var(--text-2); border-bottom:1px solid var(--border); }
+    .props-table code { color:var(--accent); font-size:0.9em; }
+    .props-table .type { color:var(--accent-2); }
+
+    .api-badge {
+      display:inline-block; font-size:0.66rem; padding:1px 6px; border-radius:3px;
+      background:rgba(99,102,241,0.12); color:var(--accent); margin-right:3px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <a href="../index.html" class="back"><i class="fas fa-arrow-left"></i> Demo Center</a>
+    <h1>🧩 YiModal 模态框组件</h1>
+  </div>
+
+  <div class="main">
+    <div class="section">
+      <h2>🎮 交互演示 <span class="badge">实时控制</span></h2>
+      <div class="controls">
+        <div class="control-group">
+          <label>尺寸 size</label>
+          <select v-model="modalSize">
+            <option value="small">small</option>
+            <option value="medium">medium</option>
+            <option value="large">large</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>显示头部</label>
+          <select v-model="showHeader">
+            <option :value="true">true</option>
+            <option :value="false">false</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>显示底部</label>
+          <select v-model="showFooter">
+            <option :value="true">true</option>
+            <option :value="false">false</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>点击遮罩关闭</label>
+          <select v-model="maskClosable">
+            <option :value="true">true</option>
+            <option :value="false">false</option>
+          </select>
+        </div>
+        <button class="btn" @click="showModal = true">▶ 打开模态框</button>
+      </div>
+      <div class="preview">
+        <p style="color:var(--text-3)">👆 点击上方按钮打开模态框 · 当前配置: size={{modalSize}} showHeader={{showHeader}} showFooter={{showFooter}}</p>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div v-if="showModal" class="modal-mask" @click.self="maskClosable && (showModal = false)">
+      <div :class="['modal-content', modalSize === 'small' ? 'modal-sm' : modalSize === 'large' ? 'modal-lg' : '']" @keydown.escape="showModal = false">
+        <div v-if="showHeader" class="modal-header">
+          <span class="title">📋 示例模态框</span>
+          <button class="close-btn" @click="showModal = false"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>这是一个 <strong>{{modalSize}}</strong> 尺寸的 YiModal 演示。</p>
+          <p style="margin-top:8px">支持 ESC 关闭、点击遮罩关闭、自定义 header/footer 显示。</p>
+          <p style="margin-top:8px">✅ 特性：三段式布局 · 键盘无障碍 · body 滚动锁定</p>
+        </div>
+        <div v-if="showFooter" class="modal-footer">
+          <button class="btn-cancel" @click="showModal = false">取消</button>
+          <button class="btn-confirm" @click="showModal = false">确认</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📋 API 属性 <span class="badge">Props</span></h2>
+      <table class="props-table">
+        <thead><tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>visible</code></td><td class="type">Boolean</td><td>false</td><td>控制显示/隐藏</td></tr>
+          <tr><td><code>title</code></td><td class="type">String</td><td>''</td><td>模态框标题</td></tr>
+          <tr><td><code>size</code></td><td class="type">String</td><td>'medium'</td><td>尺寸: small / medium / large</td></tr>
+          <tr><td><code>showHeader</code></td><td class="type">Boolean</td><td>true</td><td>是否显示头部栏</td></tr>
+          <tr><td><code>showFooter</code></td><td class="type">Boolean</td><td>false</td><td>是否显示底部操作栏</td></tr>
+          <tr><td><code>showClose</code></td><td class="type">Boolean</td><td>true</td><td>是否显示关闭按钮</td></tr>
+          <tr><td><code>maskClosable</code></td><td class="type">Boolean</td><td>true</td><td>点击遮罩是否关闭</td></tr>
+          <tr><td><code>escClosable</code></td><td class="type">Boolean</td><td>true</td><td>按 ESC 是否关闭</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>📡 事件 <span class="badge">Emits</span></h2>
+      <p style="font-size:0.84rem; color:var(--text-2)">
+        <span class="api-badge">close</span> 关闭事件 ·
+        <span class="api-badge">open</span> 打开事件（自动锁定 body 滚动）
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { createApp, ref } = Vue;
+  createApp({
+    setup() {
+      const showModal = ref(false);
+      const modalSize = ref('medium');
+      const showHeader = ref(true);
+      const showFooter = ref(true);
+      const maskClosable = ref(true);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && showModal.value) showModal.value = false;
+      });
+      return { showModal, modalSize, showHeader, showFooter, maskClosable };
+    }
+  }).mount('#app');
+</script>
+</body>
+</html>

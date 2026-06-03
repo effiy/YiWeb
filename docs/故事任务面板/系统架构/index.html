@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统架构 · YiWeb 文档</title>
+  <style>
+    :root {
+      --bg-content: rgba(22,22,32,1);
+      --bg-card: linear-gradient(159deg, rgba(38,38,52,1) 0%, rgba(34,34,46,1) 100%);
+      --color-accent: #6366f1;
+      --text-primary: rgba(250,250,252,1);
+      --text-secondary: rgba(160,160,164,1);
+      --text-muted: rgba(110,110,114,1);
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.3);
+      --shadow-hover: 0 12px 32px rgba(0,0,0,0.45);
+      --radius-card: 12px;
+      --border-subtle: 1px solid rgba(255,255,255,0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-content); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { display: inline-block; margin-bottom: 24px; color: var(--color-accent); text-decoration: none; font-size: 0.85rem; }
+    .back-link:hover { text-decoration: underline; }
+
+    .header { margin-bottom: 28px; }
+    .header h1 { font-size: 1.6rem; font-weight: 700; }
+    .header h1 .accent { color: var(--color-accent); }
+    .header .meta { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; }
+    .header .meta span { color: var(--color-accent); }
+
+    .overview {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 20px 24px; margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
+    }
+    .overview p { color: var(--text-secondary); line-height: 1.7; margin: 0 0 12px; }
+    .overview .kv { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 8px; }
+    .overview .kv .kv-item { font-size: 0.82rem; color: var(--text-muted); }
+    .overview .kv .kv-item strong { color: var(--text-primary); }
+
+    .section-title {
+      font-size: 1.05rem; font-weight: 600; margin: 24px 0 12px;
+      padding-bottom: 6px; border-bottom: 2px solid var(--color-accent);
+    }
+    .section-title .accent { color: var(--color-accent); }
+
+    .scene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .scene-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow-card);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .scene-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); border-color: rgba(99,102,241,0.2); }
+    .scene-card .num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--color-accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+    }
+    .scene-card .body { flex: 1; min-width: 0; }
+    .scene-card .body .name { color: var(--text-primary); font-weight: 600; font-size: 0.88rem; }
+    .scene-card .body .desc { color: var(--text-muted); font-size: 0.76rem; margin-top: 2px; line-height: 1.5; }
+    .scene-card .body .links { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .scene-card .body .links a {
+      font-size: 0.73rem; color: var(--color-accent); text-decoration: none;
+      border: 1px solid var(--color-accent); border-radius: 4px;
+      padding: 2px 10px; transition: all 0.15s;
+    }
+    .scene-card .body .links a:hover { background: var(--color-accent); color: #fff; }
+
+    .resource-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: 9px; padding: 12px 16px; margin-bottom: 8px;
+      box-shadow: var(--shadow-card); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .resource-card .label { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+    .resource-card a { color: var(--color-accent); text-decoration: none; font-size: 0.84rem; }
+    .resource-card a:hover { text-decoration: underline; }
+    .resource-card .sep { color: rgba(255,255,255,0.1); }
+    .resource-card .hint { color: var(--text-secondary); font-size: 0.78rem; }
+
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-size: 0.84rem; }
+    th { background: rgba(99,102,241,0.08); color: var(--color-accent); font-weight: 600; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.08); text-align: left; }
+    td { padding: 7px 12px; border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    td .p0 { color: #f87171; font-weight: 600; }
+    td .p1 { color: #fbbf24; }
+    td .p2 { color: var(--color-accent); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../../index.html">← 返回文档中心</a>
+
+    <div class="header">
+      <h1><span class="accent">🏗</span> 系统架构</h1>
+      <div class="meta">v1.1.0 · 2026-06-03 · <span>5 场景</span> · 0 循环依赖 · 5 层架构</div>
+    </div>
+
+    <div class="overview">
+      <p>系统化梳理 YiWeb 的架构全貌，作为项目知识固化的起点。所有后续故事的技术决策均以此文档为事实基线。覆盖分层结构、模块关系、数据流转、安全边界、依赖矩阵五大维度。</p>
+      <div class="kv">
+        <div class="kv-item"><strong>5</strong> 层架构</div>
+        <div class="kv-item"><strong>14</strong> 核心模块</div>
+        <div class="kv-item"><strong>28</strong> 依赖边</div>
+        <div class="kv-item"><strong>0</strong> 循环依赖</div>
+        <div class="kv-item">最深链 <strong>4</strong></div>
+        <div class="kv-item"><strong>5</strong> 类安全边界</div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="accent">📋</span> 功能点</div>
+    <table>
+      <tr><th>#</th><th>功能点</th><th>描述</th><th>优先级</th></tr>
+      <tr><td>FP1</td><td>提取系统分层结构</td><td>识别并文档化 5 个运行时层次：基础设施层 → 框架层 → 渲染增强层 → 服务层 → 视图层（自底向上）</td><td class="p0">P0</td></tr>
+      <tr><td>FP2</td><td>建立模块关系图谱</td><td>绘制各层模块间的导入/调用/依赖关系，标注耦合强度与方向</td><td class="p0">P0</td></tr>
+      <tr><td>FP3</td><td>绘制数据流转路径</td><td>追踪用户操作→API 请求→响应处理→状态变更→DOM 更新的完整链路</td><td class="p0">P0</td></tr>
+      <tr><td>FP4</td><td>标注安全防护边界</td><td>定位 XSS 防护/Token 管理/401 拦截/凭据隔离等安全控制点</td><td class="p1">P1</td></tr>
+      <tr><td>FP5</td><td>生成依赖关系矩阵</td><td>计算模块扇入/扇出、循环依赖检测、变更影响半径</td><td class="p1">P1</td></tr>
+    </table>
+
+    <div class="section-title"><span class="accent">📖</span> 场景文档 (5)</div>
+    <div class="scene-grid">
+      <div class="scene-card">
+        <span class="num">1</span>
+        <div class="body">
+          <div class="name">分层结构</div>
+          <div class="desc">5 层架构总览、各层职责与依赖约束、视图初始化时序图、组件加载流程</div>
+          <div class="links">
+            <a href="场景-1-分层结构.md">文档 →</a>
+          </div>
+        </div>
+      </div>
+      <div class="scene-card">
+        <span class="num">2</span>
+        <div class="body">
+          <div class="name">模块关系图谱</div>
+          <div class="desc">14 核心模块依赖全景图、耦合强度标注、扇入扇出 Top 5、菱形依赖分析</div>
+          <div class="links">
+            <a href="场景-2-模块关系图谱.md">文档 →</a>
+          </div>
+        </div>
+      </div>
+      <div class="scene-card">
+        <span class="num">3</span>
+        <div class="body">
+          <div class="name">数据流转路径</div>
+          <div class="desc">读写流 3 链路时序图 (Query/Mutation/Stream)、缓存策略、状态变更约束</div>
+          <div class="links">
+            <a href="场景-3-数据流转路径.md">文档 →</a>
+          </div>
+        </div>
+      </div>
+      <div class="scene-card">
+        <span class="num">4</span>
+        <div class="body">
+          <div class="name">安全防护边界</div>
+          <div class="desc">5 类边界 11 控制点、401 防抖时序图、XSS 防护链、Token 存储风险评估</div>
+          <div class="links">
+            <a href="场景-4-安全防护边界.md">文档 →</a>
+          </div>
+        </div>
+      </div>
+      <div class="scene-card">
+        <span class="num">5</span>
+        <div class="body">
+          <div class="name">依赖关系矩阵</div>
+          <div class="desc">扇入/扇出矩阵、变更影响半径、稳定性指标 (I 值)、依赖方向约束</div>
+          <div class="links">
+            <a href="场景-5-依赖关系矩阵.md">文档 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="accent">📦</span> 资源文件</div>
+    <div class="resource-card">
+      <span class="label">📄 基线</span>
+      <a href="故事任务.md">故事任务.md</a>
+      <span class="sep">|</span>
+      <span class="hint">故事基线：5 FP + AC/SC/风险 + 系统架构总览 mermaid 图</span>
+    </div>
+    <div class="resource-card">
+      <span class="label">🔗 图谱</span>
+      <a href="知识图谱.json">知识图谱.json</a>
+      <span class="sep">|</span>
+      <span class="hint">19 nodes · 28 edges · 5 layers · 4 data flows · 5 security boundaries</span>
+    </div>
+
+    <div class="section-title"><span class="accent">📊</span> 架构指标</div>
+    <table>
+      <tr><th>指标</th><th>值</th><th>说明</th></tr>
+      <tr><td>平均扇入</td><td>2.0</td><td>每个模块平均被 2 个其他模块依赖</td></tr>
+      <tr><td>平均扇出</td><td>2.0</td><td>每个模块平均依赖 2 个其他模块</td></tr>
+      <tr><td>最稳定模块</td><td>log.js (I=0.0)</td><td>扇入 6，扇出 0 — 纯基础设施</td></tr>
+      <tr><td>最不稳定模块</td><td>crud.js (I=1.0)</td><td>扇入 1，扇出 5 — 高度依赖他人</td></tr>
+      <tr><td>最深依赖链</td><td>4</td><td>aicr/index.js → crud.js → requestHelper.js → authUtils.js</td></tr>
+      <tr><td>变更高风险</td><td>baseView.js</td><td>接口变更影响全部 3 个视图</td></tr>
+    </table>
+  </div>
+</body>
+</html>

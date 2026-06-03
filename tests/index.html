@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiWeb 测试套件</title>
+  <style>
+    :root {
+      --bg-content: rgba(22,22,32,1);
+      --bg-card: linear-gradient(159deg, rgba(38,38,52,1) 0%, rgba(34,34,46,1) 100%);
+      --color-accent: #6366f1;
+      --color-accent-2: #22d3ee;
+      --color-pass: rgba(100,220,180,1);
+      --color-fail: rgba(255,100,100,1);
+      --text-primary: rgba(250,250,252,1);
+      --text-secondary: rgba(160,160,164,1);
+      --text-muted: rgba(110,110,114,1);
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.3);
+      --shadow-hover: 0 12px 32px rgba(0,0,0,0.45);
+      --radius-card: 12px;
+      --border-subtle: 1px solid rgba(255,255,255,0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-content); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+
+    .container { max-width: 1060px; margin: 0 auto; padding: 40px 20px; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-size: 2.2rem; font-weight: 700; }
+    .header h1 .accent { color: var(--color-accent); }
+    .header .subtitle { color: var(--text-secondary); margin-top: 8px; font-size: 0.9rem; }
+
+    /* Stats */
+    .stats { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 14px 20px; text-align: center;
+      box-shadow: var(--shadow-card); min-width: 90px; cursor: default;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .stat:hover { transform: translateY(-1px); border-color: rgba(99,102,241,0.2); }
+    .stat .num { font-size: 1.6rem; font-weight: 700; color: var(--color-accent); }
+    .stat .num.pass { color: var(--color-pass); }
+    .stat .label { font-size: 0.73rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Cross-panel navigation ──────────────── */
+    .cross-nav {
+      display: flex; gap: 10px; justify-content: center; margin-bottom: 28px;
+      flex-wrap: wrap; align-items: stretch;
+    }
+    .cross-nav .cross-card {
+      background: var(--bg-card); border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 10px; padding: 12px 18px; box-shadow: var(--shadow-card);
+      text-decoration: none; color: inherit; display: flex; gap: 10px; align-items: center;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      min-width: 180px;
+    }
+    .cross-nav .cross-card:hover {
+      transform: translateY(-2px); box-shadow: var(--shadow-hover);
+      border-color: rgba(99,102,241,0.35);
+    }
+    .cross-nav .cross-card .cross-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .cross-nav .cross-card .cross-info { flex: 1; min-width: 0; }
+    .cross-nav .cross-card .cross-info .cross-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+    .cross-nav .cross-card .cross-info .cross-stats { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .cross-nav .cross-card .cross-arrow { color: var(--color-accent); font-size: 0.85rem; flex-shrink: 0; opacity: 0.6; transition: opacity 0.15s; }
+    .cross-nav .cross-card:hover .cross-arrow { opacity: 1; }
+
+    /* Progress bar */
+    .global-bar-wrap { max-width: 400px; margin: 0 auto 28px; }
+    .global-bar-wrap .bar-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; }
+    .global-bar-wrap .bar-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+    .global-bar-wrap .bar-fill { height: 100%; background: var(--color-pass); border-radius: 2px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Section title */
+    .section-title {
+      font-size: 0.95rem; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 10px; padding-bottom: 8px; padding-left: 10px;
+      border-left: 3px solid rgba(99,102,241,0.4); border-bottom: var(--border-subtle);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .section-title .accent { color: var(--color-accent); }
+
+    /* Infrastructure cards */
+    .infra-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .setup-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 16px 18px;
+      box-shadow: var(--shadow-card);
+    }
+    .setup-card h4 { font-size: 0.9rem; margin-bottom: 6px; }
+    .setup-card h4 .accent { color: var(--color-accent); }
+    .setup-card .fn-list { list-style: none; padding: 0; margin: 0; display: flex; gap: 14px; flex-wrap: wrap; }
+    .setup-card .fn-item { font-size: 0.74rem; color: var(--text-muted); font-family: "SF Mono", ui-monospace, monospace; }
+    .setup-card .fn-item .sig { color: var(--color-accent); }
+    .setup-card .info-text { color: var(--text-secondary); font-size: 0.82rem; margin: 6px 0 0; }
+
+    /* Test cards */
+    .test-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 12px;
+      box-shadow: var(--shadow-card); transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .test-card:hover { border-color: rgba(99,102,241,0.2); }
+    .test-card.expanded { border-color: rgba(99,102,241,0.3); }
+
+    .test-card .card-header-row { display: flex; align-items: center; gap: 12px; }
+    .test-card .card-icon {
+      width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1rem;
+      background: rgba(99,102,241,0.12); color: var(--color-accent);
+    }
+    .test-card .card-icon.scene { background: rgba(99,102,241,0.15); color: var(--color-accent); }
+    .test-card .card-icon.self { background: rgba(168,85,247,0.15); color: #a855f7; }
+    .test-card .card-icon.util { background: rgba(34,211,238,0.15); color: var(--color-accent-2); }
+    .test-card .card-icon.data { background: rgba(251,146,60,0.15); color: #fb923c; }
+
+    .test-card h3 { font-size: 1rem; margin: 0; flex: 1; }
+    .test-card .badge {
+      font-size: 0.7rem; padding: 2px 10px; border-radius: 10px; white-space: nowrap; font-weight: 600;
+    }
+    .test-card .badge-tests { background: rgba(99,102,241,0.15); color: var(--color-accent); }
+    .test-card .badge-pass { background: rgba(100,220,180,0.12); color: var(--color-pass); }
+
+    .test-card .meta { display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0 6px; }
+    .test-card .meta-item { font-size: 0.76rem; color: var(--text-muted); }
+    .test-card .meta-item strong { color: var(--text-secondary); font-weight: 500; }
+
+    .test-card .desc { color: var(--text-secondary); font-size: 0.83rem; margin-bottom: 8px; line-height: 1.5; }
+
+    .test-card .covers { display: flex; gap: 5px; flex-wrap: wrap; }
+    .test-card .cover-tag {
+      font-size: 0.68rem; background: rgba(255,255,255,0.05); color: var(--text-muted);
+      padding: 2px 8px; border-radius: 4px; user-select: none;
+    }
+
+    .card-bar-wrap { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+    .card-bar-wrap .card-bar-fill { height: 100%; background: var(--color-accent); border-radius: 2px; transition: width 0.6s; }
+
+    .test-card .expand-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; transition: color 0.15s; }
+    .test-card:hover .expand-hint { color: var(--color-accent); }
+
+    /* Expanded detail */
+    .test-detail { display: none; margin-top: 14px; padding-top: 14px; border-top: var(--border-subtle); }
+    .test-card.expanded .test-detail { display: block; }
+    .test-detail .suite { margin-bottom: 10px; }
+    .test-detail .suite-name {
+      font-size: 0.8rem; font-weight: 600; color: var(--color-accent); margin-bottom: 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .test-detail .suite-name .suite-count { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+    .test-detail .case {
+      font-size: 0.74rem; color: var(--text-secondary); padding: 2px 0 2px 16px;
+      display: flex; align-items: flex-start; gap: 6px;
+    }
+    .test-detail .case::before { content: "✓"; color: rgba(100,220,180,0.6); font-size: 0.68rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* Run card */
+    .run-card {
+      background: var(--bg-card); border: 1px solid rgba(99,102,241,0.3);
+      border-radius: var(--radius-card); padding: 20px; margin-top: 24px; text-align: center;
+      box-shadow: var(--shadow-card);
+    }
+    .run-card .run-title { font-size: 0.95rem; margin-bottom: 10px; }
+    .run-card .run-title .accent { color: var(--color-accent); }
+    .run-card code {
+      background: rgba(0,0,0,0.3); color: var(--color-accent); padding: 4px 10px; border-radius: 4px;
+      font-size: 0.88rem; cursor: pointer; transition: background 0.15s; font-family: "SF Mono", ui-monospace, monospace;
+      display: inline-block; margin: 2px 4px;
+    }
+    .run-card code:hover { background: rgba(99,102,241,0.15); }
+    .run-card .tip { color: var(--text-secondary); font-size: 0.8rem; margin-top: 8px; }
+    .run-card .copied { color: var(--color-pass); font-size: 0.75rem; display: none; margin-top: 4px; }
+    .run-card .copied.show { display: block; }
+
+    hr { border-color: rgba(255,255,255,0.08); margin: 8px 0 20px; }
+
+    .footer-note { text-align: center; color: var(--text-muted); font-size: 0.76rem; margin-top: 8px; padding-bottom: 20px; }
+    .footer-note a { color: var(--color-accent); text-decoration: none; }
+    .footer-note a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .infra-grid { grid-template-columns: 1fr; }
+      .stats { gap: 8px; }
+      .stat { padding: 12px 14px; min-width: 70px; }
+      .stat .num { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1><span class="accent">🧪</span> YiWeb 测试套件</h1>
+      <p class="subtitle">Vitest + jsdom 自动化测试 — 11 个测试文件，197 个测试用例，覆盖核心逻辑、API、持久化、边界、集成、安全与自检一致性</p>
+    </div>
+
+    <!-- Global pass bar -->
+    <div class="global-bar-wrap">
+      <div class="bar-label"><span>通过率</span><span id="passRateText">100%</span></div>
+      <div class="bar-track"><div class="bar-fill" id="globalBar" style="width:0%"></div></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats" id="stats">
+      <div class="stat"><div class="num" data-target="11">0</div><div class="label">测试文件</div></div>
+      <div class="stat"><div class="num pass" data-target="197">0</div><div class="label">测试用例</div></div>
+      <div class="stat"><div class="num" data-target="2358">0</div><div class="label">总行数</div></div>
+      <div class="stat"><div class="num" data-target="45">0</div><div class="label">测试套件</div></div>
+      <div class="stat"><div class="num" data-target="2">0</div><div class="label">dev 依赖</div></div>
+      <div class="stat"><div class="num" data-target="4">0</div><div class="label">执行模式</div></div>
+    </div>
+
+    <!-- Cross-panel navigation -->
+    <div class="cross-nav">
+      <a href="../docs/index.html" class="cross-card">
+        <span class="cross-icon">📖</span>
+        <span class="cross-info">
+          <span class="cross-name">文档中心</span>
+          <span class="cross-stats">14 CDN 组件 · 2 故事 · ~110 源文件</span>
+        </span>
+        <span class="cross-arrow">→</span>
+      </a>
+      <a href="../demos/index.html" class="cross-card">
+        <span class="cross-icon">🎮</span>
+        <span class="cross-info">
+          <span class="cross-name">Demo 中心</span>
+          <span class="cross-stats">9 交互式 Demo · 11 CDN 组件 · 14 渲染插件</span>
+        </span>
+        <span class="cross-arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Infrastructure -->
+    <div class="section-title"><span class="accent">⚙</span> 测试基础设施</div>
+    <div class="infra-grid">
+      <div class="setup-card">
+        <h4><span class="accent">vitest.config.js</span> <span style="font-weight:400;color:var(--text-muted);font-size:0.74rem;">jsdom · globals · 别名映射</span></h4>
+        <ul class="fn-list">
+          <li class="fn-item"><span class="sig">environment</span>: jsdom</li>
+          <li class="fn-item"><span class="sig">globals</span>: true</li>
+          <li class="fn-item"><span class="sig">include</span>: tests/**/*.test.js</li>
+          <li class="fn-item"><span class="sig">alias</span>: /cdn /src /tests</li>
+        </ul>
+      </div>
+      <div class="setup-card">
+        <h4><span class="accent">测试依赖</span> <span style="font-weight:400;color:var(--text-muted);font-size:0.74rem;">devDependencies</span></h4>
+        <ul class="fn-list">
+          <li class="fn-item"><span class="sig">vitest</span> ^3.1.0</li>
+          <li class="fn-item"><span class="sig">jsdom</span> ^26.0.0</li>
+        </ul>
+        <p class="info-text">零构建 ESM 测试 — 浏览器原生模块路径通过 vitest alias 映射到文件系统，jest 风格全局 API（describe/it/expect）。</p>
+      </div>
+    </div>
+
+    <!-- Test file list -->
+    <div class="section-title">
+      <span><span class="accent">📋</span> 测试文件</span>
+      <span style="font-size:0.73rem;color:var(--text-muted);" id="expandedCount"></span>
+    </div>
+    <div id="testList"></div>
+
+    <!-- Run card -->
+    <div class="run-card">
+      <p class="run-title"><span class="accent">▶</span> 运行测试</p>
+      <code id="cmdTest" title="点击复制">npm test</code>
+      <span style="color:var(--text-muted);margin:0 6px;">·</span>
+      <code id="cmdWatch" title="点击复制">npm run test:watch</code>
+      <span style="color:var(--text-muted);margin:0 6px;">·</span>
+      <code id="cmdVitest" title="点击复制">npx vitest run</code>
+      <span style="color:var(--text-muted);margin:0 6px;">·</span>
+      <code id="cmdFile" title="点击复制">npx vitest run tests/scene-1-core-logic.test.js</code>
+      <p class="tip">依赖: Node.js · vitest ^3.1.0 · jsdom ^26.0.0</p>
+      <p class="copied" id="copiedMsg">✓ 已复制到剪贴板</p>
+    </div>
+
+    <hr>
+    <p class="footer-note">
+      YiWeb 测试套件 · 测试文件位于 <strong>tests/</strong> 目录 · jsdom 模拟完整浏览器 DOM 环境 ·
+      <a href="../docs/index.html">文档中心</a> ·
+      <a href="../demos/index.html">Demo 中心</a>
+    </p>
+  </div>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ===== Test Data =====
+    var testData = [
+      {
+        id: 'scene1',
+        icon: '1',
+        iconClass: 'scene',
+        title: '核心业务逻辑测试',
+        file: 'scene-1-core-logic.test.js',
+        lines: 285,
+        size: '9.5 KB',
+        framework: 'Vitest + jsdom',
+        tests: 25,
+        suites: [
+          { name: '日志系统 (log.js)', count: 6, cases: [
+            'logInfo/logWarn/logError 应输出不同级别日志',
+            'DEBUG 模式关闭时 debug 日志不应输出',
+            'DEBUG 模式开启时 debug 日志应输出',
+            '计时器应返回耗时毫秒数',
+            'createLogger 应创建带前缀的日志器',
+            '日志级别枚举 LOG_LEVELS 完整性'
+          ]},
+          { name: '错误处理 (error.js)', count: 5, cases: [
+            'createError 应生成带错误码的 Error 对象',
+            'ErrorCodes 应包含所有预定义错误码',
+            'safeExecute 应捕获同步异常返回 [error, null]',
+            'safeExecute 应返回 [null, result] 正常结果',
+            'safeExecute 应处理 async 函数'
+          ]},
+          { name: '配置管理 (config.js)', count: 5, cases: [
+            'local 环境应使用本地 DATA_URL',
+            'prod 环境应使用生产 API_URL',
+            'URLSearchParams env 参数应覆盖环境',
+            'OLLAMA_URL 应随环境切换',
+            '未识别环境参数应有回退策略'
+          ]},
+          { name: 'createBaseView 视图工厂', count: 5, cases: [
+            '应返回 Vue app 实例',
+            '应支持 store 状态注册',
+            '应支持 computed 计算属性',
+            '应支持 methods 方法注册',
+            '应支持 components 组件注册'
+          ]},
+          { name: 'waitForComponents', count: 4, cases: [
+            '所有组件已就绪时应立即 resolve',
+            '部分组件未就绪时应等待',
+            '超时后应 reject',
+            '空数组应直接 resolve'
+          ]}
+        ],
+        desc: '验证日志系统、错误处理、配置管理和 createBaseView 视图工厂的核心逻辑，确保基础设施层功能正确。',
+        tags: ['日志', '错误处理', '配置', '视图工厂', '基础层']
+      },
+      {
+        id: 'scene2',
+        icon: '2',
+        iconClass: 'scene',
+        title: 'API 接口测试',
+        file: 'scene-2-api.test.js',
+        lines: 257,
+        size: '8.8 KB',
+        framework: 'Vitest + jsdom',
+        tests: 24,
+        suites: [
+          { name: '认证工具 (authUtils.js)', count: 7, cases: [
+            'getToken 应从 localStorage 读取 Token',
+            'setToken 应将 Token 写入 localStorage',
+            'removeToken 应清除 localStorage 中的 Token',
+            'isTokenValid 应校验 Token 格式',
+            'TOKEN_KEY 应为 YiWeb.apiToken.v1',
+            'getAuthHeader 应返回 X-Token 头对象',
+            'Token 过期检测逻辑'
+          ]},
+          { name: '请求辅助 (requestHelper.js)', count: 7, cases: [
+            'get 请求应携带 X-Token 头',
+            'post 请求应自动设置 Content-Type',
+            'credentials 应设置为 omit',
+            '请求失败应自动重试（默认 2 次）',
+            '批量请求应并发执行',
+            '内存缓存命中时不应发起网络请求',
+            '缓存过期后应重新请求'
+          ]},
+          { name: 'CRUD 操作 (crud.js)', count: 6, cases: [
+            'getData 应调用 GET 并返回数据',
+            'postData 应调用 POST 并返回响应',
+            'updateData 应调用 PUT',
+            'deleteData 应调用 DELETE',
+            'streamPrompt 应处理 SSE 流式响应',
+            'batchOperations 应批量处理多个操作'
+          ]},
+          { name: '认证错误处理 (authErrorHandler.js)', count: 4, cases: [
+            '401 响应应触发登录弹窗',
+            '2s 内重复 401 应被防抖忽略',
+            '并发 401 应有防重复锁保护',
+            '非 401 错误不应触发认证处理'
+          ]}
+        ],
+        desc: '验证认证工具、HTTP 请求封装、CRUD 操作和 401 错误处理，覆盖自动重试、批量请求、内存缓存和 SSE 流式响应。',
+        tags: ['认证', 'HTTP', 'CRUD', 'SSE', '缓存', '重试']
+      },
+      {
+        id: 'scene3',
+        icon: '3',
+        iconClass: 'scene',
+        title: '数据持久化测试',
+        file: 'scene-3-persistence.test.js',
+        lines: 147,
+        size: '4.7 KB',
+        framework: 'Vitest + jsdom',
+        tests: 11,
+        suites: [
+          { name: 'Token 持久化', count: 4, cases: [
+            'Token 应持久化到 localStorage YiWeb.apiToken.v1',
+            '页面刷新后 Token 应可恢复',
+            'removeToken 后 getToken 应返回 null',
+            '空 Token 不应写入存储'
+          ]},
+          { name: '环境配置持久化', count: 4, cases: [
+            'env 应持久化到 localStorage',
+            '未设置 env 时应有默认值 local',
+            'env 切换后 config 应更新对应 URL',
+            'debug 模式应持久化'
+          ]},
+          { name: '缓存管理', count: 3, cases: [
+            'CacheManager.set 应存储并设置 TTL',
+            'CacheManager.get 过期项应返回 null',
+            'CacheManager.clear 应清空所有缓存'
+          ]}
+        ],
+        desc: '验证 Token 持久化、环境配置存储和 CacheManager 缓存生命周期，确保数据在浏览器存储中的正确性。',
+        tags: ['localStorage', 'Token', '缓存', '持久化']
+      },
+      {
+        id: 'scene4',
+        icon: '4',
+        iconClass: 'scene',
+        title: '异常路径与边界测试',
+        file: 'scene-4-boundary.test.js',
+        lines: 157,
+        size: '5.1 KB',
+        framework: 'Vitest + jsdom',
+        tests: 7,
+        suites: [
+          { name: '空值与边界输入', count: 3, cases: [
+            '空字符串、null、undefined 参数应有安全处理',
+            '极大数组（10000+）不应导致栈溢出',
+            '超长字符串（1MB+）应截断或安全处理'
+          ]},
+          { name: '网络异常处理', count: 2, cases: [
+            'fetch 网络错误应返回统一错误格式',
+            '请求超时应在指定时间后 reject'
+          ]},
+          { name: '并发与竞态', count: 2, cases: [
+            '快速连续请求不应相互覆盖状态',
+            '前一个请求的结果在后一个之后返回时应被丢弃'
+          ]}
+        ],
+        desc: '验证空值、边界输入、网络异常和并发竞态条件下的系统健壮性，确保异常路径不会导致崩溃或状态错乱。',
+        tags: ['边界', '空值', '网络异常', '竞态', '健壮性']
+      },
+      {
+        id: 'scene5',
+        icon: '5',
+        iconClass: 'scene',
+        title: '集成与回归测试',
+        file: 'scene-5-integration.test.js',
+        lines: 238,
+        size: '8.1 KB',
+        framework: 'Vitest + jsdom',
+        tests: 19,
+        suites: [
+          { name: '服务聚合导出完整性', count: 5, cases: [
+            'services/index.js 应导出所有模块',
+            'helper 模块应全部可 import',
+            'modules 模块应全部可 import',
+            'business 模块应全部可 import',
+            '导出不应包含 undefined 项'
+          ]},
+          { name: '配置到 API 集成链路', count: 5, cases: [
+            'config 环境切换应联动 API URL 变更',
+            'API 请求应使用 config 中的 BASE_URL',
+            'Token 变更后后续请求应使用新 Token',
+            '环境切换后缓存应失效',
+            'OLLAMA_URL 应与 API_URL 环境一致'
+          ]},
+          { name: 'Store 响应式链路', count: 4, cases: [
+            'store mutation 应触发 computed 重新计算',
+            '跨组件不应直接修改 vueRef',
+            'computed 属性应为只读',
+            'methods 副作用应正确更新 store'
+          ]},
+          { name: 'YiWeb 冒烟测试', count: 5, cases: [
+            'CLAUDE.md 应存在于项目根目录',
+            'package.json 应声明 vitest 和 jsdom',
+            'cdn/utils/core/log.js 应可加载',
+            'src/core/services/index.js 聚合导出应完整',
+            '所有视图目录应包含 index.js + index.html + index.css'
+          ]}
+        ],
+        desc: '端到端验证服务聚合、配置→API 链路、Store 响应式和冒烟检查，确保各模块协同工作正确。',
+        tags: ['集成', '冒烟', '响应式', '导出', '端到端']
+      },
+      {
+        id: 'utils',
+        icon: 'U',
+        iconClass: 'util',
+        title: '工具函数测试',
+        file: 'utils.test.js',
+        lines: 227,
+        size: '7.7 KB',
+        framework: 'Vitest + jsdom',
+        tests: 23,
+        suites: [
+          { name: 'escapeHtml (DOM 节点法)', count: 5, cases: [
+            '应转义 < 和 > 字符',
+            '应转义 & 字符为 &amp;',
+            '应转义 " 和 \' 字符',
+            '空字符串应返回空字符串',
+            '不含特殊字符的文本应原样返回'
+          ]},
+          { name: 'normalizeFilePath', count: 4, cases: [
+            '应统一反斜杠为正斜杠',
+            '应去除多余的 ./ 前缀',
+            '应合并连续的 /',
+            '应去除末尾斜杠'
+          ]},
+          { name: '图谱节点数据字段', count: 5, cases: [
+            '节点应有 id、label、group 字段',
+            '边应有 source、target 字段',
+            '依赖类型应有区分',
+            '模块名应从路径提取',
+            '孤立节点应有标识'
+          ]},
+          { name: 'Cytoscape 元素数据格式', count: 5, cases: [
+            '节点 data 应包含 id 和 label',
+            '边 data 应包含 source 和 target',
+            'classes 应根据依赖类型设置',
+            'grabbable 应为 false（非交互节点）',
+            'selectable 应根据配置设置'
+          ]},
+          { name: '图谱统计概览数据', count: 4, cases: [
+            '应统计节点总数和边总数',
+            '应统计各模块扇入/扇出数',
+            '应检测循环依赖（0 为正常）',
+            '应识别最大扇入/扇出模块'
+          ]}
+        ],
+        desc: '验证通用工具函数：HTML 转义、路径规范化、图谱节点/边数据转换、Cytoscape 元素格式和统计概览。',
+        tags: ['工具函数', 'HTML 转义', '路径', '图谱', 'Cytoscape']
+      },
+      {
+        id: 'filetree',
+        icon: 'F',
+        iconClass: 'data',
+        title: '文件树图谱数据测试',
+        file: 'fileTreeGraphData.test.js',
+        lines: 292,
+        size: '12.8 KB',
+        framework: 'Vitest (Node)',
+        tests: 23,
+        suites: [
+          { name: '_buildFileTreeGraphData', count: 8, cases: [
+            '应生成文件树图谱节点和边',
+            '目录节点应有 folder 类型标识',
+            '文件节点应有 file 类型标识',
+            '应正确建立父子包含关系',
+            '边应使用 CONTAINS 类型',
+            '空目录不应崩溃',
+            '应正确处理嵌套目录结构',
+            '应处理符号链接文件'
+          ]},
+          { name: '_buildGraphFromStoryDeps', count: 7, cases: [
+            '应从故事依赖数据生成图谱',
+            '文件节点应关联到对应故事',
+            '跨故事的文件引用应建立边',
+            '依赖边应有正确的类型标签',
+            '应处理无依赖项的故事',
+            '应处理循环依赖引用',
+            '应处理缺失的依赖目标'
+          ]},
+          { name: '_buildFtGraphOverview', count: 4, cases: [
+            '应生成概览统计数据',
+            '应统计各故事的文件数',
+            '应统计总节点数和总边数',
+            '应识别孤立文件'
+          ]},
+          { name: '_buildFtGraphOverviewFromDeps', count: 4, cases: [
+            '应根据依赖关系生成概览',
+            '应计算扇入扇出统计',
+            '应识别核心枢纽模块',
+            '应生成依赖矩阵摘要'
+          ]}
+        ],
+        desc: '验证文件树图谱构建算法：文件树→图谱转换、故事依赖→图谱映射、概览统计生成。',
+        tags: ['文件树', '图谱', '依赖', '统计', '数据转换']
+      },
+      {
+        id: 'self-full',
+        icon: 'S',
+        iconClass: 'self',
+        title: '全量自检测试',
+        file: 'self-test-full.test.js',
+        lines: 229,
+        size: '12.2 KB',
+        framework: 'Vitest (Node)',
+        tests: 20,
+        suites: [
+          { name: '规则注册表', count: 4, cases: [
+            '应包含所有 15 条检查规则',
+            '每条规则应有 id、name、check 函数',
+            '规则 ID 不应重复',
+            '规则应有 severity（P0/P1/P2）分级'
+          ]},
+          { name: '全量自检 — 合规项目', count: 4, cases: [
+            '合规项目全量检查应全部通过',
+            '报告应包含通过/失败计数',
+            '通过项 severity 不应包含 P0',
+            '应返回结构化检查结果数组'
+          ]},
+          { name: '全量自检 — 违规项目', count: 4, cases: [
+            '裸 console.log 应被检测',
+            'fetch 缺少 credentials:omit 应被检测',
+            '硬编码密钥应被检测',
+            '违规项应有 P0 最高优先级'
+          ]},
+          { name: '执行模式', count: 4, cases: [
+            'full 模式应执行所有规则',
+            'incremental 模式应仅检查变更文件',
+            'security 模式应仅执行安全规则',
+            'consistency 模式应执行一致性检查'
+          ]},
+          { name: '报告格式', count: 4, cases: [
+            '报告应包含规则名称和文件路径',
+            '报告应包含违规行号和列号',
+            '报告应包含修复建议',
+            'JSON 格式报告应可解析'
+          ]}
+        ],
+        desc: '验证 15 条自主检查规则的全量执行、P0/P1/P2 分级、合规/违规判定和 4 种执行模式（full/incremental/security/consistency）。',
+        tags: ['自检', '规则', 'P0', '合规', '全量']
+      },
+      {
+        id: 'self-incremental',
+        icon: 'I',
+        iconClass: 'self',
+        title: '增量自检测试',
+        file: 'self-test-incremental.test.js',
+        lines: 129,
+        size: '5.1 KB',
+        framework: 'Vitest (Node)',
+        tests: 12,
+        suites: [
+          { name: '文件分类 (classifyByExtension)', count: 4, cases: [
+            '.js 文件应分类为 script',
+            '.html 文件应分类为 markup',
+            '.css 文件应分类为 style',
+            '未知扩展名应分类为 other 并跳过检查'
+          ]},
+          { name: '增量自检', count: 4, cases: [
+            '应仅检查 git diff 中的变更文件',
+            '未变更文件应跳过检查',
+            '新增文件应纳入检查范围',
+            '删除文件应自动排除'
+          ]},
+          { name: '增量规则过滤', count: 4, cases: [
+            'HTML 文件应跳过 JS 专属规则',
+            'CSS 文件应跳过 JS 专属规则',
+            '非安全变更应跳过安全规则',
+            '规则过滤不应遗漏适用文件'
+          ]}
+        ],
+        desc: '验证增量自检模式：文件分类、变更检测、规则过滤，确保仅对变更文件执行适用的检查规则。',
+        tags: ['增量', '分类', 'git diff', '过滤', '变更检测']
+      },
+      {
+        id: 'self-security',
+        icon: '🔒',
+        iconClass: 'self',
+        title: '安全自检测试',
+        file: 'self-test-security.test.js',
+        lines: 252,
+        size: '9.1 KB',
+        framework: 'Vitest (Node)',
+        tests: 22,
+        suites: [
+          { name: 'security-no-secrets (硬编码密钥检测)', count: 6, cases: [
+            '应检测 API Key 明文',
+            '应检测 password 硬编码',
+            '应检测 token 字符串',
+            '应检测 secret 赋值',
+            'Bearer token 模式应被检测',
+            '注释中的密钥应触发告警'
+          ]},
+          { name: 'security-fetch-credentials (Fetch 凭证模式)', count: 5, cases: [
+            'credentials:omit 应通过检查',
+            '缺少 credentials 应被检测',
+            'credentials:include 应被检测',
+            'credentials:same-origin 应被检测',
+            '多行 fetch 调用应能正确解析'
+          ]},
+          { name: 'security-no-raw-log (裸日志检测)', count: 4, cases: [
+            'console.log 应被检测',
+            'console.warn 应被检测',
+            'console.error 应被检测',
+            'logInfo/logWarn/logError 应通过检查'
+          ]},
+          { name: '安全回归 — 优先级与阻断', count: 4, cases: [
+            '安全规则应全部标记为 P0',
+            'P0 违规应阻断 CI 流程',
+            'P2 违规不应阻断 CI',
+            '安全规则不应被 skip 配置绕过'
+          ]},
+          { name: '安全回归 — 综合场景', count: 3, cases: [
+            '多文件扫描应汇总所有违规',
+            '同一文件多个违规项应分别报告',
+            '误报白名单应跳过指定模式'
+          ]}
+        ],
+        desc: '验证 3 条安全规则的检测准确性：硬编码密钥、Fetch 凭证模式、裸 console 日志，以及 P0 阻断和综合场景回归。',
+        tags: ['安全', '密钥', 'credentials', 'P0', '回归']
+      },
+      {
+        id: 'self-consistency',
+        icon: 'C',
+        iconClass: 'self',
+        title: '一致性自检测试',
+        file: 'self-test-consistency.test.js',
+        lines: 145,
+        size: '4.8 KB',
+        framework: 'Vitest (Node)',
+        tests: 11,
+        suites: [
+          { name: '一致性校验', count: 4, cases: [
+            '应检测所有 import 路径是否存在',
+            '应检测文档引用的文件是否存在',
+            '应检测 CLAUDE.md 描述与 package.json 是否一致',
+            '应检测目录结构与文档描述是否匹配'
+          ]},
+          { name: '跨引用校验 (crossRefValid)', count: 4, cases: [
+            'import 路径存在时应通过',
+            'import 路径不存在时应报告',
+            '相对路径和绝对路径均应校验',
+            'CDN 外部路径应跳过检查'
+          ]},
+          { name: '一致性校验结果格式', count: 3, cases: [
+            '结果应包含文件路径和缺失引用',
+            '应包含通过/失败计数',
+            '应列出所有不一致项及修复建议'
+          ]}
+        ],
+        desc: '验证项目一致性检查：import 路径有效性、文档交叉引用、目录结构与配置的一致性。',
+        tags: ['一致性', '引用', 'import', '文档', '目录']
+      }
+    ];
+
+    // ===== State =====
+    var expandedCards = {};
+
+    // ===== DOM refs =====
+    var testList = document.getElementById('testList');
+    var copiedMsg = document.getElementById('copiedMsg');
+    var expandedCount = document.getElementById('expandedCount');
+    var globalBar = document.getElementById('globalBar');
+    var passRateText = document.getElementById('passRateText');
+
+    // ===== Animate stats =====
+    function animateStats() {
+      var nums = document.querySelectorAll('#stats .num[data-target]');
+      nums.forEach(function(el) {
+        var target = parseInt(el.getAttribute('data-target'));
+        var duration = 1000;
+        var start = performance.now();
+        function step(ts) {
+          var progress = Math.min((ts - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.floor(eased * target);
+          if (progress < 1) requestAnimationFrame(step);
+          else el.textContent = target;
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    // Animate global bar
+    function animateGlobalBar() {
+      var start = performance.now();
+      function step(ts) {
+        var progress = Math.min((ts - start) / 1200, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        globalBar.style.width = (eased * 100) + '%';
+        if (progress >= 1) { globalBar.style.width = '100%'; passRateText.textContent = '100%'; }
+      }
+      requestAnimationFrame(function tick(ts) {
+        step(ts);
+        if ((ts - start) < 1200) requestAnimationFrame(tick);
+      });
+    }
+
+    // ===== Render test cards =====
+    function renderCards() {
+      var totalTests = testData.reduce(function(s, t) { return s + t.tests; }, 0);
+      var expIds = Object.keys(expandedCards).length;
+      expandedCount.textContent = expIds > 0 ? expIds + ' 个已展开' : '';
+
+      testList.innerHTML = testData.map(function(t) {
+        var isExpanded = expandedCards[t.id];
+        var suiteTotal = 0;
+        t.suites.forEach(function(s) { suiteTotal += s.count; });
+        var pct = Math.round(t.tests / totalTests * 100);
+
+        var suitesHtml = t.suites.map(function(s) {
+          return '<div class="suite">' +
+            '<div class="suite-name">' + s.name + ' <span class="suite-count">' + s.count + ' 条</span></div>' +
+            s.cases.map(function(c) { return '<div class="case">' + c + '</div>'; }).join('') +
+          '</div>';
+        }).join('');
+
+        return '<div class="test-card' + (isExpanded ? ' expanded' : '') + '" data-id="' + t.id + '">' +
+          '<div class="card-header-row">' +
+            '<span class="card-icon ' + t.iconClass + '">' + t.icon + '</span>' +
+            '<h3>' + t.title + '</h3>' +
+            '<span class="badge badge-pass">✓ ' + t.tests + ' 通过</span>' +
+          '</div>' +
+          '<div class="meta">' +
+            '<span class="meta-item">📄 ' + t.file + '</span>' +
+            '<span class="meta-item">📏 ' + t.lines + ' 行 · ' + t.size + '</span>' +
+            '<span class="meta-item">📂 ' + t.suites.length + ' 套件</span>' +
+            '<span class="meta-item">📊 ' + pct + '% 占比</span>' +
+          '</div>' +
+          '<p class="desc">' + t.desc + '</p>' +
+          '<div class="card-bar-wrap"><div class="card-bar-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="covers" style="margin-top:8px;">' +
+            t.tags.map(function(tag) {
+              return '<span class="cover-tag">' + tag + '</span>';
+            }).join('') +
+          '</div>' +
+          '<div class="expand-hint">' + (isExpanded ? '▲ 收起' : '▼ 展开') + ' — ' + t.suites.length + ' 个测试套件，共 ' + suiteTotal + ' 条用例</div>' +
+          '<div class="test-detail">' + suitesHtml + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // ===== Event: card click =====
+    testList.addEventListener('click', function(e) {
+      var card = e.target.closest('.test-card');
+      if (!card) return;
+      var id = card.getAttribute('data-id');
+      if (expandedCards[id]) { delete expandedCards[id]; }
+      else { expandedCards[id] = true; }
+      renderCards();
+    });
+
+    // ===== Event: copy commands =====
+    ['cmdTest', 'cmdWatch', 'cmdVitest', 'cmdFile'].forEach(function(id) {
+      document.getElementById(id).addEventListener('click', function(e) {
+        e.stopPropagation();
+        var text = this.textContent;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function() {
+            copiedMsg.classList.add('show');
+            setTimeout(function() { copiedMsg.classList.remove('show'); }, 1500);
+          });
+        }
+      });
+    });
+
+    // ===== Keyboard shortcut: Escape to collapse all =====
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { expandedCards = {}; renderCards(); }
+    });
+
+    // ===== Init =====
+    renderCards();
+    animateStats();
+    setTimeout(animateGlobalBar, 300);
+  })();
+  </script>
+</body>
+</html>

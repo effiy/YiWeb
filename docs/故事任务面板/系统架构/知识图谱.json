@@ -1,0 +1,91 @@
+{
+  "story": {
+    "id": "yiweb-arch",
+    "name": "系统架构",
+    "version": "1.1.0",
+    "description": "YiWeb 系统架构知识固化——分层结构、模块关系、数据流转、安全边界、依赖矩阵"
+  },
+  "nodes": [
+    { "id": "infra", "label": "基础设施层", "layer": 1, "path": "cdn/utils/core/", "files": 18 },
+    { "id": "log", "label": "日志系统", "layer": 1, "path": "cdn/utils/core/log.js", "parent": "infra" },
+    { "id": "error", "label": "错误处理", "layer": 1, "path": "cdn/utils/core/error.js", "parent": "infra" },
+    { "id": "config", "label": "环境配置", "layer": 1, "path": "src/core/config.js" },
+    { "id": "framework", "label": "框架层", "layer": 2, "path": "cdn/utils/view/", "files": 4 },
+    { "id": "baseView", "label": "createBaseView", "layer": 2, "path": "cdn/utils/view/baseView.js", "parent": "framework" },
+    { "id": "componentLoader", "label": "组件加载器", "layer": 2, "path": "cdn/utils/view/componentLoader.js", "parent": "framework" },
+    { "id": "components", "label": "UI 组件库", "layer": 3, "path": "cdn/components/", "files": 14 },
+    { "id": "render", "label": "渲染增强层", "layer": 4, "path": "cdn/markdown/ + cdn/mermaid/", "files": 16 },
+    { "id": "markdown", "label": "Markdown 渲染器", "layer": 4, "path": "cdn/markdown/", "parent": "render" },
+    { "id": "mermaid", "label": "Mermaid 渲染器", "layer": 4, "path": "cdn/mermaid/", "parent": "render" },
+    { "id": "services", "label": "服务层", "layer": 5, "path": "src/core/services/", "files": 12 },
+    { "id": "requestHelper", "label": "HTTP 请求封装", "layer": 5, "path": "src/core/services/helper/requestHelper.js", "parent": "services" },
+    { "id": "crud", "label": "CRUD 操作", "layer": 5, "path": "src/core/services/modules/crud.js", "parent": "services" },
+    { "id": "authUtils", "label": "认证工具", "layer": 5, "path": "src/core/services/helper/authUtils.js", "parent": "services" },
+    { "id": "authErrorHandler", "label": "401 处理", "layer": 5, "path": "src/core/services/helper/authErrorHandler.js", "parent": "services" },
+    { "id": "views", "label": "视图层", "layer": 6, "path": "src/views/", "files": 110 },
+    { "id": "aicr", "label": "aicr 视图", "layer": 6, "path": "src/views/aicr/", "parent": "views", "files": 80 },
+    { "id": "claude", "label": "claude 视图", "layer": 6, "path": "src/views/claude/", "parent": "views", "files": 8 },
+    { "id": "story", "label": "story 视图", "layer": 6, "path": "src/views/story/", "parent": "views", "files": 20 }
+  ],
+  "edges": [
+    { "from": "aicr", "to": "baseView", "type": "import", "strength": "strong" },
+    { "from": "aicr", "to": "services", "type": "import", "strength": "strong" },
+    { "from": "aicr", "to": "config", "type": "import", "strength": "weak" },
+    { "from": "aicr", "to": "markdown", "type": "import", "strength": "weak" },
+    { "from": "aicr", "to": "mermaid", "type": "import", "strength": "weak" },
+    { "from": "claude", "to": "baseView", "type": "import", "strength": "strong" },
+    { "from": "claude", "to": "services", "type": "import", "strength": "strong" },
+    { "from": "story", "to": "baseView", "type": "import", "strength": "strong" },
+    { "from": "story", "to": "services", "type": "import", "strength": "strong" },
+    { "from": "baseView", "to": "log", "type": "import", "strength": "weak" },
+    { "from": "baseView", "to": "error", "type": "import", "strength": "weak" },
+    { "from": "baseView", "to": "componentLoader", "type": "import", "strength": "strong" },
+    { "from": "componentLoader", "to": "error", "type": "import", "strength": "weak" },
+    { "from": "services", "to": "requestHelper", "type": "re-export", "strength": "weak" },
+    { "from": "services", "to": "crud", "type": "re-export", "strength": "weak" },
+    { "from": "services", "to": "authUtils", "type": "re-export", "strength": "weak" },
+    { "from": "services", "to": "authErrorHandler", "type": "re-export", "strength": "weak" },
+    { "from": "requestHelper", "to": "authUtils", "type": "import", "strength": "strong" },
+    { "from": "requestHelper", "to": "authErrorHandler", "type": "import", "strength": "medium" },
+    { "from": "requestHelper", "to": "error", "type": "import", "strength": "weak" },
+    { "from": "requestHelper", "to": "log", "type": "import", "strength": "weak" },
+    { "from": "crud", "to": "requestHelper", "type": "import", "strength": "strong" },
+    { "from": "crud", "to": "authUtils", "type": "import", "strength": "strong" },
+    { "from": "crud", "to": "authErrorHandler", "type": "import", "strength": "medium" },
+    { "from": "crud", "to": "error", "type": "import", "strength": "weak" },
+    { "from": "crud", "to": "log", "type": "import", "strength": "weak" },
+    { "from": "authErrorHandler", "to": "authUtils", "type": "import", "strength": "strong" },
+    { "from": "markdown", "to": "log", "type": "import", "strength": "weak" }
+  ],
+  "layers": [
+    { "id": 1, "name": "基础设施层", "path": "cdn/utils/core/" },
+    { "id": 2, "name": "框架层", "path": "cdn/utils/view/" },
+    { "id": 3, "name": "UI 组件库", "path": "cdn/components/" },
+    { "id": 4, "name": "渲染增强层", "path": "cdn/markdown/ + cdn/mermaid/" },
+    { "id": 5, "name": "服务层", "path": "src/core/services/" },
+    { "id": 6, "name": "视图层", "path": "src/views/" }
+  ],
+  "securityBoundaries": [
+    { "id": "input", "name": "输入边界", "controls": ["URLSearchParams", "JSZip 文件名过滤", "输入 trim+长度限制"] },
+    { "id": "transport", "name": "传输边界", "controls": ["credentials:omit", "X-Token 头", "HTTPS"] },
+    { "id": "storage", "name": "存储边界", "controls": ["localStorage 隔离", "YiWeb.apiToken.v1 key"] },
+    { "id": "auth", "name": "认证边界", "controls": ["401 防抖 2s", "防重复锁", "dialog showModal"] },
+    { "id": "render", "name": "渲染边界", "controls": ["SanitizePlugin 白名单", "createTextNode 转义"] }
+  ],
+  "dataFlows": [
+    { "id": "query", "name": "读链路", "path": "methods → crud.getData → requestHelper.getRequest → fetch → store mutation → DOM" },
+    { "id": "mutation", "name": "写链路", "path": "methods → crud.postData → requestHelper.postRequest → fetch → response → store update" },
+    { "id": "stream", "name": "流链路", "path": "inputMethods → streamPrompt → SSE fetch → onChunk → 增量 DOM" },
+    { "id": "cache", "name": "缓存链路", "path": "CachedRequest.get → 内存命中 / fetch 穿透 → 响应" }
+  ],
+  "metrics": {
+    "totalModules": 14,
+    "totalEdges": 28,
+    "avgFanIn": 2.0,
+    "avgFanOut": 2.0,
+    "circularDependencies": 0,
+    "maxDepth": 4,
+    "mostStable": "log.js (I=0.0)",
+    "mostUnstable": "crud.js (I=1.0)"
+  }
+}

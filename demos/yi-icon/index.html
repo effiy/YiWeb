@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiIcon Demo · YiWeb</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #161620; --bg-card: #22222e; --bg-elevated: #2a2a38;
+      --accent: #6366f1; --accent-2: #22d3ee; --danger: #ef4444;
+      --text: #fafafc; --text-2: #a0a0a4; --text-3: #6e6e72;
+      --border: rgba(255,255,255,0.06); --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
+    .topbar h1 { font-size: 0.95rem; font-weight: 700; }
+    .topbar .back { color: var(--text-3); text-decoration: none; font-size: 0.8rem; }
+    .topbar .back:hover { color: var(--accent); }
+    .main { flex:1; padding: 32px 24px; max-width: 1100px; margin:0 auto; width:100%; }
+    .section { margin-bottom: 32px; }
+    .section h2 { font-size: 1rem; color: var(--text-2); margin-bottom: 14px; padding-left:10px; border-left:3px solid var(--accent); }
+    .section h2 .badge { font-size:0.72rem; color:var(--text-3); font-weight:400; margin-left:8px; }
+
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 10px; margin-bottom: 16px;
+    }
+    .icon-cell {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 16px 10px; border-radius: 8px; cursor: pointer;
+      background: var(--bg-card); border: 1px solid var(--border);
+      transition: all 0.15s; text-align: center;
+    }
+    .icon-cell:hover { border-color: var(--accent); background: rgba(99,102,241,0.06); }
+    .icon-cell .icon-display { font-size: 1.3rem; color: var(--text-2); }
+    .icon-cell .icon-name { font-size: 0.66rem; color: var(--text-3); word-break: break-all; }
+    .icon-cell .icon-class { font-size: 0.6rem; color: var(--text-3); opacity: 0.6; font-family: ui-monospace, monospace; }
+
+    .icon-cell.copied { border-color: var(--accent-2); background: rgba(34,211,238,0.08); }
+
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px;
+    }
+    .control-group { display:flex; flex-direction:column; gap:4px; }
+    .control-group label { font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05em; }
+    .control-group input {
+      background: var(--bg); color: var(--text); border:1px solid rgba(255,255,255,0.12);
+      border-radius:6px; padding:5px 10px; font-size:0.82rem; width:200px;
+    }
+
+    .size-demo {
+      display: flex; gap: 16px; align-items: center;
+      padding: 20px; background: var(--bg-card); border:1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px;
+    }
+    .size-demo .item { display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .size-demo .item .s-label { font-size:0.68rem; color:var(--text-3); }
+
+    .spin-demo {
+      display: flex; gap: 24px; align-items: center;
+      padding: 20px; background: var(--bg-card); border:1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 16px;
+    }
+    .spin-demo .item { display:flex; flex-direction:column; align-items:center; gap:6px; }
+
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: var(--accent-2); color: #0a0a12; padding: 8px 20px;
+      border-radius: 8px; font-size:0.82rem; font-weight:600; z-index: 999;
+      animation: toastIn 0.25s ease;
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+    .category-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .category-tabs button {
+      padding:4px 14px; border-radius:16px; font-size:0.76rem; cursor:pointer;
+      border:1px solid rgba(255,255,255,0.12); background:transparent; color:var(--text-2);
+      transition: all 0.15s;
+    }
+    .category-tabs button:hover { border-color:var(--accent); color:var(--accent); }
+    .category-tabs button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <a href="../index.html" class="back"><i class="fas fa-arrow-left"></i> Demo Center</a>
+    <h1>🎨 YiIcon 图标组件 + iconMap 图标库</h1>
+  </div>
+
+  <div class="main">
+    <!-- Size & Spin Demo -->
+    <div class="section">
+      <h2>📏 Size 尺寸 & Spin 旋转</h2>
+      <div class="size-demo">
+        <div class="item"><i class="fas fa-star" style="font-size:0.8rem;color:var(--text-2)"></i><span class="s-label">default</span></div>
+        <div class="item"><i class="fas fa-star fa-sm" style="color:var(--text-2)"></i><span class="s-label">sm</span></div>
+        <div class="item"><i class="fas fa-star fa-lg" style="color:var(--accent)"></i><span class="s-label">lg</span></div>
+        <div class="item"><i class="fas fa-star fa-xl" style="color:var(--accent)"></i><span class="s-label">xl</span></div>
+        <div style="width:1px;height:30px;background:var(--border);margin:0 8px"></div>
+        <div class="item"><i class="fas fa-spinner fa-spin" style="font-size:1.3rem;color:var(--accent)"></i><span class="s-label">spin=true</span></div>
+        <div class="item"><i class="fas fa-sync-alt fa-spin" style="font-size:1.3rem;color:var(--accent-2)"></i><span class="s-label">sync + spin</span></div>
+        <div class="item"><i class="fas fa-circle-notch fa-spin" style="font-size:1.3rem;color:var(--text-2)"></i><span class="s-label">notch + spin</span></div>
+      </div>
+    </div>
+
+    <!-- Search + Filter -->
+    <div class="section">
+      <h2>🔍 Icon Map 图鉴 <span class="badge">{{ filteredIcons.length }} / {{ allIcons.length }} 图标</span></h2>
+      <div class="controls">
+        <div class="control-group">
+          <label>搜索图标</label>
+          <input placeholder="搜索名称或类名..." v-model="searchQuery">
+        </div>
+      </div>
+      <div class="category-tabs">
+        <button :class="{active:activeCat==='all'}" @click="activeCat='all'">全部</button>
+        <button :class="{active:activeCat==='操作'}" @click="activeCat='操作'">操作</button>
+        <button :class="{active:activeCat==='导航'}" @click="activeCat='导航'">导航</button>
+        <button :class="{active:activeCat==='文件'}" @click="activeCat='文件'">文件</button>
+        <button :class="{active:activeCat==='状态'}" @click="activeCat='状态'">状态</button>
+        <button :class="{active:activeCat==='视图'}" @click="activeCat='视图'">视图</button>
+        <button :class="{active:activeCat==='品牌'}" @click="activeCat='品牌'">品牌</button>
+        <button :class="{active:activeCat==='杂项'}" @click="activeCat='杂项'">杂项</button>
+      </div>
+      <div class="icon-grid">
+        <div v-for="icon in filteredIcons" :key="icon.name"
+             :class="['icon-cell', {copied: icon.copied}]"
+             @click="copyIcon(icon)">
+          <div class="icon-display"><i :class="icon.class"></i></div>
+          <div class="icon-name">{{ icon.name }}</div>
+          <div class="icon-class">{{ icon.class }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📋 YiIcon Props</h2>
+      <table class="props-table">
+        <thead><tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>String</td><td>''</td><td>图标语义名（iconMap key），如 'search', 'edit'</td></tr>
+          <tr><td><code>size</code></td><td>String</td><td>''</td><td>sm / lg / xl</td></tr>
+          <tr><td><code>spin</code></td><td>Boolean</td><td>false</td><td>旋转动画（用于加载指示器）</td></tr>
+          <tr><td><code>className</code></td><td>String</td><td>''</td><td>额外 CSS 类名</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" v-if="toastMsg">{{ toastMsg }}</div>
+  </div>
+</div>
+
+<script>
+  const { createApp, ref, computed } = Vue;
+
+  // Full icon map categories
+  const iconCategories = {
+    '操作': ['search','refresh','close','download','upload','copy','edit','add','delete','save','redo','rotate-right','exchange','i-cursor'],
+    '导航': ['chevron-left','chevron-right','chevron-up','chevron-down','arrow-left','external-link','expand','compress'],
+    '文件': ['file','file-alt','file-code','file-image','file-upload','folder-open','folder-plus','image'],
+    '状态': ['loading','success','warning','error','info','inbox'],
+    '视图': ['list','columns','grid','tag'],
+    '品牌': ['github','youtube','stack-overflow','git'],
+    '杂项': ['globe','globe-asia','keyboard','lightbulb','palette','users','book','code','cloud','newspaper','share','blog','question','crosshairs','key'],
+    'Claude': ['puzzle-piece','robot','folder','check-circle','circle'],
+  };
+
+  const iconClassMap = {
+    'search':'fas fa-search','refresh':'fas fa-sync-alt','close':'fas fa-times',
+    'download':'fas fa-download','upload':'fas fa-upload','copy':'fas fa-copy',
+    'edit':'fas fa-pen','add':'fas fa-plus','delete':'fas fa-ban','save':'fas fa-save',
+    'redo':'fas fa-redo','rotate-right':'fas fa-rotate-right','exchange':'fas fa-exchange-alt',
+    'i-cursor':'fas fa-i-cursor','chevron-left':'fas fa-chevron-left',
+    'chevron-right':'fas fa-chevron-right','chevron-up':'fas fa-chevron-up',
+    'chevron-down':'fas fa-chevron-down','arrow-left':'fas fa-arrow-left',
+    'external-link':'fas fa-external-link-alt','expand':'fas fa-expand','compress':'fas fa-compress',
+    'file':'fas fa-file','file-alt':'fas fa-file-alt','file-code':'fas fa-file-code',
+    'file-image':'fas fa-file-image','file-upload':'fas fa-file-upload',
+    'folder-open':'fas fa-folder-open','folder-plus':'fas fa-folder-plus','image':'fas fa-image',
+    'loading':'fas fa-spinner','success':'fas fa-check','warning':'fas fa-exclamation-triangle',
+    'error':'fas fa-exclamation-circle','info':'fas fa-info-circle','inbox':'fas fa-inbox',
+    'list':'fas fa-list','columns':'fas fa-columns','grid':'fas fa-th-large','tag':'fas fa-tag',
+    'github':'fab fa-github','youtube':'fab fa-youtube','stack-overflow':'fab fa-stack-overflow',
+    'git':'fab fa-git-alt','globe':'fas fa-globe','globe-asia':'fas fa-globe-asia',
+    'keyboard':'fas fa-keyboard','lightbulb':'fas fa-lightbulb','palette':'fas fa-palette',
+    'users':'fas fa-users','book':'fas fa-book','code':'fas fa-code','cloud':'fas fa-cloud',
+    'newspaper':'fas fa-newspaper','share':'fas fa-share-alt','blog':'fas fa-blog',
+    'question':'fas fa-question-circle','crosshairs':'fas fa-crosshairs','key':'fas fa-key',
+    'puzzle-piece':'fas fa-puzzle-piece','robot':'fas fa-robot','folder':'fas fa-folder',
+    'check-circle':'fas fa-check-circle','circle':'far fa-circle',
+  };
+
+  createApp({
+    setup() {
+      const searchQuery = ref(''), activeCat = ref('all'), toastMsg = ref('');
+
+      const allIcons = computed(() => {
+        const arr = [];
+        for (const [cat, names] of Object.entries(iconCategories)) {
+          for (const name of names) {
+            arr.push({ name, class: iconClassMap[name] || 'fas fa-question-circle', category: cat, copied: false });
+          }
+        }
+        return arr;
+      });
+
+      const filteredIcons = computed(() => {
+        let list = allIcons.value;
+        if (activeCat.value !== 'all') {
+          list = list.filter(i => i.category === activeCat.value);
+        }
+        const q = searchQuery.value.toLowerCase().trim();
+        if (q) {
+          list = list.filter(i => i.name.toLowerCase().includes(q) || i.class.toLowerCase().includes(q));
+        }
+        return list;
+      });
+
+      let toastTimer = null;
+      function copyIcon(icon) {
+        navigator.clipboard.writeText(`iconMap['${icon.name}'] → "${icon.class}"`).then(() => {
+          icon.copied = true;
+          toastMsg.value = `📋 已复制: ${icon.name} (${icon.class})`;
+          if (toastTimer) clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => { toastMsg.value = ''; icon.copied = false; }, 2000);
+        }).catch(() => {
+          toastMsg.value = `📋 ${icon.name}: ${icon.class}`;
+          if (toastTimer) clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => { toastMsg.value = ''; }, 2000);
+        });
+      }
+
+      return { searchQuery, activeCat, toastMsg, allIcons, filteredIcons, copyIcon };
+    }
+  }).mount('#app');
+</script>
+
+<style>
+  .props-table { width:100%; border-collapse:collapse; font-size:0.78rem; margin-top:14px; }
+  .props-table th { text-align:left; padding:8px 10px; color:var(--text-3); font-weight:500; border-bottom:1px solid var(--border); }
+  .props-table td { padding:8px 10px; color:var(--text-2); border-bottom:1px solid var(--border); }
+  .props-table code { color:var(--accent); }
+</style>
+</body>
+</html>

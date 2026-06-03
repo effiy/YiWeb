@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YiWeb Demo Center · 零构建 ESM 演示</title>
+  <style>
+    :root {
+      --bg-content: rgba(22,22,32,1);
+      --bg-card: linear-gradient(159deg, rgba(38,38,52,1) 0%, rgba(34,34,46,1) 100%);
+      --bg-card-flat: rgba(34,34,46,1);
+      --color-accent: #6366f1;
+      --color-accent-2: #22d3ee;
+      --color-accent-3: #a855f7;
+      --color-accent-4: #f59e0b;
+      --color-accent-5: #10b981;
+      --text-primary: rgba(250,250,252,1);
+      --text-secondary: rgba(160,160,164,1);
+      --text-muted: rgba(110,110,114,1);
+      --shadow-card: 0 4px 20px rgba(0,0,0,0.3);
+      --shadow-hover: 0 12px 32px rgba(0,0,0,0.45);
+      --radius-card: 12px;
+      --radius-sm: 6px;
+      --border-subtle: 1px solid rgba(255,255,255,0.06);
+      --transition-fast: 0.15s ease;
+      --transition-smooth: 0.2s ease;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg-content);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .demo-container { max-width: 1160px; margin: 0 auto; padding: 40px 20px 20px; }
+
+    /* ── Header ─────────────────────────────── */
+    .demo-header { text-align: center; margin-bottom: 20px; animation: fadeInDown 0.5s ease both; }
+    .demo-header h1 { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.02em; }
+    .demo-header h1 .accent {
+      background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .demo-header .subtitle {
+      color: var(--text-secondary); margin-top: 8px; font-size: 0.92rem;
+      max-width: 600px; margin-left: auto; margin-right: auto;
+    }
+    .demo-header .subtitle code {
+      background: rgba(99,102,241,0.12); color: var(--color-accent);
+      padding: 1px 6px; border-radius: 3px; font-size: 0.88em;
+    }
+
+    /* ── Quick-nav ribbon ──────────────────── */
+    .quick-nav {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 24px; animation: fadeInDown 0.5s 0.1s ease both;
+    }
+    .quick-nav a {
+      font-size: 0.78rem; color: var(--text-muted); text-decoration: none;
+      padding: 4px 14px; border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all var(--transition-fast);
+    }
+    .quick-nav a:hover {
+      border-color: var(--color-accent); color: var(--color-accent);
+      background: rgba(99,102,241,0.08);
+    }
+    .quick-nav a .emoji { margin-right: 3px; }
+
+    /* ── Stats ─────────────────────────────── */
+    .demo-stats {
+      display: flex; gap: 14px; justify-content: center; margin-bottom: 36px;
+      flex-wrap: wrap; animation: fadeInDown 0.5s 0.15s ease both;
+    }
+    .demo-stat {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 14px 22px; text-align: center;
+      box-shadow: var(--shadow-card); min-width: 88px;
+      transition: transform var(--transition-smooth);
+    }
+    .demo-stat:hover { transform: translateY(-2px); }
+    .demo-stat .num { font-size: 1.7rem; font-weight: 700; color: var(--color-accent); }
+    .demo-stat .num.green { color: var(--color-accent-2); }
+    .demo-stat .num.purple { color: var(--color-accent-3); }
+    .demo-stat .num.amber { color: var(--color-accent-4); }
+    .demo-stat .label { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Cross-panel navigation ──────────────── */
+    .cross-nav {
+      display: flex; gap: 10px; justify-content: center; margin-bottom: 32px;
+      flex-wrap: wrap; align-items: stretch;
+    }
+    .cross-nav .cross-card {
+      background: var(--bg-card); border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 10px; padding: 12px 18px; box-shadow: var(--shadow-card);
+      text-decoration: none; color: inherit; display: flex; gap: 10px; align-items: center;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      min-width: 180px;
+    }
+    .cross-nav .cross-card:hover {
+      transform: translateY(-2px); box-shadow: var(--shadow-hover);
+      border-color: rgba(99,102,241,0.35);
+    }
+    .cross-nav .cross-card .cross-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .cross-nav .cross-card .cross-info { flex: 1; min-width: 0; }
+    .cross-nav .cross-card .cross-info .cross-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+    .cross-nav .cross-card .cross-info .cross-stats { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .cross-nav .cross-card .cross-arrow { color: var(--color-accent); font-size: 0.85rem; flex-shrink: 0; opacity: 0.6; transition: opacity 0.15s; }
+    .cross-nav .cross-card:hover .cross-arrow { opacity: 1; }
+
+    /* ── Section title ─────────────────────── */
+    .section-title {
+      font-size: 1.05rem; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 16px; padding-left: 10px; border-left: 3px solid rgba(99,102,241,0.4);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title .accent { color: var(--color-accent); }
+    .section-title .count {
+      font-size: 0.72rem; color: var(--text-muted); font-weight: 400;
+      background: rgba(255,255,255,0.04); padding: 2px 10px; border-radius: 10px;
+    }
+
+    /* ── Card grid ─────────────────────────── */
+    .demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .demo-grid.compact { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+
+    .demo-card {
+      background: var(--bg-card); border: var(--border-subtle);
+      border-radius: var(--radius-card); padding: 20px 22px; box-shadow: var(--shadow-card);
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      display: flex; flex-direction: column;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .demo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      border-color: rgba(99,102,241,0.25);
+    }
+
+    .demo-card .card-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .demo-card .card-icon {
+      width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .demo-card .card-icon.graph    { background: rgba(99,102,241,0.15); color: var(--color-accent); }
+    .demo-card .card-icon.render   { background: rgba(168,85,247,0.15); color: var(--color-accent-3); }
+    .demo-card .card-icon.diagram  { background: rgba(34,211,238,0.15); color: var(--color-accent-2); }
+    .demo-card .card-icon.component{ background: rgba(245,158,11,0.15); color: var(--color-accent-4); }
+    .demo-card .card-icon.utility  { background: rgba(16,185,129,0.15); color: var(--color-accent-5); }
+    .demo-card .card-icon.form     { background: rgba(236,72,153,0.15); color: #ec4899; }
+    .demo-card .card-icon.plugin   { background: rgba(99,102,241,0.12); color: var(--color-accent); }
+
+    .demo-card .card-title-area { flex: 1; }
+    .demo-card .card-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .demo-card .card-path { font-size: 0.72rem; color: var(--text-muted); font-family: "SF Mono", "Courier Prime", ui-monospace, monospace; margin-top: 2px; }
+
+    .demo-card .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .demo-card .badge {
+      font-size: 0.68rem; padding: 2px 8px; border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.12); color: var(--text-secondary);
+    }
+    .demo-card .badge.accent { border-color: var(--color-accent); color: var(--color-accent); }
+    .demo-card .badge.green  { border-color: var(--color-accent-2); color: var(--color-accent-2); }
+    .demo-card .badge.purple { border-color: var(--color-accent-3); color: var(--color-accent-3); }
+
+    .demo-card .card-desc { color: var(--text-secondary); font-size: 0.83rem; margin-bottom: 12px; line-height: 1.55; flex: 1; }
+
+    .demo-card .card-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .demo-card .btn-demo {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.8rem; color: var(--color-accent); text-decoration: none;
+      border: 1px solid var(--color-accent); border-radius: 6px;
+      padding: 5px 14px; transition: background 0.15s, color 0.15s;
+    }
+    .demo-card .btn-demo:hover { background: var(--color-accent); color: #fff; }
+    .demo-card .btn-demo.external { border-color: var(--text-muted); color: var(--text-muted); }
+    .demo-card .btn-demo.external:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+
+    .demo-card .demo-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+    .demo-card .demo-tags .tag {
+      font-size: 0.66rem; color: var(--text-muted);
+      background: rgba(255,255,255,0.04); border-radius: 4px; padding: 2px 7px;
+    }
+
+    /* ── Compact card variant ──────────────── */
+    .demo-card.compact { padding: 14px 16px; }
+    .demo-card.compact .card-head { margin-bottom: 6px; }
+    .demo-card.compact .card-icon { width: 32px; height: 32px; border-radius: 6px; font-size: 0.82rem; }
+    .demo-card.compact .card-name { font-size: 0.88rem; }
+    .demo-card.compact .card-desc { font-size: 0.76rem; margin-bottom: 8px; }
+    .demo-card.compact .demo-tags .tag { font-size: 0.62rem; }
+
+    /* ── Code snippet callout ──────────────── */
+    .callout {
+      background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(34,211,238,0.05));
+      border: 1px solid rgba(99,102,241,0.18); border-radius: var(--radius-card);
+      padding: 22px 28px; margin-bottom: 32px;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .callout h3 { font-size: 0.95rem; margin-bottom: 10px; color: var(--color-accent); }
+    .callout pre {
+      background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px; padding: 14px 18px; overflow-x: auto;
+      font-family: "SF Mono", "Courier Prime", ui-monospace, monospace;
+      font-size: 0.78rem; line-height: 1.7; color: var(--text-secondary);
+    }
+    .callout pre .kw { color: var(--color-accent-3); }
+    .callout pre .fn { color: var(--color-accent-2); }
+    .callout pre .str { color: var(--color-accent-5); }
+    .callout pre .cmt { color: var(--text-muted); }
+
+    /* ── Divider ───────────────────────────── */
+    .divider {
+      border: none; border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 8px 0 28px;
+    }
+    .divider.thick { border-top-width: 2px; border-color: rgba(255,255,255,0.08); }
+
+    /* ── Footer ────────────────────────────── */
+    .footer-note { text-align: center; color: var(--text-muted); font-size: 0.76rem; margin-top: 8px; padding-bottom: 24px; line-height: 1.8; }
+    .footer-note a { color: var(--color-accent); text-decoration: none; transition: color var(--transition-fast); }
+    .footer-note a:hover { text-decoration: underline; color: var(--color-accent-2); }
+    .footer-note .sep { color: rgba(255,255,255,0.1); margin: 0 8px; }
+
+    /* ── Back to top ───────────────────────── */
+    .back-top {
+      position: fixed; bottom: 28px; right: 28px;
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--bg-card-flat); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; box-shadow: var(--shadow-card);
+      transition: all var(--transition-smooth);
+      opacity: 0; pointer-events: none; z-index: 100;
+    }
+    .back-top.visible { opacity: 1; pointer-events: auto; }
+    .back-top:hover { border-color: var(--color-accent); color: var(--color-accent); transform: translateY(-2px); }
+
+    /* ── Tooltip (keyboard hint) ───────────── */
+    .kbd {
+      display: inline-block; font-size: 0.68rem; font-family: inherit;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 3px; padding: 1px 5px; margin: 0 1px;
+      color: var(--text-muted);
+    }
+
+    /* ── Animations ────────────────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ────────────────────────── */
+    @media (max-width: 768px) {
+      .demo-container { padding: 24px 12px 12px; }
+      .demo-header h1 { font-size: 1.5rem; }
+      .demo-header .subtitle { font-size: 0.82rem; }
+      .demo-grid { grid-template-columns: 1fr; gap: 12px; }
+      .demo-grid.compact { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      .demo-stats { gap: 8px; }
+      .demo-stat { padding: 10px 14px; min-width: 70px; }
+      .demo-stat .num { font-size: 1.3rem; }
+      .callout { padding: 14px 16px; }
+      .callout pre { font-size: 0.7rem; padding: 10px 12px; }
+      .back-top { bottom: 16px; right: 16px; width: 36px; height: 36px; }
+    }
+    @media (max-width: 480px) {
+      .demo-grid.compact { grid-template-columns: 1fr 1fr; }
+      .demo-card { padding: 14px 16px; }
+      .demo-card .card-name { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+
+    <!-- ═══════ Header ═══════ -->
+    <header class="demo-header">
+      <h1><span class="accent">⬡</span> YiWeb Demo Center</h1>
+      <p class="subtitle">
+        项目中关键第三方库与 CDN 组件的独立功能演示 —
+        <code>零构建</code> · <code>纯 ESM</code> · <code>浏览器原生加载</code>
+      </p>
+    </header>
+
+    <!-- ═══════ Quick-nav ═══════ -->
+    <nav class="quick-nav" aria-label="页面导航">
+      <a href="#demos"><span class="emoji">📦</span> 渲染库 Demo</a>
+      <a href="#component-demos"><span class="emoji">🎮</span> 组件 Demo</a>
+      <a href="#components"><span class="emoji">🧩</span> CDN 组件</a>
+      <a href="#utilities"><span class="emoji">🔧</span> 工具库</a>
+      <a href="#quickstart"><span class="emoji">🚀</span> 快速开始</a>
+    </nav>
+
+    <!-- ═══════ Stats ═══════ -->
+    <div class="demo-stats" id="stats" aria-label="统计概览">
+      <div class="demo-stat">
+        <div class="num" id="stat-demos">9</div>
+        <div class="label">交互式 Demo</div>
+      </div>
+      <div class="demo-stat">
+        <div class="num green" id="stat-components">11</div>
+        <div class="label">CDN 通用组件</div>
+      </div>
+      <div class="demo-stat">
+        <div class="num purple" id="stat-plugins">14</div>
+        <div class="label">渲染插件</div>
+      </div>
+      <div class="demo-stat">
+        <div class="num amber" id="stat-utils">30+</div>
+        <div class="label">核心工具模块</div>
+      </div>
+      <div class="demo-stat">
+        <div class="num">0</div>
+        <div class="label">npm 运行时依赖</div>
+      </div>
+    </div>
+
+    <!-- Cross-panel navigation -->
+    <div class="cross-nav">
+      <a href="../docs/index.html" class="cross-card">
+        <span class="cross-icon">📖</span>
+        <span class="cross-info">
+          <span class="cross-name">文档中心</span>
+          <span class="cross-stats">14 CDN 组件 · 2 故事 · ~110 源文件</span>
+        </span>
+        <span class="cross-arrow">→</span>
+      </a>
+      <a href="../tests/index.html" class="cross-card">
+        <span class="cross-icon">🧪</span>
+        <span class="cross-info">
+          <span class="cross-name">测试套件</span>
+          <span class="cross-stats">11 测试文件 · 197 测试用例 · 100% 通过率</span>
+        </span>
+        <span class="cross-arrow">→</span>
+      </a>
+    </div>
+
+    <!-- ═══════ Section 1: 可视化 & 渲染库 Demo ═══════ -->
+    <div class="section-title" id="demos">
+      <span class="accent">📦</span> 可视化 &amp; 渲染库 Demo
+      <span class="count">3 个交互式演示</span>
+    </div>
+    <div class="demo-grid">
+
+      <!-- Cytoscape Graph -->
+      <div class="demo-card" style="animation-delay: 0.05s">
+        <div class="card-head">
+          <span class="card-icon graph">◆</span>
+          <div class="card-title-area">
+            <div class="card-name">Cytoscape.js + dagre 图谱布局</div>
+            <div class="card-path">demos/cytoscape-graph/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">图可视化</span>
+          <span class="badge">dagre 布局</span>
+          <span class="badge">交互式</span>
+        </div>
+        <p class="card-desc">
+          基于 Cytoscape.js 和 dagre 布局引擎的交互式知识图谱。支持节点/边可视化、dagre 层级布局、适应视图缩放、标签切换等功能。
+        </p>
+        <div class="card-actions">
+          <a href="cytoscape-graph/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">cytoscape</span><span class="tag">dagre</span><span class="tag">图谱布局</span><span class="tag">CDN ESM</span>
+        </div>
+      </div>
+
+      <!-- Markdown Render -->
+      <div class="demo-card" style="animation-delay: 0.1s">
+        <div class="card-head">
+          <span class="card-icon render">◇</span>
+          <div class="card-title-area">
+            <div class="card-name">Markdown 渲染引擎</div>
+            <div class="card-path">demos/markdown-render/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">Markdown</span>
+          <span class="badge">marked</span>
+          <span class="badge">Sanitize</span>
+        </div>
+        <p class="card-desc">
+          基于 marked 的 Markdown 渲染 Demo。支持标题、代码块、表格、引用、列表、HTML 实体，可切换查看渲染输出与原始源码。
+        </p>
+        <div class="card-actions">
+          <a href="markdown-render/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">marked</span><span class="tag">自研净化</span><span class="tag">渲染</span><span class="tag">Sanitize</span><span class="tag">CDN ESM</span>
+        </div>
+      </div>
+
+      <!-- Mermaid -->
+      <div class="demo-card" style="animation-delay: 0.15s">
+        <div class="card-head">
+          <span class="card-icon diagram">△</span>
+          <div class="card-title-area">
+            <div class="card-name">Mermaid 图表渲染</div>
+            <div class="card-path">demos/mermaid/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">图表</span>
+          <span class="badge green">7 种类型</span>
+          <span class="badge">交互式</span>
+        </div>
+        <p class="card-desc">
+          基于 Mermaid.js 的多类型图表渲染 Demo。覆盖流程图、时序图、类图、状态图、甘特图、饼图、ER 图共 7 种图表类型，支持一键切换预览。
+        </p>
+        <div class="card-actions">
+          <a href="mermaid/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">mermaid</span><span class="tag">流程图</span><span class="tag">时序图</span><span class="tag">甘特图</span><span class="tag">CDN ESM</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider thick">
+
+    <!-- ═══════ Section 2: CDN 组件交互 Demo ═══════ -->
+    <div class="section-title" id="component-demos">
+      <span class="accent">🎮</span> CDN 组件交互 Demo
+      <span class="count">6 个独立演示</span>
+    </div>
+    <div class="demo-grid">
+
+      <div class="demo-card" style="animation-delay: 0.02s">
+        <div class="card-head">
+          <span class="card-icon component">🔘</span>
+          <div class="card-title-area">
+            <div class="card-name">YiButton / YiIconButton</div>
+            <div class="card-path">demos/yi-button/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">按钮</span>
+          <span class="badge">6 种变体</span>
+          <span class="badge">3 种尺寸</span>
+        </div>
+        <p class="card-desc">按钮组件交互演示。实时切换 variant（primary/secondary/outline/ghost/danger/accent）、size、disabled/loading 状态，以及 YiIconButton 完整展示。</p>
+        <div class="card-actions">
+          <a href="yi-button/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">YiButton</span><span class="tag">YiIconButton</span><span class="tag">variant</span><span class="tag">交互</span>
+        </div>
+      </div>
+
+      <div class="demo-card" style="animation-delay: 0.06s">
+        <div class="card-head">
+          <span class="card-icon component">🏷️</span>
+          <div class="card-title-area">
+            <div class="card-name">YiTag</div>
+            <div class="card-path">demos/yi-tag/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">标签</span>
+          <span class="badge">7 种主题</span>
+          <span class="badge">多选/关闭</span>
+        </div>
+        <p class="card-desc">标签组件交互演示。展示 variant 主题色、clickable 点击反馈、closable 关闭、active 多选、disabled 禁用、size 尺寸等完整 API。</p>
+        <div class="card-actions">
+          <a href="yi-tag/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">YiTag</span><span class="tag">closable</span><span class="tag">active</span><span class="tag">多选</span>
+        </div>
+      </div>
+
+      <div class="demo-card" style="animation-delay: 0.10s">
+        <div class="card-head">
+          <span class="card-icon component">🪟</span>
+          <div class="card-title-area">
+            <div class="card-name">YiModal</div>
+            <div class="card-path">demos/yi-modal/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">模态框</span>
+          <span class="badge">3 种尺寸</span>
+          <span class="badge">ESC/遮罩</span>
+        </div>
+        <p class="card-desc">模态框组件交互演示。实时控制 size / showHeader / showFooter / maskClosable，支持 ESC 关闭和点击遮罩关闭。</p>
+        <div class="card-actions">
+          <a href="yi-modal/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">YiModal</span><span class="tag">三段式</span><span class="tag">body锁定</span><span class="tag">键盘</span>
+        </div>
+      </div>
+
+      <div class="demo-card" style="animation-delay: 0.14s">
+        <div class="card-head">
+          <span class="card-icon form">📝</span>
+          <div class="card-title-area">
+            <div class="card-name">YiInput / YiSelect / YiTextarea</div>
+            <div class="card-path">demos/yi-form/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">表单</span>
+          <span class="badge">3 合 1</span>
+          <span class="badge">组合示例</span>
+        </div>
+        <p class="card-desc">表单控件组交互演示。YiInput（size/variant/disabled）、YiSelect（下拉/搜索/选中）和 YiTextarea，含完整组合表单示例。</p>
+        <div class="card-actions">
+          <a href="yi-form/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">YiInput</span><span class="tag">YiSelect</span><span class="tag">YiTextarea</span><span class="tag">表单</span>
+        </div>
+      </div>
+
+      <div class="demo-card" style="animation-delay: 0.18s">
+        <div class="card-head">
+          <span class="card-icon utility">💬</span>
+          <div class="card-title-area">
+            <div class="card-name">YiLoading / YiEmptyState / YiErrorState</div>
+            <div class="card-path">demos/yi-feedback/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">状态反馈</span>
+          <span class="badge">4 种动画</span>
+          <span class="badge">3 合 1</span>
+        </div>
+        <p class="card-desc">状态反馈组件交互演示。Loading（spinner/dots/pulse/wave + 全屏）、EmptyState（多场景切换）、ErrorState（重试交互）。</p>
+        <div class="card-actions">
+          <a href="yi-feedback/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">YiLoading</span><span class="tag">YiEmptyState</span><span class="tag">YiErrorState</span><span class="tag">反馈</span>
+        </div>
+      </div>
+
+      <div class="demo-card" style="animation-delay: 0.22s">
+        <div class="card-head">
+          <span class="card-icon graph">🎨</span>
+          <div class="card-title-area">
+            <div class="card-name">YiIcon + iconMap 图标库</div>
+            <div class="card-path">demos/yi-icon/</div>
+          </div>
+        </div>
+        <div class="badge-row">
+          <span class="badge accent">图标</span>
+          <span class="badge green">61 个图标</span>
+          <span class="badge">8 个分类</span>
+        </div>
+        <p class="card-desc">图标组件与图标库完整图鉴。支持搜索过滤、分类浏览、点击复制、size/spin 演示，覆盖 8 大类别 61 个语义图标。</p>
+        <div class="card-actions">
+          <a href="yi-icon/index.html" class="btn-demo">▶ 查看 Demo</a>
+        </div>
+        <div class="demo-tags">
+          <span class="tag">YiIcon</span><span class="tag">iconMap</span><span class="tag">Font Awesome</span><span class="tag">图鉴</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider thick">
+
+    <!-- ═══════ Section 3: CDN 组件库清单 ═══════ -->
+    <div class="section-title" id="components">
+      <span class="accent">🧩</span> CDN 通用组件库清单
+      <span class="count">11 个可复用组件</span>
+    </div>
+    <div class="demo-grid compact">
+
+      <div class="demo-card compact" style="animation-delay: 0.02s">
+        <div class="card-head">
+          <span class="card-icon component">🔘</span>
+          <div class="card-title-area">
+            <div class="card-name">YiButton / YiIconButton</div>
+            <div class="card-path">cdn/components/common/buttons/</div>
+          </div>
+        </div>
+        <p class="card-desc">通用按钮组件，支持多种 variant（primary/secondary/ghost/danger）和 size 配置。图标按钮支持 iconMap 内所有图标。</p>
+        <div class="demo-tags">
+          <span class="tag">按钮</span><span class="tag">variant</span><span class="tag">disabled</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.04s">
+        <div class="card-head">
+          <span class="card-icon component">🏷️</span>
+          <div class="card-title-area">
+            <div class="card-name">YiTag</div>
+            <div class="card-path">cdn/components/common/tags/</div>
+          </div>
+        </div>
+        <p class="card-desc">标签组件，支持多种颜色主题和可关闭模式，广泛用于状态标记、分类筛选等场景。</p>
+        <div class="demo-tags">
+          <span class="tag">标签</span><span class="tag">closable</span><span class="tag">主题色</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.06s">
+        <div class="card-head">
+          <span class="card-icon component">🪟</span>
+          <div class="card-title-area">
+            <div class="card-name">YiModal</div>
+            <div class="card-path">cdn/components/common/modals/</div>
+          </div>
+        </div>
+        <p class="card-desc">模态框组件，支持标题栏、内容区、底部操作栏三段式布局，ESC 关闭、点击遮罩关闭等交互。</p>
+        <div class="demo-tags">
+          <span class="tag">模态框</span><span class="tag">ESC</span><span class="tag">遮罩</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.08s">
+        <div class="card-head">
+          <span class="card-icon component">⏳</span>
+          <div class="card-title-area">
+            <div class="card-name">YiLoading</div>
+            <div class="card-path">cdn/components/common/loaders/</div>
+          </div>
+        </div>
+        <p class="card-desc">加载状态组件，支持全屏/行内两种模式，可自定义加载文案和 spinner 样式。</p>
+        <div class="demo-tags">
+          <span class="tag">加载</span><span class="tag">spinner</span><span class="tag">全屏</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.10s">
+        <div class="card-head">
+          <span class="card-icon form">📝</span>
+          <div class="card-title-area">
+            <div class="card-name">YiInput / YiTextarea</div>
+            <div class="card-path">cdn/components/common/forms/</div>
+          </div>
+        </div>
+        <p class="card-desc">表单输入组件，支持 placeholder、disabled、maxlength、自动高度等，统一的外观和交互反馈。</p>
+        <div class="demo-tags">
+          <span class="tag">输入框</span><span class="tag">表单</span><span class="tag">校验</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.12s">
+        <div class="card-head">
+          <span class="card-icon form">📋</span>
+          <div class="card-title-area">
+            <div class="card-name">YiSelect</div>
+            <div class="card-path">cdn/components/common/forms/</div>
+          </div>
+        </div>
+        <p class="card-desc">下拉选择组件，支持单选/多选、搜索过滤、自定义 option 渲染、键盘导航（↑↓ Enter）。</p>
+        <div class="demo-tags">
+          <span class="tag">下拉</span><span class="tag">多选</span><span class="tag">搜索</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.14s">
+        <div class="card-head">
+          <span class="card-icon component">📭</span>
+          <div class="card-title-area">
+            <div class="card-name">YiEmptyState</div>
+            <div class="card-path">cdn/components/common/feedback/</div>
+          </div>
+        </div>
+        <p class="card-desc">空状态占位组件，当列表/表格无数据时展示友好提示，支持自定义图标、标题、描述和操作按钮。</p>
+        <div class="demo-tags">
+          <span class="tag">空状态</span><span class="tag">占位</span><span class="tag">无数据</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.16s">
+        <div class="card-head">
+          <span class="card-icon component">⚠️</span>
+          <div class="card-title-area">
+            <div class="card-name">YiErrorState</div>
+            <div class="card-path">cdn/components/common/feedback/</div>
+          </div>
+        </div>
+        <p class="card-desc">错误状态组件，展示错误信息并提供重试按钮，统一处理网络异常、权限不足等错误场景。</p>
+        <div class="demo-tags">
+          <span class="tag">错误</span><span class="tag">重试</span><span class="tag">异常</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.18s">
+        <div class="card-head">
+          <span class="card-icon component">🎨</span>
+          <div class="card-title-area">
+            <div class="card-name">YiIcon</div>
+            <div class="card-path">cdn/icons/</div>
+          </div>
+        </div>
+        <p class="card-desc">图标组件，基于 SVG sprite 的图标系统，通过 iconMap 统一管理，支持 size/color 灵活配置。</p>
+        <div class="demo-tags">
+          <span class="tag">图标</span><span class="tag">SVG</span><span class="tag">iconMap</span>
+        </div>
+      </div>
+
+      <!-- Business components -->
+      <div class="demo-card compact" style="animation-delay: 0.20s">
+        <div class="card-head">
+          <span class="card-icon utility">🔍</span>
+          <div class="card-title-area">
+            <div class="card-name">SearchHeader</div>
+            <div class="card-path">cdn/components/business/</div>
+          </div>
+        </div>
+        <p class="card-desc">业务搜索头部组件，集成了搜索输入、筛选条件和操作按钮的复合组件。</p>
+        <div class="demo-tags">
+          <span class="tag">搜索</span><span class="tag">业务组件</span><span class="tag">筛选</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.22s">
+        <div class="card-head">
+          <span class="card-icon utility">📄</span>
+          <div class="card-title-area">
+            <div class="card-name">SkeletonLoader</div>
+            <div class="card-path">cdn/components/business/</div>
+          </div>
+        </div>
+        <p class="card-desc">骨架屏加载组件，内容加载前展示页面结构轮廓，提升感知性能与用户体验。</p>
+        <div class="demo-tags">
+          <span class="tag">骨架屏</span><span class="tag">加载</span><span class="tag">UX</span>
+        </div>
+      </div>
+
+    </div>
+
+    <hr class="divider thick">
+
+    <!-- ═══════ Section 3: 核心工具库 ═══════ -->
+    <div class="section-title" id="utilities">
+      <span class="accent">🔧</span> 核心工具库概览
+      <span class="count">cdn/utils/ 模块地图</span>
+    </div>
+    <div class="demo-grid compact">
+
+      <div class="demo-card compact" style="animation-delay: 0.02s">
+        <div class="card-head">
+          <span class="card-icon utility">📋</span>
+          <div class="card-title-area">
+            <div class="card-name">log 日志模块</div>
+            <div class="card-path">cdn/utils/core/log.js</div>
+          </div>
+        </div>
+        <p class="card-desc">统一的日志输出工具，提供 <code>logInfo</code> / <code>logWarn</code> / <code>logError</code> 三级日志，替代裸 console。</p>
+        <div class="demo-tags">
+          <span class="tag">日志</span><span class="tag">分级</span><span class="tag">debug</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.04s">
+        <div class="card-head">
+          <span class="card-icon utility">🌐</span>
+          <div class="card-title-area">
+            <div class="card-name">http 请求模块</div>
+            <div class="card-path">cdn/utils/core/http.js</div>
+          </div>
+        </div>
+        <p class="card-desc">封装 fetch，统一认证头注入、401 拦截、自动重试、超时控制、响应类型解析。</p>
+        <div class="demo-tags">
+          <span class="tag">fetch</span><span class="tag">X-Token</span><span class="tag">重试</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.06s">
+        <div class="card-head">
+          <span class="card-icon utility">⚠️</span>
+          <div class="card-title-area">
+            <div class="card-name">error 错误处理</div>
+            <div class="card-path">cdn/utils/core/error.js</div>
+          </div>
+        </div>
+        <p class="card-desc">统一错误码枚举 <code>ErrorCodes</code>，结构化错误对象，与 log 模块联动输出错误上下文。</p>
+        <div class="demo-tags">
+          <span class="tag">ErrorCodes</span><span class="tag">结构化</span><span class="tag">上下文</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.08s">
+        <div class="card-head">
+          <span class="card-icon utility">💾</span>
+          <div class="card-title-area">
+            <div class="card-name">storage 存储模块</div>
+            <div class="card-path">cdn/utils/core/storage.js</div>
+          </div>
+        </div>
+        <p class="card-desc">localStorage 安全封装，JSON 序列化/反序列化，过期时间支持，异常容错处理。</p>
+        <div class="demo-tags">
+          <span class="tag">localStorage</span><span class="tag">JSON</span><span class="tag">TTL</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.10s">
+        <div class="card-head">
+          <span class="card-icon utility">📡</span>
+          <div class="card-title-area">
+            <div class="card-name">eventBus 事件总线</div>
+            <div class="card-path">cdn/utils/core/eventBus.js</div>
+          </div>
+        </div>
+        <p class="card-desc">发布-订阅模式的事件总线，支持命名空间事件、一次性监听、优先级排序、事件日志。</p>
+        <div class="demo-tags">
+          <span class="tag">pub/sub</span><span class="tag">命名空间</span><span class="tag">once</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.12s">
+        <div class="card-head">
+          <span class="card-icon utility">🎬</span>
+          <div class="card-title-area">
+            <div class="card-name">animation 动画工具</div>
+            <div class="card-path">cdn/utils/core/animation.js</div>
+          </div>
+        </div>
+        <p class="card-desc">高性能动画辅助，基于 requestAnimationFrame，支持缓动函数、链式调用和中断控制。</p>
+        <div class="demo-tags">
+          <span class="tag">rAF</span><span class="tag">缓动</span><span class="tag">链式</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.14s">
+        <div class="card-head">
+          <span class="card-icon utility">📐</span>
+          <div class="card-title-area">
+            <div class="card-name">validation 校验模块</div>
+            <div class="card-path">cdn/utils/core/validation.js</div>
+          </div>
+        </div>
+        <p class="card-desc">通用输入校验工具，支持必填、长度、正则、自定义规则，返回结构化校验结果。</p>
+        <div class="demo-tags">
+          <span class="tag">校验</span><span class="tag">规则</span><span class="tag">表单</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.16s">
+        <div class="card-head">
+          <span class="card-icon utility">🏗️</span>
+          <div class="card-title-area">
+            <div class="card-name">baseView 视图框架</div>
+            <div class="card-path">cdn/utils/view/baseView.js</div>
+          </div>
+        </div>
+        <p class="card-desc">自研视图基类 <code>createBaseView</code>，提供 store + computed + methods 模式，语义类似 Vue Options API。</p>
+        <div class="demo-tags">
+          <span class="tag">视图框架</span><span class="tag">响应式</span><span class="tag">store</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.18s">
+        <div class="card-head">
+          <span class="card-icon utility">🌍</span>
+          <div class="card-title-area">
+            <div class="card-name">i18n 国际化</div>
+            <div class="card-path">cdn/utils/core/i18n.js</div>
+          </div>
+        </div>
+        <p class="card-desc">轻量国际化模块，支持多语言文案注册、参数插值、回退语言链，无需外部依赖。</p>
+        <div class="demo-tags">
+          <span class="tag">i18n</span><span class="tag">多语言</span><span class="tag">插值</span>
+        </div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.20s">
+        <div class="card-head">
+          <span class="card-icon utility">💬</span>
+          <div class="card-title-area">
+            <div class="card-name">message / dialog UI</div>
+            <div class="card-path">cdn/utils/ui/</div>
+          </div>
+        </div>
+        <p class="card-desc">消息提示与对话框工具，支持 toast 通知（success/warning/error）、确认对话框、自定义渲染。</p>
+        <div class="demo-tags">
+          <span class="tag">toast</span><span class="tag">dialog</span><span class="tag">confirm</span>
+        </div>
+      </div>
+
+    </div>
+
+    <hr class="divider">
+
+    <!-- ═══════ Section 4: 插件体系 overview ═══════ -->
+    <div class="section-title">
+      <span class="accent">🔌</span> Markdown &amp; Mermaid 插件体系
+      <span class="count">14 个可组合插件</span>
+    </div>
+    <div class="demo-grid compact">
+
+      <div class="demo-card compact" style="animation-delay: 0.02s">
+        <div class="card-head">
+          <span class="card-icon plugin">🧹</span>
+          <div class="card-title-area">
+            <div class="card-name">SanitizePlugin</div>
+            <div class="card-path">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">自研 HTML 净化插件（非 DOMPurify），白名单标签/属性/CSS 校验，防止 XSS 攻击。</p>
+        <div class="demo-tags"><span class="tag">XSS</span><span class="tag">自研净化</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.04s">
+        <div class="card-head">
+          <span class="card-icon plugin">📑</span>
+          <div class="card-title-area">
+            <div class="card-name">TocPlugin</div>
+            <div class="card-path">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">自动生成目录导航，支持层级缩进、锚点跳转、滚动高亮当前章节。</p>
+        <div class="demo-tags"><span class="tag">目录</span><span class="tag">锚点</span><span class="tag">高亮</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.06s">
+        <div class="card-head">
+          <span class="card-icon plugin">🧜</span>
+          <div class="card-title-area">
+            <div class="card-name">MermaidPlugin</div>
+            <div class="card-path">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">Markdown 中内嵌 Mermaid 图表渲染，自动识别代码块并替换为 SVG 图表。</p>
+        <div class="demo-tags"><span class="tag">Mermaid</span><span class="tag">代码块</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.08s">
+        <div class="card-head">
+          <span class="card-icon plugin">📝</span>
+          <div class="card-title-area">
+            <div class="card-name">FrontmatterPlugin</div>
+            <div class="card-path">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">解析 Markdown 文件头部的 YAML frontmatter 元数据，提取 title/tags/date 等字段。</p>
+        <div class="demo-tags"><span class="tag">YAML</span><span class="tag">元数据</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.10s">
+        <div class="card-head">
+          <span class="card-icon plugin">🔗</span>
+          <div class="card-title-area">
+            <div class="card-name">InternalLinkPlugin</div>
+            <div class="card-path">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">Wiki 风格内部链接解析 `[[target]]`，自动转换为可点击的内部页面链接。</p>
+        <div class="demo-tags"><span class="tag">WikiLink</span><span class="tag">内部链接</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.12s">
+        <div class="card-head">
+          <span class="card-icon plugin">📦</span>
+          <div class="card-title-area">
+            <div class="card-name">ContainersPlugin</div>
+            <div class="card-path">cdn/markdown/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">自定义容器块（info/warning/danger/tip），支持标题、图标和嵌套 Markdown 内容。</p>
+        <div class="demo-tags"><span class="tag">容器</span><span class="tag">提示块</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.14s">
+        <div class="card-head">
+          <span class="card-icon plugin">📋</span>
+          <div class="card-title-area">
+            <div class="card-name">ClipboardPlugin</div>
+            <div class="card-path">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">Mermaid 图表一键复制到剪贴板（SVG/PNG），便于粘贴到文档或聊天工具中。</p>
+        <div class="demo-tags"><span class="tag">复制</span><span class="tag">剪贴板</span><span class="tag">SVG</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.16s">
+        <div class="card-head">
+          <span class="card-icon plugin">⬇️</span>
+          <div class="card-title-area">
+            <div class="card-name">DownloadPlugin</div>
+            <div class="card-path">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">Mermaid 图表下载为 SVG/PNG 文件，支持自定义文件名和导出分辨率。</p>
+        <div class="demo-tags"><span class="tag">下载</span><span class="tag">PNG</span><span class="tag">导出</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.18s">
+        <div class="card-head">
+          <span class="card-icon plugin">🔲</span>
+          <div class="card-title-area">
+            <div class="card-name">FullscreenPlugin</div>
+            <div class="card-path">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">图表全屏查看模式，支持 ESC 退出，适合在演示或审查复杂图表时使用。</p>
+        <div class="demo-tags"><span class="tag">全屏</span><span class="tag">演示</span></div>
+      </div>
+
+      <div class="demo-card compact" style="animation-delay: 0.20s">
+        <div class="card-head">
+          <span class="card-icon plugin">🔧</span>
+          <div class="card-title-area">
+            <div class="card-name">ToolbarPlugin</div>
+            <div class="card-path">cdn/mermaid/plugins/</div>
+          </div>
+        </div>
+        <p class="card-desc">图表悬停工具栏，集成复制、下载、全屏等操作的统一入口。</p>
+        <div class="demo-tags"><span class="tag">工具栏</span><span class="tag">悬停</span></div>
+      </div>
+
+    </div>
+
+    <hr class="divider">
+
+    <!-- ═══════ Section 5: 快速开始 ═══════ -->
+    <div class="callout" id="quickstart" style="animation-delay: 0.22s">
+      <h3>🚀 如何新增一个 Demo？</h3>
+      <pre><span class="cmt"># 1. 在 demos/ 下新建目录</span>
+mkdir -p <span class="str">demos/my-demo/</span>
+
+<span class="cmt"># 2. 创建自包含的 index.html（零构建，直接可用）</span>
+touch <span class="str">demos/my-demo/index.html</span>
+
+<span class="cmt"># 3. 在本页 demo-grid 中添加卡片</span>
+<span class="cmt">#    复制现有卡片结构，修改 icon / name / path / desc / tags</span>
+
+<span class="cmt"># 4. 通过 http-server 或项目自带的静态服务访问</span>
+<span class="str">http://127.0.0.1:8081/demos/</span></pre>
+      <p style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted);">
+        💡 所有第三方库通过 CDN ESM 加载，无需 <code>npm install</code>。Demo 页面完全自包含，可直接在浏览器中打开。
+      </p>
+    </div>
+
+    <!-- ═══════ Footer ═══════ -->
+    <hr class="divider">
+    <footer class="footer-note">
+      <strong>YiWeb Demo Center</strong>
+      <span class="sep">·</span> 所有 Demo 通过 CDN 加载第三方库，零 npm 运行时依赖
+      <span class="sep">·</span> <a href="../docs/index.html">📖 文档中心</a>
+      <span class="sep">·</span> <a href="../tests/index.html">🧪 测试套件</a>
+      <span class="sep">·</span> <a href="../CLAUDE.md">📋 CLAUDE.md</a>
+      <span class="sep">·</span> <a href="https://github.com/almond/knowledges-panel" target="_blank" rel="noopener">🔗 GitHub</a>
+      <br>
+      <span style="font-size: 0.7rem; opacity: 0.6;">
+        框架: <span class="kbd">createBaseView</span>
+        构建: <span class="kbd">零构建 ESM</span>
+        测试: <span class="kbd">Vitest + jsdom</span>
+        运行: 浏览器原生加载
+      </span>
+    </footer>
+
+  </div>
+
+  <!-- Back to top button -->
+  <button class="back-top" id="backTop" title="回到顶部" aria-label="回到顶部">↑</button>
+
+  <script>
+    // ── Staggered card animations ──
+    document.querySelectorAll('.demo-card').forEach((card, i) => {
+      card.style.animationDelay = `${0.02 + i * 0.015}s`;
+    });
+
+    // ── Back to top ──
+    const backTop = document.getElementById('backTop');
+    function toggleBackTop() {
+      backTop.classList.toggle('visible', window.scrollY > 400);
+    }
+    window.addEventListener('scroll', toggleBackTop, { passive: true });
+    backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // ── Keyboard shortcuts ──
+    document.addEventListener('keydown', (e) => {
+      // Escape scrolls to top
+      if (e.key === 'Escape' && document.activeElement === document.body) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      // 't' scrolls to top
+      if (e.key === 't' && document.activeElement === document.body && !e.metaKey && !e.ctrlKey) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    // ── Animate stat numbers on load ──
+    function animateStats() {
+      document.querySelectorAll('#stats .num').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      });
+      requestAnimationFrame(() => {
+        document.querySelectorAll('#stats .num').forEach((el, i) => {
+          setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          }, 300 + i * 80);
+        });
+      });
+    }
+    animateStats();
+
+    // ── Track internal demo visits (console only — no telemetry) ──
+    document.querySelectorAll('.btn-demo').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const card = e.target.closest('.demo-card');
+        const name = card?.querySelector('.card-name')?.textContent?.trim() || 'unknown';
+        console.log(`[DemoCenter] Opening demo: ${name}`);
+      });
+    });
+
+    console.log(
+      '%c⬡ YiWeb Demo Center%c ready\n%c9 demos · 11 components · 14 plugins · 30+ utilities%c',
+      'color:#6366f1;font-size:1.1em;font-weight:700;',
+      '',
+      'color:#a0a0a4;',
+      ''
+    );
+  </script>
+</body>
+</html>
