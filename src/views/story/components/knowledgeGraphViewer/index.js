@@ -310,30 +310,36 @@ registerGlobalComponent({
             const container = this.$refs.cyContainer;
             if (!container) return;
 
-            const nodes = (this.graphData?.nodes || []).map(n => ({
-                data: {
-                    id: n.id,
-                    label: n.label || n.id,
-                    color: getNodeColor(n),
-                    group: n.group || n.type || '',
-                    type: n.type || '',
-                    description: n.description || '',
-                    file: n.file || '',
-                    functions: (n.keyFunctions || []).join(', '),
-                    riskLevel: n.riskLevel || '',
-                    mdFiles: n.mdFiles ? JSON.stringify(n.mdFiles) : '',
-                },
-            }));
+            const nodes = (this.graphData?.nodes || []).map(n => {
+                const d = (n && n.data && typeof n.data === 'object') ? n.data : n;
+                return {
+                    data: {
+                        id: d.id,
+                        label: d.label || d.id,
+                        color: getNodeColor(d),
+                        group: d.group || d.type || '',
+                        type: d.type || '',
+                        description: d.description || '',
+                        file: d.file || '',
+                        functions: (d.keyFunctions || []).join(', '),
+                        riskLevel: d.riskLevel || '',
+                        mdFiles: d.mdFiles ? (typeof d.mdFiles === 'string' ? d.mdFiles : JSON.stringify(d.mdFiles)) : '',
+                    },
+                };
+            });
 
-            const edges = (this.graphData?.edges || []).map(e => ({
-                data: {
-                    id: `${e.source}_${e.relation}_${e.target}`,
-                    source: e.source,
-                    target: e.target,
-                    label: e.label || '',
-                    relation: e.relation || '',
-                },
-            }));
+            const edges = (this.graphData?.edges || []).map(e => {
+                const d = (e && e.data && typeof e.data === 'object') ? e.data : e;
+                return {
+                    data: {
+                        id: d.id || `${d.source}_${d.relation || d.type}_${d.target}`,
+                        source: d.source,
+                        target: d.target,
+                        label: d.label || '',
+                        relation: d.relation || d.type || '',
+                    },
+                };
+            });
 
             const nodeCount = nodes.length;
             const dagreOpts = nodeCount > 100 ? { rankSep: 180, nodeSep: 120, edgeSep: 40, ranker: 'tight-tree' }

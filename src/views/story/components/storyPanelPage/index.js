@@ -188,6 +188,32 @@ registerGlobalComponent({
             }
         },
 
+        _normalizeGraph(raw) {
+            // 兼容两种格式：Cytoscape 风格 { data: {...}, classes: "..." } 与扁平 { id: ..., label: ... }
+            const flatNode = (n) => {
+                if (!n) return n;
+                if (n.data && typeof n.data === 'object') {
+                    return { ...n.data, classes: n.classes || '', _raw: n };
+                }
+                return n;
+            };
+            const flatEdge = (e) => {
+                if (!e) return e;
+                if (e.data && typeof e.data === 'object') {
+                    const flat = { ...e.data, classes: e.classes || '', _raw: e };
+                    // 统一 relation 字段：优先 data.type，回退 data.relation
+                    if (!flat.relation && flat.type) flat.relation = flat.type;
+                    return flat;
+                }
+                if (!e.relation && e.type) e.relation = e.type;
+                return e;
+            };
+            return {
+                nodes: (raw.nodes || []).map(flatNode),
+                edges: (raw.edges || []).map(flatEdge),
+            };
+        },
+
         async loadGraphData() {
             if (this._graphLoading || this._isDestroyed) return;
             this._graphLoading = true;
@@ -197,7 +223,8 @@ registerGlobalComponent({
                 if (resp.ok) {
                     const data = await resp.json();
                     if (this._isDestroyed) return;
-                    this._graphData = data.graph || { nodes: [], edges: [] };
+                    const raw = data.knowledgeGraph || data.graph || { nodes: [], edges: [] };
+                    this._graphData = this._normalizeGraph(raw);
                     this._graphTitle = (data.project && data.project.name) || (data.story && data.story.name) || '故事依赖关系图';
                 } else {
                     if (this._isDestroyed) return;
@@ -247,12 +274,14 @@ registerGlobalComponent({
                         const data = await resp.json();
                         if (!firstName) firstName = (data.story && data.story.name) || dir;
 
-                        for (const n of (data.graph?.nodes || [])) {
-                            if (!allNodes.has(n.id)) allNodes.set(n.id, { ...n });
+                        const raw = data.knowledgeGraph || data.graph || { nodes: [], edges: [] };
+                        const normalized = this._normalizeGraph(raw);
+                        for (const n of normalized.nodes) {
+                            if (n.id && !allNodes.has(n.id)) allNodes.set(n.id, n);
                         }
-                        for (const e of (data.graph?.edges || [])) {
-                            const key = `${e.source}|${e.target}|${e.relation}`;
-                            if (!allEdges.has(key)) allEdges.set(key, { ...e });
+                        for (const e of normalized.edges) {
+                            const key = `${e.source}|${e.target}|${e.relation || e.type || ''}`;
+                            if (!allEdges.has(key)) allEdges.set(key, e);
                         }
                     } catch (_) {}
                 }

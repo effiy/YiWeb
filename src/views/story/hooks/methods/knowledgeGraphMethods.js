@@ -13,6 +13,33 @@ import {
     refreshCache
 } from '../utils/knowledgeGraphUtils.js';
 
+/**
+ * 将 Cytoscape 风格 { data: {...}, classes: "..." } 节点/边扁平化为普通对象
+ */
+function normalizeGraphData(raw) {
+    const flatNode = (n) => {
+        if (!n) return n;
+        if (n.data && typeof n.data === 'object') {
+            return { ...n.data, classes: n.classes || '', _raw: n };
+        }
+        return n;
+    };
+    const flatEdge = (e) => {
+        if (!e) return e;
+        if (e.data && typeof e.data === 'object') {
+            const flat = { ...e.data, classes: e.classes || '', _raw: e };
+            if (!flat.relation && flat.type) flat.relation = flat.type;
+            return flat;
+        }
+        if (!e.relation && e.type) e.relation = e.type;
+        return e;
+    };
+    return {
+        nodes: (raw.nodes || []).map(flatNode),
+        edges: (raw.edges || []).map(flatEdge),
+    };
+}
+
 export function createKnowledgeGraphMethods(state) {
     async function loadKnowledgeGraphData() {
         state.knowledgeGraphLoading.value = true;
@@ -90,7 +117,8 @@ export function createKnowledgeGraphMethods(state) {
             }
 
             const data = await response.json();
-            const graph = data.graph || { nodes: [], edges: [] };
+            const raw = data.knowledgeGraph || data.graph || { nodes: [], edges: [] };
+            const graph = normalizeGraphData(raw);
 
             state.knowledgeGraphData.value = graph;
             state.knowledgeGraphTitle.value = (data.story && data.story.name) || directory;
@@ -127,7 +155,8 @@ export function createKnowledgeGraphMethods(state) {
                 return;
             }
             const data = await response.json();
-            state.panelKgGraphData.value = data.graph || { nodes: [], edges: [] };
+            const raw = data.knowledgeGraph || data.graph || { nodes: [], edges: [] };
+            state.panelKgGraphData.value = normalizeGraphData(raw);
             state.panelKgGraphTitle.value = (data.story && data.story.name) || directory;
         } catch (err) {
             state.panelKgGraphData.value = null;
@@ -143,7 +172,8 @@ export function createKnowledgeGraphMethods(state) {
             const response = await fetch('/docs/故事任务面板/故事依赖.json', { credentials: 'omit' });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            state.knowledgeGraphData.value = data.graph || { nodes: [], edges: [] };
+            const raw = data.knowledgeGraph || data.graph || { nodes: [], edges: [] };
+            state.knowledgeGraphData.value = normalizeGraphData(raw);
             state.knowledgeGraphTitle.value = (data.story && data.story.name) || '故事依赖关系图';
             state.showKnowledgeGraph.value = true;
         } catch (err) {
