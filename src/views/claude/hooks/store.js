@@ -39,7 +39,7 @@ export function createStore() {
         error.value = null;
         await safeExecuteAsync(async () => {
             try {
-                const url = buildServiceUrl('query_documents', { cname: 'sessions', limit: 10000 });
+                const url = buildServiceUrl('query_documents', { cname: 'sessions', limit: 100000000 });
                 const response = await getData(url, {}, false);
 
                 let items = [];

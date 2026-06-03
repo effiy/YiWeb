@@ -137,7 +137,7 @@ async function getExistingSessions(apiUrl, token) {
     method_name: 'query_documents',
     parameters: {
       cname: 'sessions',
-      limit: 10000
+      limit: 100000000
     }
   });
 

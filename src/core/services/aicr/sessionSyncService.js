@@ -386,7 +386,7 @@ class SessionSyncService {
                 try {
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',
-                        limit: 1000
+                        limit: 100000000
                     });
                     const findResp = await getData(findUrl, {}, false);
                     const dbSessions = findResp?.data?.list || [];
@@ -638,7 +638,7 @@ class SessionSyncService {
                         const findUrl = buildServiceUrl('query_documents', {
                             cname: 'sessions',
                             filter: filter,
-                            limit: 10
+                            limit: 100000000
                         });
                         const findResp = await getData(findUrl, {}, false);
                         const items = findResp?.data?.list || [];
@@ -838,7 +838,7 @@ class SessionSyncService {
                 // 获取所有会话（通过列表接口）
                 const url = buildServiceUrl('query_documents', {
                     cname: 'sessions',
-                    limit: 1000
+                    limit: 100000000
                 });
                 const response = await getData(url, {}, false);
                 

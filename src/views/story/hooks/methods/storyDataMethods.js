@@ -79,7 +79,7 @@ export function createStoryDataMethods(state) {
             const body = {
                 module_name: 'services.database.data_service',
                 method_name: 'query_documents',
-                parameters: { cname: 'sessions', limit: 10000 },
+                parameters: { cname: 'sessions', limit: 100000000 },
             };
             logInfo('[故事面板] 加载数据, API:', apiUrl);
             const res = await fetch(apiUrl + '/', {

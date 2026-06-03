@@ -188,7 +188,7 @@ export function createAicrStoreSessionsOps(deps, state) {
                 const body = {
                     module_name: 'services.database.data_service',
                     method_name: 'query_documents',
-                    parameters: { cname: 'sessions', limit: 10000, filter: { file_path: '故事任务面板/' } },
+                    parameters: { cname: 'sessions', limit: 100000000, filter: { file_path: '故事任务面板/' } },
                 };
 
                 const res = await fetch(apiUrl + '/', {
